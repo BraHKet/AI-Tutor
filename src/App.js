@@ -1,23 +1,34 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import LoginPage from './components/LoginPage'
-import HomePage from './components/HomePage'
+// Esempio in App.js (adatta alla tua struttura)
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import HomePage from './components/HomePage';
+import LoginPage from './components/LoginPage';
 import CreateProject from './components/CreateProject';
+import StudyPlanViewer from './components/StudyPlanViewer'; // Importa il nuovo componente
+import useGoogleAuth from './hooks/useGoogleAuth'; // Per la logica di PrivateRoute
 
 function App() {
+  const { user, loading } = useGoogleAuth();
+
+  if (loading) {
+    return <div>Loading...</div>; // O uno spinner migliore
+  }
+
   return (
     <Router>
-      <div className="app-container">
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
 
-        <main className="main-content">
-          <Routes>
-            <Route path="/" element={<LoginPage />} />
-            <Route path="/homepage" element={<HomePage />} />
-            <Route path="/projects" element={<HomePage />} />
-            <Route path="/create-project" element={<CreateProject />} />
-          </Routes>
-        </main>
+        {/* Routes protette */}
+        <Route path="/" element={<HomePage />} />
+        <Route path="/create-project" element={<CreateProject />} />
+        <Route path="/projects" element={<HomePage />} />
+        {/* NUOVA ROTTA per visualizzare il piano */}
+        <Route path="/projects/:projectId/plan" element={<StudyPlanViewer />} />
 
-      </div>
+        {/* Fallback o redirect se necessario */}
+        <Route path="*" element={<Navigate to={user ? "/" : "/login"} replace />} />
+      </Routes>
     </Router>
   );
 }

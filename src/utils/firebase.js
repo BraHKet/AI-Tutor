@@ -3,24 +3,23 @@ import { initializeApp } from "firebase/app";
 import {
   getFirestore,
   collection,
-  doc,
-  getDoc,
-  getDocs,
   addDoc,
-  updateDoc,
-  deleteDoc,
-  query,
-  where,
-  orderBy
+  doc,
+  setDoc,
+  writeBatch,
+  serverTimestamp // Usiamo serverTimestamp per createdAt
 } from "firebase/firestore";
-import { 
-  getAuth, 
-  GoogleAuthProvider, 
+import {
+  getAuth,
+  GoogleAuthProvider,
   signInWithPopup,
   signOut,
+  onAuthStateChanged // Esportiamolo per l'hook
 } from "firebase/auth";
 
-// Replace with your Firebase configuration
+// --- CONFIGURAZIONE FIREBASE ---
+// !!! SOSTITUISCI CON I TUOI VALORI REALI DALLA FIREBASE CONSOLE !!!
+// In particolare, assicurati che 'apiKey' sia ESATTAMENTE quella della tua app web Firebase.
 const firebaseConfig = {
   apiKey: "AIzaSyDEvG7PnTdzMg5xF_xO-u97cjO4QF4rRaw",
   authDomain: "ai-tutor-b7897.firebaseapp.com",
@@ -29,139 +28,94 @@ const firebaseConfig = {
   messagingSenderId: "706674759570",
   appId: "1:706674759570:web:87614633401febbd21134b"
 };
-  
-console.log('Firebase: Initializing Firebase with config');
+// -----------------------------
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
 export const db = getFirestore(app);
-export const provider = new GoogleAuthProvider();
+export const auth = getAuth(app);
 
-console.log('Firebase: Firebase initialized successfully');
+// Google Auth Provider
+const provider = new GoogleAuthProvider();
 
-// Authentication helpers
-export const signInWithGoogle = async () => {
-  console.log('Firebase: signInWithGoogle called');
-  try {
-    console.log('Firebase: Starting Google sign-in popup...');
-    const result = await signInWithPopup(auth, provider);
-    console.log('Firebase: Sign-in successful, user:', result.user.email);
-    
-    // Log additional user info
-    console.log('Firebase: User ID:', result.user.uid);
-    console.log('Firebase: User Display Name:', result.user.displayName);
-    
-    return result.user;
-  } catch (error) {
-    console.error("Firebase: Error signing in with Google:", error);
-    console.error("Firebase: Error code:", error.code);
-    console.error("Firebase: Error message:", error.message);
-    throw error;
-  }
+export const signInWithGoogle = () => {
+  // Potresti aggiungere scope qui se necessario, ma solitamente non per il solo login
+  // provider.addScope('https://www.googleapis.com/auth/drive.file'); // Esempio - NON necessario se usi GSI per Drive
+  return signInWithPopup(auth, provider);
 };
 
-export const logoutUser = async () => {
-  console.log('Firebase: logoutUser called');
-  try {
-    await signOut(auth);
-    console.log('Firebase: User signed out successfully');
-  } catch (error) {
-    console.error("Firebase: Error signing out:", error);
-    throw error;
-  }
+export const logoutUser = () => {
+  return signOut(auth);
 };
 
-// Firestore helpers
-export const createProject = async (projectData) => {
-  console.log('Firebase: createProject called with data:', projectData);
-  try {
-    console.log("Firebase: Creating project in Firestore...");
-    const docRef = await addDoc(collection(db, "projects"), projectData);
-    console.log("Firebase: Project created successfully with ID:", docRef.id);
-    return docRef.id;
-  } catch (error) {
-    console.error("Firebase: Error creating project in Firestore:", error);
-    console.error("Firebase: Error code:", error.code);
-    console.error("Firebase: Error message:", error.message);
-    throw error;
-  }
-};
+// --- Funzione per Salvare Progetto e Piano (Nuova) ---
+/**
+ * Salva i dati principali del progetto e la struttura del piano (topics) in Firestore.
+ * Usa un batch write per garantire l'atomicità.
+ * @param {object} projectCoreData - Dati base del progetto (title, examName, totalDays, userId, originalFiles, etc.).
+ * @param {Array<object>} topicsData - Array di oggetti topic da salvare nella sotto-collezione.
+ * @returns {Promise<string>} - L'ID del progetto creato.
+ * @throws {Error} - Se il salvataggio fallisce.
+ */
+export const saveProjectWithPlan = async (projectCoreData, topicsData) => {
+  const batch = writeBatch(db);
+  const newProjectRef = doc(collection(db, "projects")); // Genera ref con nuovo ID
 
-export const updateProject = async (projectId, data) => {
-  console.log('Firebase: updateProject called for ID:', projectId);
-  console.log('Firebase: Update data:', data);
-  try {
-    const projectRef = doc(db, "projects", projectId);
-    await updateDoc(projectRef, {
-      ...data,
-      updatedAt: new Date()
+  console.log("Firebase: Preparing batch write. Project ID:", newProjectRef.id);
+
+  // 1. Set Project Document
+  batch.set(newProjectRef, {
+    ...projectCoreData,
+    id: newProjectRef.id, // Salva ID nel documento
+    createdAt: serverTimestamp(), // Orario del server
+    studyPlanStatus: 'generated'
+  });
+
+  // 2. Set Topic Documents in Subcollection
+  if (topicsData && topicsData.length > 0) {
+    const topicsCollectionRef = collection(db, "projects", newProjectRef.id, "topics");
+    topicsData.forEach((topic) => {
+      // Usa l'ID già generato nell'orchestrator se presente, altrimenti genera nuovo ref
+      const topicRef = topic.id ? doc(topicsCollectionRef, topic.id) : doc(topicsCollectionRef);
+       // Assicurati che l'ID sia salvato nel documento topic, anche se ne generiamo uno nuovo qui
+       const topicDataWithId = { ...topic, id: topicRef.id };
+       batch.set(topicRef, topicDataWithId);
     });
-    console.log('Firebase: Project updated successfully');
+    console.log(`Firebase: Added ${topicsData.length} topics to batch.`);
+  } else {
+     console.warn("Firebase: No topics data provided to saveProjectWithPlan.");
+  }
+
+  // 3. Commit Batch
+  try {
+    await batch.commit();
+    console.log("Firebase: Batch write successful. Project ID:", newProjectRef.id);
+    return newProjectRef.id; // Restituisci l'ID del progetto
   } catch (error) {
-    console.error("Firebase: Error updating project:", error);
-    throw error;
+    console.error("Firebase: Error committing batch write:", error);
+    throw new Error("Impossibile salvare il piano completo su Firebase: " + error.message);
   }
 };
 
-export const getUserProjects = async (userId) => {
-  console.log('Firebase: getUserProjects called for userId:', userId);
+
+// --- Vecchia Funzione (deprecata per i piani AI) ---
+/**
+ * @deprecated Use saveProjectWithPlan for projects with AI-generated plans.
+ */
+export const createProject = async (projectData) => {
+  console.warn("Firebase: Using deprecated createProject function.");
   try {
-    const projectsRef = collection(db, "projects");
-    const q = query(
-      projectsRef, 
-      where("userId", "==", userId),
-      orderBy("createdAt", "desc")
-    );
-    
-    console.log('Firebase: Executing query for user projects...');
-    const querySnapshot = await getDocs(q);
-    console.log('Firebase: Found projects:', querySnapshot.size);
-    
-    const projects = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-    
-    console.log('Firebase: Returning projects:', projects.length);
-    return projects;
-  } catch (error) {
-    console.error("Firebase: Error getting user projects:", error);
-    console.error("Firebase: Error code:", error.code);
-    console.error("Firebase: Error message:", error.message);
-    throw error;
+    const docRef = await addDoc(collection(db, "projects"), {
+      ...projectData,
+      createdAt: serverTimestamp()
+    });
+    console.log("Firebase: (Deprecated) Project document written with ID: ", docRef.id);
+    return docRef.id;
+  } catch (e) {
+    console.error("Firebase: (Deprecated) Error adding project document: ", e);
+    throw new Error("Impossibile salvare il progetto su Firebase (vecchia funzione).");
   }
 };
 
-export const getProjectById = async (projectId) => {
-  console.log('Firebase: getProjectById called for ID:', projectId);
-  try {
-    const projectRef = doc(db, "projects", projectId);
-    const projectSnap = await getDoc(projectRef);
-    
-    if (projectSnap.exists()) {
-      console.log('Firebase: Project found');
-      return {
-        id: projectSnap.id,
-        ...projectSnap.data()
-      };
-    } else {
-      console.log('Firebase: Project not found');
-      throw new Error("Project not found");
-    }
-  } catch (error) {
-    console.error("Firebase: Error getting project:", error);
-    throw error;
-  }
-};
-
-export const deleteProject = async (projectId) => {
-  console.log('Firebase: deleteProject called for ID:', projectId);
-  try {
-    await deleteDoc(doc(db, "projects", projectId));
-    console.log('Firebase: Project deleted successfully');
-  } catch (error) {
-    console.error("Firebase: Error deleting project:", error);
-    throw error;
-  }
-};
+// Esporta onAuthStateChanged per l'hook useGoogleAuth
+export { onAuthStateChanged };
