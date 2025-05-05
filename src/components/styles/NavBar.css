@@ -1,0 +1,193 @@
+/* src/components/styles/NavBar.css */
+.navbar {
+  position: fixed;
+  transition: all 0.3s ease;
+  z-index: 100;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+}
+
+.navbar-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Desktop/Tablet Navbar (Vertical - Slim Version) */
+.navbar.desktop {
+  width: 200px;  /* Made narrower as requested */
+  height: 100vh;
+  left: 0;
+  top: 0;
+  background: linear-gradient(180deg, #2d2d44 0%, #1a1a2e 100%);
+  color: white;
+  padding: 20px 0;
+}
+
+.navbar.desktop .navbar-logo {
+  padding: 0 15px 15px;
+  margin-bottom: 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+}
+
+.navbar.desktop .navbar-logo h2 {
+  font-size: 1.5rem;
+}
+
+.navbar.desktop .navbar-links {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 0;
+  width: 100%;
+}
+
+.navbar.desktop .nav-item {
+  display: flex;
+  align-items: center;
+  width: 85%;
+  padding: 10px 15px;
+  margin-bottom: 15px;
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.navbar.desktop .nav-item:hover {
+  color: white;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.navbar.desktop .nav-item.active {
+  color: white;
+  background: linear-gradient(90deg, rgba(138, 101, 255, 0.3) 0%, transparent 100%);
+  border-left: 3px solid #8a65ff;
+}
+
+.navbar.desktop .nav-icon {
+  margin-right: 12px;
+  display: flex;
+  align-items: center;
+}
+
+.navbar.desktop .navbar-footer {
+  padding: 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: auto;
+}
+
+/* Mobile Navbar (App Style - Fixed Bottom) */
+.navbar.mobile {
+  width: 100%;
+  height: 60px;
+  bottom: 0;
+  left: 0;
+  background: linear-gradient(90deg, #2d2d44 0%, #1a1a2e 100%);
+  position: fixed;
+  display: flex;
+  align-items: center;
+}
+
+.navbar.mobile .navbar-container {
+  width: 100%;
+  flex-direction: row;
+}
+
+.navbar.mobile .navbar-links {
+  display: flex;
+  justify-content: space-around;
+  width: 100%;
+  height: 100%;
+}
+
+.navbar.mobile .nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0;
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  flex: 1;
+  transition: all 0.2s ease;
+}
+
+.navbar.mobile .nav-item:hover {
+  color: white;
+}
+
+.navbar.mobile .nav-item.active {
+  color: #8a65ff;
+}
+
+.navbar.mobile .nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* User Info Styles */
+.user-info {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 8px;
+  border: 2px solid #8a65ff;
+}
+
+.user-details {
+  flex: 1;
+  overflow: hidden;
+}
+
+.user-name {
+  font-weight: 600;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 14px;
+}
+
+.user-email {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.logout-btn {
+  width: 100%;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 5px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 13px;
+}
+
+.logout-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Content adjustment helper classes (to add to your main CSS) */
+.content-with-navbar-desktop {
+  margin-left: 200px;
+  transition: margin-left 0.3s ease;
+}
+
+.content-with-navbar-mobile {
+  padding-bottom: 60px;
+}
