@@ -3,14 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import { createProject } from '../utils/firebase';
 import useGoogleAuth from '../hooks/useGoogleAuth';
 import { googleDriveService } from '../utils/googleDriveService';
-import { FilePlus, Upload, X, Calendar, BookOpen, Info, AlertCircle } from 'lucide-react';
+import { FilePlus, Upload, X, Calendar, BookOpen, Info, AlertCircle, Loader } from 'lucide-react';
 import NavBar from './NavBar';
 import './styles/CreateProject.css';
 
 const CreateProject = () => {
   const navigate = useNavigate();
   const { user } = useGoogleAuth();
-  const [serviceReady, setServiceReady] = useState(false);
+  const [serviceStatus, setServiceStatus] = useState({
+    ready: false,
+    initializing: false,
+    error: null
+  });
   
   const [formData, setFormData] = useState({
     title: '',
@@ -27,22 +31,83 @@ const CreateProject = () => {
 
   // Inizializza il servizio Google Drive
   useEffect(() => {
+    console.log('CreateProject: MOUNTED');
     console.log('CreateProject: useEffect - initializing Google Drive service');
     
     const initService = async () => {
       try {
+        setServiceStatus({
+          ready: false,
+          initializing: true,
+          error: null
+        });
+        
         console.log('CreateProject: Starting service initialization...');
         await googleDriveService.initialize();
         console.log('CreateProject: Service initialized successfully');
-        setServiceReady(true);
+        
+        setServiceStatus({
+          ready: true,
+          initializing: false,
+          error: null
+        });
       } catch (error) {
         console.error('CreateProject: Error initializing Google Drive service', error);
+        
+        setServiceStatus({
+          ready: false,
+          initializing: false,
+          error: error.message
+        });
+        
         setError('Errore nell\'inizializzazione del servizio Google Drive: ' + error.message);
       }
     };
 
     initService();
+    return () => {
+      console.log('CreateProject: UNMOUNTED');
+    };
   }, []);
+
+  // Funzione per ritentare l'inizializzazione
+  const retryInitialization = async () => {
+    setError('');
+    initServiceRetry();
+  };
+
+  const initServiceRetry = async () => {
+    try {
+      setServiceStatus({
+        ready: false,
+        initializing: true,
+        error: null
+      });
+      
+      console.log('CreateProject: Retrying service initialization...');
+      await googleDriveService.initialize();
+      console.log('CreateProject: Service initialized successfully');
+      
+      setServiceStatus({
+        ready: true,
+        initializing: false,
+        error: null
+      });
+      
+      setSuccess('Servizio Google Drive inizializzato con successo!');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      console.error('CreateProject: Error initializing Google Drive service', error);
+      
+      setServiceStatus({
+        ready: false,
+        initializing: false,
+        error: error.message
+      });
+      
+      setError('Errore nell\'inizializzazione del servizio Google Drive: ' + error.message);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -57,11 +122,24 @@ const CreateProject = () => {
     const newFiles = Array.from(e.target.files);
     console.log('CreateProject: Files selected:', newFiles.length);
     
+    if (newFiles.length === 0) return;
+    
     // Validate file types (PDF only)
-    const invalidFiles = newFiles.filter(file => file.type !== 'application/pdf');
-    if (invalidFiles.length > 0) {
-      console.log('CreateProject: Invalid files detected:', invalidFiles);
+    const invalidTypeFiles = newFiles.filter(file => file.type !== 'application/pdf');
+    if (invalidTypeFiles.length > 0) {
+      console.log('CreateProject: Invalid file types detected:', invalidTypeFiles);
       setError('Solo file PDF sono accettati');
+      return;
+    }
+    
+    // Validate file sizes
+    const MAX_FILE_SIZE_MB = googleDriveService.MAX_FILE_SIZE_MB || 50;
+    const oversizedFiles = newFiles.filter(file => file.size > MAX_FILE_SIZE_MB * 1024 * 1024);
+    
+    if (oversizedFiles.length > 0) {
+      const fileNames = oversizedFiles.map(f => f.name).join(', ');
+      console.log(`CreateProject: Files exceeding max size of ${MAX_FILE_SIZE_MB}MB:`, oversizedFiles);
+      setError(`I seguenti file superano la dimensione massima di ${MAX_FILE_SIZE_MB}MB: ${fileNames}`);
       return;
     }
     
@@ -79,7 +157,7 @@ const CreateProject = () => {
     e.preventDefault();
     console.log('CreateProject: Form submitted');
     console.log('CreateProject: User authenticated:', !!user, user?.uid);
-    console.log('CreateProject: Service ready:', serviceReady);
+    console.log('CreateProject: Service ready:', serviceStatus.ready);
     console.log('CreateProject: Form data:', formData);
     console.log('CreateProject: Files to upload:', files.length);
     
@@ -104,9 +182,9 @@ const CreateProject = () => {
         throw new Error('Carica almeno un file PDF per continuare');
       }
 
-      if (!serviceReady) {
+      if (!serviceStatus.ready) {
         console.error('CreateProject: Google Drive service not ready');
-        throw new Error('Il servizio Google Drive non è ancora pronto. Riprova tra qualche secondo.');
+        throw new Error('Il servizio Google Drive non è ancora pronto. Riprova dopo aver inizializzato il servizio.');
       }
 
       setSuccess('Creazione in corso... Caricamento dei file su Google Drive...');
@@ -183,6 +261,22 @@ const CreateProject = () => {
             <div className="message error-message">
               <AlertCircle size={20} />
               <span>{error}</span>
+              {error.includes('Google Drive') && (
+                <button 
+                  onClick={retryInitialization}
+                  className="retry-button"
+                  disabled={serviceStatus.initializing}
+                >
+                  {serviceStatus.initializing ? (
+                    <>
+                      <Loader size={16} className="spin-icon" />
+                      Inizializzazione...
+                    </>
+                  ) : (
+                    'Riprova'
+                  )}
+                </button>
+              )}
             </div>
           )}
           
@@ -190,6 +284,13 @@ const CreateProject = () => {
             <div className="message success-message">
               <Info size={20} />
               <span>{success}</span>
+            </div>
+          )}
+          
+          {serviceStatus.initializing && !error && (
+            <div className="message info-message">
+              <Loader size={20} className="spin-icon" />
+              <span>Inizializzazione del servizio Google Drive in corso...</span>
             </div>
           )}
           
@@ -306,6 +407,8 @@ const CreateProject = () => {
                     </div>
                     <p className="file-upload-info">
                       Carica libri, dispense o temi d'esame in formato PDF
+                      <br />
+                      <small className="file-size-limit">Dimensione massima: {googleDriveService.MAX_FILE_SIZE_MB || 50}MB per file</small>
                     </p>
                   </div>
                   
@@ -360,7 +463,7 @@ const CreateProject = () => {
               <button 
                 type="submit" 
                 className="submit-btn"
-                disabled={loading || files.length === 0 || !serviceReady}
+                disabled={loading || files.length === 0 || !serviceStatus.ready}
               >
                 {loading ? 'Creazione in corso...' : 'Crea Piano di Studio'}
               </button>

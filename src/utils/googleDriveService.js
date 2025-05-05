@@ -1,11 +1,27 @@
 // src/utils/googleDriveService.js
 
 class GoogleDriveService {
+  // Proprietà statiche per condividere lo stato tra istanze
+  static instance = null;
+  static isInitialized = false;
+  static isInitializing = false;
+  static initPromise = null;
+  static initializationAttempts = 0;
+  static MAX_INITIALIZATION_ATTEMPTS = 3;
+  static gapiLoaded = false;
+  static gsiLoaded = false;
+  
   constructor() {
-    console.log('GoogleDriveService: Constructor called');
-    this.isInitialized = false;
+    // Implementazione del pattern singleton
+    if (GoogleDriveService.instance) {
+      return GoogleDriveService.instance;
+    }
+    
+    GoogleDriveService.instance = this;
+    
     this.accessToken = null;
     this.tokenClient = null;
+    this.MAX_FILE_SIZE_MB = 50; // Maximum file size in MB
     
     // IMPORTANTE: Assicurati di avere le credenziali corrette
     this.CLIENT_ID = '954741971381-4qtl2v6f4b2iebt23kd827sumf6d31dg.apps.googleusercontent.com';
@@ -13,7 +29,7 @@ class GoogleDriveService {
     this.SCOPES = 'https://www.googleapis.com/auth/drive.file';
     this.FOLDER_NAME = 'AI Tutor Files';
     
-    // Verifica le credenziali
+    console.log('GoogleDriveService: Singleton instance created');
     this.checkConfiguration();
   }
   
@@ -37,55 +53,176 @@ class GoogleDriveService {
     console.log('GoogleDriveService: Current origin:', window.location.origin);
   }
 
-  // Inizializza Google API Client
+  // Controlla la dimensione del file
+  checkFileSize(file) {
+    const fileSizeMB = file.size / (1024 * 1024);
+    console.log(`GoogleDriveService: File size check - ${file.name}: ${fileSizeMB.toFixed(2)} MB`);
+    
+    if (fileSizeMB > this.MAX_FILE_SIZE_MB) {
+      throw new Error(`Il file ${file.name} supera la dimensione massima consentita di ${this.MAX_FILE_SIZE_MB} MB`);
+    }
+    
+    return true;
+  }
+
+  // Inizializza Google API Client con singleton pattern
   async initialize() {
     console.log('GoogleDriveService: initialize() called');
     
-    if (this.isInitialized) {
+    // Verifica se è già inizializzato
+    if (GoogleDriveService.isInitialized) {
       console.log('GoogleDriveService: Already initialized');
       return true;
     }
-
+    
+    // Se è già in corso un'inizializzazione, restituisci la stessa promise
+    if (GoogleDriveService.isInitializing && GoogleDriveService.initPromise) {
+      console.log('GoogleDriveService: Initialization already in progress, returning existing promise');
+      return GoogleDriveService.initPromise;
+    }
+    
+    console.log('GoogleDriveService: Starting new initialization process');
+    GoogleDriveService.isInitializing = true;
+    GoogleDriveService.initializationAttempts++;
+    
+    // Reset delle librerie caricate se stiamo ritentando
+    if (GoogleDriveService.initializationAttempts > 1) {
+      GoogleDriveService.gapiLoaded = false;
+      GoogleDriveService.gsiLoaded = false;
+    }
+    
+    // Crea una nuova promise e memorizzala
+    GoogleDriveService.initPromise = new Promise(async (resolve, reject) => {
+      try {
+        // Imposta un timeout per l'intera inizializzazione
+        const timeoutId = setTimeout(() => {
+          GoogleDriveService.isInitializing = false;
+          GoogleDriveService.initPromise = null;
+          reject(new Error('Timeout inizializzazione'));
+        }, 20000);
+        
+        // Processo di inizializzazione
+        await this._initializeProcess();
+        
+        // Cancella il timeout se l'inizializzazione ha successo
+        clearTimeout(timeoutId);
+        
+        GoogleDriveService.isInitialized = true;
+        GoogleDriveService.isInitializing = false;
+        console.log('GoogleDriveService: Initialization completed successfully');
+        resolve(true);
+      } catch (error) {
+        console.error('GoogleDriveService: Initialization error:', error);
+        GoogleDriveService.isInitializing = false;
+        GoogleDriveService.initPromise = null;
+        
+        // Riprova l'inizializzazione se non abbiamo superato il numero massimo di tentativi
+        if (GoogleDriveService.initializationAttempts < GoogleDriveService.MAX_INITIALIZATION_ATTEMPTS) {
+          console.log(`GoogleDriveService: Retrying initialization (attempt ${GoogleDriveService.initializationAttempts + 1}/${GoogleDriveService.MAX_INITIALIZATION_ATTEMPTS})...`);
+          // Chiamata ricorsiva per riprovare dopo un breve ritardo
+          setTimeout(() => {
+            resolve(this.initialize());
+          }, 1000);
+        } else {
+          reject(new Error(`Inizializzazione fallita dopo ${GoogleDriveService.MAX_INITIALIZATION_ATTEMPTS} tentativi: ${error.message}`));
+        }
+      }
+    });
+    
+    return GoogleDriveService.initPromise;
+  }
+  
+  // Processo interno di inizializzazione
+  async _initializeProcess() {
     try {
-      // Aspetta che GSI sia caricato (è già nel index.html)
-      console.log('GoogleDriveService: Waiting for GSI to be ready...');
-      await this.waitForGSI();
-      console.log('GoogleDriveService: GSI is ready');
+      // Aspetta che GSI sia caricato
+      if (!GoogleDriveService.gsiLoaded) {
+        console.log('GoogleDriveService: Waiting for GSI to be ready...');
+        await this.waitForGSI();
+        GoogleDriveService.gsiLoaded = true;
+        console.log('GoogleDriveService: GSI is ready');
+      } else {
+        console.log('GoogleDriveService: GSI already loaded');
+      }
       
-      // Carica Google API
-      console.log('GoogleDriveService: Loading Google API script...');
-      await this.loadGoogleScript();
-      console.log('GoogleDriveService: Google API script loaded');
+      // Carica Google API se non è già caricata
+      if (!GoogleDriveService.gapiLoaded) {
+        console.log('GoogleDriveService: Loading Google API script...');
+        await this.loadGoogleScript();
+        GoogleDriveService.gapiLoaded = true;
+        console.log('GoogleDriveService: Google API script loaded');
+      } else {
+        console.log('GoogleDriveService: Google API script already loaded');
+      }
       
-      // Inizializza solo il client per le API
+      // Verifica se il client è già stato inizializzato
+      if (window.gapi && window.gapi.client && window.gapi.client.getToken) {
+        console.log('GoogleDriveService: GAPI client already initialized');
+        return true;
+      }
+      
+      // Inizializza il client per le API
       console.log('GoogleDriveService: Loading client...');
+      
+      // Usa una Promise per avvolgere gapi.load per controllare meglio il flusso
       await new Promise((resolve, reject) => {
-        window.gapi.load('client', {
-          callback: resolve,
-          onerror: reject
-        });
+        try {
+          window.gapi.load('client', {
+            callback: () => {
+              console.log('GoogleDriveService: Client loaded successfully');
+              resolve();
+            },
+            onerror: (err) => {
+              console.error('GoogleDriveService: Error loading client:', err);
+              reject(new Error('Failed to load GAPI client'));
+            },
+            timeout: 10000,
+            ontimeout: () => {
+              console.error('GoogleDriveService: Timeout loading client');
+              reject(new Error('Timeout loading GAPI client'));
+            }
+          });
+        } catch (err) {
+          console.error('GoogleDriveService: Exception in gapi.load:', err);
+          reject(err);
+        }
       });
       
       console.log('GoogleDriveService: Initializing gapi client...');
-      await window.gapi.client.init({
-        apiKey: this.API_KEY
-      });
-      
-      this.isInitialized = true;
-      console.log('GoogleDriveService: Initialization completed');
-      return true;
+      try {
+        await window.gapi.client.init({
+          apiKey: this.API_KEY,
+        });
+        console.log('GoogleDriveService: GAPI client initialized successfully');
+        return true;
+      } catch (err) {
+        console.error('GoogleDriveService: Error initializing GAPI client:', err);
+        throw err;
+      }
     } catch (error) {
-      console.error('GoogleDriveService: Initialization error:', error);
-      throw new Error('Inizializzazione fallita: ' + error.message);
+      console.error('GoogleDriveService: Error in initialization process:', error);
+      throw error;
     }
   }
 
-  // Aspetta che GSI sia caricato
+  // Aspetta che GSI sia caricato con timeout
   waitForGSI() {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
+      let attempts = 0;
+      const maxAttempts = 50; // circa 5 secondi
+      
+      // Se GSI è già caricato, risolvi immediatamente
+      if (window.google && window.google.accounts && window.google.accounts.oauth2) {
+        resolve();
+        return;
+      }
+      
       const checkGSI = () => {
+        attempts++;
         if (window.google && window.google.accounts && window.google.accounts.oauth2) {
           resolve();
+        } else if (attempts > maxAttempts) {
+          reject(new Error('Timeout nel caricamento di Google Identity Services'));
         } else {
           setTimeout(checkGSI, 100);
         }
@@ -97,22 +234,50 @@ class GoogleDriveService {
   // Carica lo script delle Google API
   loadGoogleScript() {
     return new Promise((resolve, reject) => {
+      // Se gapi è già caricato, risolvi immediatamente
       if (window.gapi) {
         console.log('GoogleDriveService: gapi already loaded');
         resolve();
         return;
       }
 
+      // Rimuovi eventuali script esistenti (in caso di ricaricamento)
+      const existingScript = document.querySelector('script[src*="apis.google.com/js/api.js"]');
+      if (existingScript) {
+        existingScript.parentNode.removeChild(existingScript);
+        console.log('GoogleDriveService: Removed existing gapi script');
+      }
+
       const script = document.createElement('script');
       script.src = 'https://apis.google.com/js/api.js';
+      script.async = true;
+      script.defer = true;
+      
+      // Aggiungi un timeout per il caricamento dello script
+      const timeout = setTimeout(() => {
+        reject(new Error('Timeout nel caricamento dello script Google API'));
+      }, 10000);
+      
       script.onload = () => {
+        clearTimeout(timeout);
         console.log('GoogleDriveService: Google API script loaded');
-        resolve();
+        
+        // Lascia un po' di tempo all'API per inizializzarsi
+        setTimeout(() => {
+          if (window.gapi) {
+            resolve();
+          } else {
+            reject(new Error('Google API loaded but gapi object not available'));
+          }
+        }, 500);
       };
+      
       script.onerror = (error) => {
+        clearTimeout(timeout);
         console.error('GoogleDriveService: Failed to load Google API script', error);
         reject(new Error('Failed to load Google API script'));
       };
+      
       document.head.appendChild(script);
     });
   }
@@ -126,6 +291,12 @@ class GoogleDriveService {
 
     return new Promise((resolve, reject) => {
       try {
+        // Verifica che GSI sia caricato
+        if (!window.google || !window.google.accounts || !window.google.accounts.oauth2) {
+          reject(new Error('Google Identity Services non è caricato'));
+          return;
+        }
+        
         // Crea un tokenClient solo se non esiste
         if (!this.tokenClient) {
           this.tokenClient = window.google.accounts.oauth2.initTokenClient({
@@ -161,7 +332,7 @@ class GoogleDriveService {
   async ensureAuthenticated() {
     console.log('GoogleDriveService: ensureAuthenticated() called');
     
-    if (!this.isInitialized) {
+    if (!GoogleDriveService.isInitialized) {
       console.log('GoogleDriveService: Not initialized, calling initialize()');
       await this.initialize();
     }
@@ -248,6 +419,9 @@ class GoogleDriveService {
   async uploadFile(file, onProgress = null) {
     console.log('GoogleDriveService: uploadFile() called for file:', file.name);
     
+    // Verifica la dimensione del file
+    this.checkFileSize(file);
+    
     const token = await this.ensureAuthenticated();
     console.log('GoogleDriveService: Token obtained for upload');
     
@@ -272,6 +446,9 @@ class GoogleDriveService {
       const xhr = new XMLHttpRequest();
       xhr.open('POST', 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink,webContentLink');
       xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      
+      // Imposta un timeout per l'upload (30 minuti)
+      xhr.timeout = 30 * 60 * 1000;
 
       // Gestisci il progresso del caricamento
       if (onProgress) {
@@ -300,6 +477,10 @@ class GoogleDriveService {
         xhr.onerror = (error) => {
           console.error('GoogleDriveService: Upload error', error);
           reject(new Error('Upload failed'));
+        };
+        xhr.ontimeout = () => {
+          console.error('GoogleDriveService: Upload timed out');
+          reject(new Error('Timeout durante il caricamento del file'));
         };
       });
 
@@ -344,8 +525,6 @@ class GoogleDriveService {
       throw new Error(`Errore durante il caricamento di ${file.name}: ${error.message}`);
     }
   }
-
-  // Altri metodi rimangono uguali...
 }
 
 // Esporta un'istanza singleton del servizio
