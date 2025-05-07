@@ -6,7 +6,7 @@ import { googleDriveService } from '../utils/googleDriveService';
 import { createPdfChunk } from '../utils/pdfProcessor';
 import { generateContentIndexFromPDFs, distributeTopicsToDays } from '../utils/gemini';
 import { saveProjectWithPlan } from '../utils/firebase'; // Usa la funzione di salvataggio finale
-import { genAI, model } from '../utils/gemini';
+import { genAI, model, prepareFilesOnce } from '../utils/gemini';
 import { v4 as uuidv4 } from 'uuid';
 
 import PlanReviewModal from './PlanReviewModal'; // Importa il modale
@@ -172,6 +172,19 @@ const CreateProject = () => {
     if (!serviceStatus.ready) { setError('Servizio Google Drive non pronto.'); setLoading(false); return; }
     if (!genAI || !model) { setError('Servizio AI Gemini non inizializzato.'); setLoading(false); return; }
   
+    setLoadingMessage('Preparazione file PDF...');
+    try {
+     // Prepara tutti i file una volta all'inizio
+      await prepareFilesOnce(files);
+      console.log('CreateProject: File PDF preparati con successo');
+    } catch (prepError) {
+      console.error('CreateProject: Errore preparazione file:', prepError);
+      setError(`Errore preparazione file: ${prepError.message}`);
+      setLoading(false);
+      return;
+      }
+
+
     console.log('CreateProject: Starting provisional plan generation sequence...');
     let contentIndex = null;
     let topicDistribution = null;

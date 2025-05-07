@@ -34,6 +34,9 @@ const geminiClient = initGeminiAI();
 export const genAI = geminiClient?.genAI || null;
 export const model = geminiClient?.model || null;
 
+// Cache per memorizzare i PDF convertiti in base64
+const pdfCache = new Map();
+
 // Funzione per convertire un file PDF in un oggetto Part per Gemini
 export const createFilePartFromPDF = async (file) => {
   try {
@@ -60,6 +63,63 @@ export const createFilePartFromPDF = async (file) => {
   }
 };
 
+// Funzione per preparare i file una sola volta
+export const prepareFilesOnce = async (pdfFiles) => {
+  console.log(`GeminiService: Preparazione iniziale di ${pdfFiles.length} file PDF...`);
+  const fileParts = [];
+  
+  for (const file of pdfFiles) {
+    const fileId = `${file.name}-${file.size}`; // Identificatore unico per il file
+    
+    if (pdfCache.has(fileId)) {
+      console.log(`GeminiService: File "${file.name}" già presente in cache, riutilizzo.`);
+      fileParts.push(pdfCache.get(fileId));
+      continue;
+    }
+    
+    console.log(`GeminiService: Conversione file "${file.name}" in base64...`);
+    try {
+      const filePart = await createFilePartFromPDF(file);
+      pdfCache.set(fileId, filePart);
+      fileParts.push(filePart);
+      console.log(`GeminiService: File "${file.name}" convertito e memorizzato in cache.`);
+    } catch (error) {
+      console.error(`GeminiService: Errore durante la conversione di "${file.name}":`, error);
+      throw error;
+    }
+  }
+  
+  console.log(`GeminiService: Preparazione completata, ${fileParts.length} file pronti.`);
+  return fileParts;
+};
+
+// Funzione per ottenere i file preparati (dalla cache o convertendoli se necessario)
+export const getPreparedFiles = async (pdfFiles) => {
+  const preparedFiles = [];
+  
+  for (const file of pdfFiles) {
+    const fileId = `${file.name}-${file.size}`;
+    
+    if (pdfCache.has(fileId)) {
+      preparedFiles.push(pdfCache.get(fileId));
+    } else {
+      const filePart = await createFilePartFromPDF(file);
+      pdfCache.set(fileId, filePart);
+      preparedFiles.push(filePart);
+    }
+  }
+  
+  return preparedFiles;
+};
+
+// Funzione ausiliaria per riparare JSON malformato
+const attemptToFixJSON = (jsonString) => {
+  let fixedString = jsonString.replace(/,\s*\]/g, ']');
+  fixedString = fixedString.replace(/}\s*,\s*,\s*{/g, "}, {");
+  fixedString = fixedString.replace(/([{,]\s*)([a-zA-Z0-9_]+)(\s*:)/g, '$1"$2"$3');
+  return fixedString;
+};
+
 // --- Funzione 1: Estrarre Indice/Struttura direttamente dai PDF ---
 /**
  * Chiede all'AI di generare un indice strutturato degli argomenti dai file PDF forniti.
@@ -75,13 +135,9 @@ export const generateContentIndexFromPDFs = async (examName, pdfFiles) => {
     console.log(`GeminiService: Generating content index for "${examName}" from ${pdfFiles.length} direct PDF files...`);
 
     try {
-        // Prepara i files come parts di contenuto per Gemini
-        const fileParts = [];
-        for (const file of pdfFiles) {
-            console.log(`Processing file for Gemini: ${file.name}`);
-            const filePart = await createFilePartFromPDF(file);
-            fileParts.push(filePart);
-        }
+        // Ottieni i file preparati (dalla cache se possibile)
+        const fileParts = await getPreparedFiles(pdfFiles);
+        console.log(`GeminiService: ${fileParts.length} file PDF preparati per l'analisi.`);
 
         // Prepara il prompt testuale
         const textPart = {
@@ -91,15 +147,19 @@ export const generateContentIndexFromPDFs = async (examName, pdfFiles) => {
 
             Obiettivo: Identifica e struttura gerarchicamente TUTTI gli argomenti principali e secondari trattati nei PDF forniti.
 
-            Per ogni argomento PRINCIPALE identificato, indica il nome del file PDF e il numero di pagina stimato dove quell'argomento inizia.
+            MOLTO IMPORTANTE: Per OGNI argomento PRINCIPALE identificato, DEVI indicare:
+            1. Il nome esatto del file PDF di origine (sourceFile)
+            2. Il numero di pagina esatto dove quell'argomento inizia (startPage)
+            
+            Queste informazioni sono FONDAMENTALI per il corretto funzionamento dell'applicazione.
 
             Formato di Output Richiesto (JSON ESCLUSIVO):
             {
               "tableOfContents": [
                 {
                   "title": "Titolo Argomento Principale 1",
-                  "sourceFile": "Nome del file PDF", 
-                  "startPage": X, // Numero di pagina stimato dell'inizio dell'argomento
+                  "sourceFile": "NomeDelFilePDF.pdf", 
+                  "startPage": 12, // Numero di pagina ESATTO dell'inizio dell'argomento
                   "subTopics": [
                     { "title": "Sotto-argomento 1.1" },
                     { "title": "Sotto-argomento 1.2" }
@@ -109,16 +169,21 @@ export const generateContentIndexFromPDFs = async (examName, pdfFiles) => {
               ]
             }
 
-            IMPORTANTE: Assicurati di coprire TUTTI gli argomenti. 'startPage' e 'sourceFile' sono fondamentali. Se gli argomenti sono semplici aggregane di più insieme altrimenti se sono difficili aggregane di meno.
+            VERIFICHE ESSENZIALI:
+            - Assicurati che OGNI argomento abbia sia sourceFile che startPage
+            - Verifica che i nomi dei file corrispondano ESATTAMENTE ai nomi dei file forniti
+            - Controlla che i numeri di pagina siano corretti e realistici
+            - Se gli argomenti sono semplici aggregane di più insieme, se sono difficili aggregane di meno
 
             Genera ora l'indice strutturato in formato JSON:
             `
         };
 
-        // Combina il prompt testuale con i file PDF
+        // Combina il prompt testuale con i file PDF preparati
         const parts = [textPart, ...fileParts];
         
         // Invia la richiesta a Gemini
+        console.log("GeminiService: Invio richiesta a Gemini per generazione indice...");
         const result = await model.generateContent({
             contents: [{ role: "user", parts: parts }],
             generationConfig: {
@@ -135,6 +200,8 @@ export const generateContentIndexFromPDFs = async (examName, pdfFiles) => {
         }
 
         const responseText = response.text();
+        console.log("GeminiService: Risposta ricevuta da Gemini, estrazione JSON...");
+        
         // Estrai JSON (logica robusta)
         let jsonString = responseText.trim();
         const jsonMatch = jsonString.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
@@ -144,12 +211,52 @@ export const generateContentIndexFromPDFs = async (examName, pdfFiles) => {
             if (firstBracket !== -1) { const lastBracket = jsonString.lastIndexOf('}'); jsonString = jsonString.substring(firstBracket, lastBracket > firstBracket ? lastBracket + 1 : undefined); }
             else { throw new Error("Risposta AI per indice non è JSON riconoscibile."); }
         }
+        console.log("JSON ESTRATTO:", jsonString);
 
         try {
-            const parsedIndex = JSON.parse(jsonString);
+            // Prova il parsing normale
+            let parsedIndex;
+            try {
+                parsedIndex = JSON.parse(jsonString);
+            } catch (initialParseError) {
+                console.warn("GeminiService: Errore nel parsing JSON iniziale, tentativo di riparazione...");
+                // Tenta di riparare JSON malformato
+                const fixedJson = attemptToFixJSON(jsonString);
+                parsedIndex = JSON.parse(fixedJson);
+                console.log("GeminiService: JSON riparato con successo.");
+            }
+            
             if (!parsedIndex.tableOfContents || !Array.isArray(parsedIndex.tableOfContents)) {
                throw new Error("JSON indice non contiene 'tableOfContents' array.");
             }
+
+            // Verifica ogni argomento
+            const missingInfo = parsedIndex.tableOfContents.filter(topic => 
+              !topic.sourceFile || !topic.startPage || typeof topic.startPage !== 'number'
+            );
+            
+            if (missingInfo.length > 0) {
+              console.warn("GeminiService: Alcuni argomenti non hanno sourceFile o startPage corretti:", 
+                missingInfo.map(t => t.title));
+                
+              // Auto-correzione: assegna valori predefiniti
+              missingInfo.forEach(topic => {
+                if (!topic.sourceFile && pdfFiles.length > 0) {
+                  console.warn(`GeminiService: Assegnazione sourceFile predefinito a "${topic.title}"`);
+                  topic.sourceFile = pdfFiles[0].name;
+                }
+                if (!topic.startPage || typeof topic.startPage !== 'number') {
+                  console.warn(`GeminiService: Assegnazione startPage predefinita a "${topic.title}"`);
+                  topic.startPage = 1;
+                }
+              });
+              
+              // Se la maggior parte è senza info, solleva un avviso
+              if (missingInfo.length > parsedIndex.tableOfContents.length / 2) {
+                console.warn("GeminiService: Attenzione - Più della metà degli argomenti aveva informazioni mancanti.");
+              }
+            }
+
             console.log("GeminiService: Content index generated successfully.");
             return parsedIndex;
         } catch (parseError) {
@@ -223,7 +330,14 @@ export const distributeTopicsToDays = async (examName, totalDays, tableOfContent
     console.log(`GeminiService: Distributing ${tableOfContents.length} topics over ${studyDays} study days...`);
     console.log(`NUMERO DI GIORNI DI STUDIO " ${studyDays}"`);
     try {
-        const result = await model.generateContent(prompt);
+        const result = await model.generateContent({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: {
+                temperature: 0.1,
+                maxOutputTokens: 4096,
+            }
+        });
+        
         const response = result.response;
         if (!response || response.promptFeedback?.blockReason) { 
            const blockReason = response?.promptFeedback?.blockReason || 'Ragione sconosciuta';
@@ -231,6 +345,8 @@ export const distributeTopicsToDays = async (examName, totalDays, tableOfContent
         }
 
         const responseText = response.text();
+        console.log("GeminiService: Risposta distribuzione ricevuta da Gemini.");
+        
         // Estrai JSON
         let jsonString = responseText.trim();
         const jsonMatch = jsonString.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
@@ -247,21 +363,64 @@ export const distributeTopicsToDays = async (examName, totalDays, tableOfContent
         }
 
         try {
-            const parsedDistribution = JSON.parse(jsonString);
+            // Prova il parsing normale
+            let parsedDistribution;
+            try {
+                parsedDistribution = JSON.parse(jsonString);
+            } catch (initialParseError) {
+                console.warn("GeminiService: Errore nel parsing JSON distribuzione, tentativo di riparazione...");
+                // Tenta di riparare JSON malformato
+                const fixedJson = attemptToFixJSON(jsonString);
+                parsedDistribution = JSON.parse(fixedJson);
+                console.log("GeminiService: JSON distribuzione riparato con successo.");
+            }
+            
             if (!parsedDistribution.dailyPlan || !Array.isArray(parsedDistribution.dailyPlan)) {
                 throw new Error("JSON distribuzione non contiene 'dailyPlan' array.");
             }
+            
             // Aggiungi validazione assegnazione
             const assignedTitles = new Set(parsedDistribution.dailyPlan.flatMap(d => d.assignedTopics?.map(t => t.title?.trim()) || []).filter(Boolean));
             const originalTitles = new Set(tableOfContents.map(t => t.title?.trim()).filter(Boolean));
             let allAssigned = true;
+            const unassignedTopics = [];
+            
             originalTitles.forEach(title => {
                 if (!assignedTitles.has(title)) {
                     console.error(`GeminiService: Argomento "${title}" non assegnato!`);
+                    unassignedTopics.push(title);
                     allAssigned = false;
                 }
             });
-            if(!allAssigned) console.error("GeminiService: Non tutti gli argomenti assegnati!");
+            
+            if (!allAssigned) {
+                console.error(`GeminiService: ${unassignedTopics.length} argomenti non assegnati!`);
+                
+                // Correzione automatica: distribuisci argomenti non assegnati
+                if (unassignedTopics.length > 0) {
+                    console.log("GeminiService: Correzione automatica della distribuzione...");
+                    
+                    // Distribuisci gli argomenti mancanti sui giorni in modo bilanciato
+                    const topicsPerDay = Math.ceil(unassignedTopics.length / studyDays);
+                    let topicIndex = 0;
+                    
+                    for (let day = 1; day <= studyDays && topicIndex < unassignedTopics.length; day++) {
+                        const dayPlan = parsedDistribution.dailyPlan.find(d => d.day === day);
+                        
+                        if (dayPlan) {
+                            if (!dayPlan.assignedTopics) dayPlan.assignedTopics = [];
+                            
+                            // Aggiungi fino a topicsPerDay argomenti a questo giorno
+                            for (let i = 0; i < topicsPerDay && topicIndex < unassignedTopics.length; i++) {
+                                dayPlan.assignedTopics.push({ title: unassignedTopics[topicIndex] });
+                                topicIndex++;
+                            }
+                        }
+                    }
+                    
+                    console.log("GeminiService: Distribuzione corretta automaticamente");
+                }
+            }
 
             console.log("GeminiService: Topic distribution generated successfully.");
             return parsedDistribution;
