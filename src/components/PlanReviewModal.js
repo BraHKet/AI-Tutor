@@ -1,7 +1,7 @@
-// src/components/PlanReviewModal.jsx (o .js)
+// src/components/PlanReviewModal.jsx
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import PageSelector from './PageSelector'; // Importa PageSelector
-import { Loader, AlertCircle, Edit3, Save, XCircle, Calendar, BookOpen, Info } from 'lucide-react';
+import { Loader, AlertCircle, Edit3, Save, XCircle, Calendar, BookOpen, Info, ChevronDown, ChevronRight, Maximize2, X, ArrowLeft, ArrowRight } from 'lucide-react';
 
 // Stili per il modale
 const modalStyles = {
@@ -13,7 +13,7 @@ const modalStyles = {
   daySection: { marginBottom: '20px', border: '1px solid #eee', padding: '10px 15px', borderRadius: '5px', backgroundColor: '#fdfdfd' },
   dayHeader: { marginTop: 0, borderBottom: '1px solid #eee', paddingBottom: '8px', display: 'flex', alignItems: 'center', fontSize: '1.1em', fontWeight: '600', color: '#333' },
   topicItem: { marginBottom: '15px', paddingLeft: '10px', borderLeft: '3px solid #ffc107', paddingTop: '8px', paddingBottom: '8px' },
-  topicTitle: { marginBottom: '8px', display: 'flex', alignItems: 'center', fontWeight: 'bold', fontSize: '1.05em', color: '#212529' },
+  topicTitle: { marginBottom: '8px', display: 'flex', alignItems: 'center', fontWeight: 'bold', fontSize: '1.05em', color: '#212529', cursor: 'pointer' },
   pageSelectorContainer: { marginTop: '10px', border: '1px solid #e0e0e0', borderRadius: '4px', padding: '10px' },
   pageSelectorHeader: { display:'flex', alignItems:'center', marginBottom:'8px', fontSize: '0.9em', fontWeight: '500' },
   suggestedPages: { fontSize: '0.8em', color: '#666', fontStyle: 'italic', marginBottom: '10px', marginTop:'5px' },
@@ -22,9 +22,130 @@ const modalStyles = {
   cancelButton: { padding: '8px 18px', fontSize: '1em', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' },
   error: { color: '#dc3545', fontSize: '0.85em', marginTop: '5px', fontWeight: '500'},
   loadingBox: {marginBottom: '15px', padding: '10px', backgroundColor: '#e9ecef', borderRadius: '5px', display: 'flex', alignItems: 'center'},
-  errorBox: {marginBottom: '15px', padding: '10px', backgroundColor: '#f8d7da', color: '#721c24', borderRadius: '5px', display: 'flex', alignItems: 'center'}
+  errorBox: {marginBottom: '15px', padding: '10px', backgroundColor: '#f8d7da', color: '#721c24', borderRadius: '5px', display: 'flex', alignItems: 'center'},
+  openEditorButton: { 
+    display: 'inline-flex', 
+    alignItems: 'center', 
+    padding: '5px 12px', 
+    fontSize: '0.9em', 
+    backgroundColor: '#f8f9fa', 
+    color: '#0d6efd', 
+    border: '1px solid #dee2e6', 
+    borderRadius: '4px', 
+    cursor: 'pointer',
+    marginTop: '8px',
+    marginBottom: '8px',
+    transition: 'all 0.2s'
+  },
+  fullscreenButton: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '5px 10px',
+    fontSize: '0.85em',
+    backgroundColor: '#6c757d',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    marginLeft: 'auto',
+    marginRight: '5px'
+  },
+  // Stili per la visualizzazione a schermo intero
+  fullscreenOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    zIndex: 2000,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  fullscreenHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    padding: '15px 20px',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    color: 'white',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  fullscreenContent: {
+    width: '90%',
+    height: '80%',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative'
+  },
+  fullscreenImage: {
+    maxWidth: '100%',
+    maxHeight: '100%',
+    objectFit: 'contain',
+    boxShadow: '0 5px 15px rgba(0, 0, 0, 0.5)'
+  },
+  fullscreenNavigation: {
+    position: 'absolute',
+    bottom: '20px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '10px',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    borderRadius: '5px'
+  },
+  fullscreenNavButton: {
+    background: 'none',
+    border: 'none',
+    color: 'white',
+    cursor: 'pointer',
+    margin: '0 15px',
+    padding: '5px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  fullscreenPageInfo: {
+    color: 'white',
+    margin: '0 15px',
+    fontSize: '1.1em'
+  },
+  fullscreenCloseButton: {
+    background: 'none',
+    border: 'none',
+    color: 'white',
+    cursor: 'pointer'
+  },
+  pageSelectionControls: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px'
+  },
+  fullscreenSelectButton: {
+    padding: '6px 12px',
+    backgroundColor: '#28a745',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    marginRight: '10px'
+  },
+  fullscreenUnselectButton: {
+    padding: '6px 12px',
+    backgroundColor: '#dc3545',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer'
+  }
 };
-
 
 const PlanReviewModal = ({
     isOpen,
@@ -38,6 +159,19 @@ const PlanReviewModal = ({
 }) => {
     const [currentUserSelections, setCurrentUserSelections] = useState({});
     const [validationErrors, setValidationErrors] = useState({});
+    // Nuovo stato per tenere traccia del topic attualmente espanso
+    const [expandedTopicId, setExpandedTopicId] = useState(null);
+    
+    // Stati per la visualizzazione a schermo intero
+    const [fullscreenMode, setFullscreenMode] = useState(false);
+    const [currentFullscreenData, setCurrentFullscreenData] = useState({
+      topicTitle: '',
+      fileUrl: '',
+      currentPage: 1,
+      totalPages: 1,
+      pageImages: [],
+      selectedPages: []
+    });
 
     // Memoizza dati dalle props
     const contentIndex = useMemo(() => provisionalPlanData?.index || [], [provisionalPlanData]);
@@ -91,6 +225,7 @@ const PlanReviewModal = ({
             });
             setCurrentUserSelections(initialSelections);
             setValidationErrors({});
+            setExpandedTopicId(null); // Resetta l'argomento espanso quando si apre il modale
             console.log("PlanReviewModal: Initial page selections (original page numbers):", initialSelections);
         }
     }, [isOpen, topicDistribution, contentIndex, getSuggestedRange, pageMapping]);
@@ -104,8 +239,79 @@ const PlanReviewModal = ({
             [topicTitle]: newSelectedPagesArray
         }));
         setValidationErrors(prev => { const newErrors = {...prev}; delete newErrors[topicTitle]; return newErrors; });
-    }, []);
+        
+        // Aggiorna anche lo stato di fullscreen se attivo
+        if (fullscreenMode && currentFullscreenData.topicTitle === topicTitle) {
+            setCurrentFullscreenData(prev => ({
+                ...prev,
+                selectedPages: newSelectedPagesArray
+            }));
+        }
+    }, [fullscreenMode, currentFullscreenData.topicTitle]);
 
+    // Funzione per gestire l'espansione/contrazione di un topic
+    const toggleTopicExpansion = (topicId) => {
+        if (expandedTopicId === topicId) {
+            // Se già espanso, chiudi
+            setExpandedTopicId(null);
+        } else {
+            // Altrimenti, espandi questo e chiudi altri
+            setExpandedTopicId(topicId);
+        }
+    };
+
+    // Funzione per entrare in modalità schermo intero
+    const enterFullscreenMode = (topicTitle, pageImages, initialPage = 1) => {
+        const selectedPages = currentUserSelections[topicTitle] || [];
+        
+        setCurrentFullscreenData({
+            topicTitle,
+            currentPage: initialPage,
+            totalPages: pageImages.length,
+            pageImages,
+            selectedPages
+        });
+        
+        setFullscreenMode(true);
+    };
+
+    // Funzione per uscire dalla modalità schermo intero
+    const exitFullscreenMode = () => {
+        setFullscreenMode(false);
+    };
+
+    // Funzioni per navigare tra le pagine in modalità schermo intero
+    const goToNextPage = () => {
+        setCurrentFullscreenData(prev => ({
+            ...prev,
+            currentPage: Math.min(prev.currentPage + 1, prev.totalPages)
+        }));
+    };
+
+    const goToPrevPage = () => {
+        setCurrentFullscreenData(prev => ({
+            ...prev,
+            currentPage: Math.max(prev.currentPage - 1, 1)
+        }));
+    };
+
+    // Funzione per gestire la selezione/deselezione di una pagina in modalità schermo intero
+    const togglePageSelection = (pageNum) => {
+        const { topicTitle, selectedPages } = currentFullscreenData;
+        const isSelected = selectedPages.includes(pageNum);
+        
+        let newSelectedPages;
+        if (isSelected) {
+            // Deseleziona
+            newSelectedPages = selectedPages.filter(p => p !== pageNum);
+        } else {
+            // Seleziona
+            newSelectedPages = [...selectedPages, pageNum].sort((a, b) => a - b);
+        }
+        
+        // Aggiorna entrambi gli stati
+        handleSelectionChange(topicTitle, newSelectedPages);
+    };
 
     // Validazione
     const validateSelections = () => {
@@ -142,6 +348,8 @@ const PlanReviewModal = ({
              if(firstErrorKey) {
                  const errorElement = document.getElementById(`topic-item-${firstErrorKey.replace(/\s+/g, '-')}`); // Usa ID su topic item
                  errorElement?.scrollIntoView({behavior: 'smooth', block: 'center'});
+                 // Espandi automaticamente il primo topic con errore
+                 setExpandedTopicId(firstErrorKey);
              }
         }
     };
@@ -155,118 +363,312 @@ const PlanReviewModal = ({
         return originalFiles[firstPageInfo.fileIndex];
     }, [getSuggestedRange, originalFiles, pageMapping]);
 
+    // Handler per l'attivazione della modalità schermo intero dal PageSelector
+    const handleToggleFullscreen = (topicTitle, pageImages, initialPage = 1) => {
+        enterFullscreenMode(topicTitle, pageImages, initialPage);
+    };
+
+    // Gestore eventi tastiera per navigazione in modalità schermo intero
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (!fullscreenMode) return;
+            
+            switch(e.key) {
+                case 'Escape':
+                    exitFullscreenMode();
+                    break;
+                case 'ArrowRight':
+                    goToNextPage();
+                    break;
+                case 'ArrowLeft':
+                    goToPrevPage();
+                    break;
+                case ' ':
+                    // Spazio per selezionare/deselezionare la pagina corrente
+                    e.preventDefault();
+                    const pageNum = currentFullscreenData.currentPage;
+                    togglePageSelection(pageNum);
+                    break;
+                default:
+                    break;
+            }
+        };
+        
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [fullscreenMode, currentFullscreenData]);
 
     if (!isOpen) return null;
 
     return (
-        <div style={modalStyles.overlay}>
-            <div style={modalStyles.content}>
-                <div style={modalStyles.header}>
-                    <h2>Revisione Piano e Pagine</h2>
-                    <button onClick={onCancel} style={modalStyles.closeButton} disabled={isFinalizing} title="Annulla revisione">
-                        <XCircle size={22} color="#888" />
-                    </button>
-                </div>
+        <>
+            <div style={modalStyles.overlay}>
+                <div style={modalStyles.content}>
+                    <div style={modalStyles.header}>
+                        <h2>Revisione Piano e Pagine</h2>
+                        <button onClick={onCancel} style={modalStyles.closeButton} disabled={isFinalizing} title="Annulla revisione">
+                            <XCircle size={22} color="#888" />
+                        </button>
+                    </div>
 
-                 {isFinalizing && ( <div style={modalStyles.loadingBox}><Loader size={20} className="spin-icon" style={{marginRight: '10px'}}/><span>{finalizationMessage || 'Finalizzazione...'}</span></div>)}
-                 {finalizationError && !isFinalizing && ( <div style={modalStyles.errorBox}><AlertCircle size={20} style={{marginRight: '10px'}}/><span>{finalizationError}</span></div> )}
+                    {isFinalizing && ( <div style={modalStyles.loadingBox}><Loader size={20} className="spin-icon" style={{marginRight: '10px'}}/><span>{finalizationMessage || 'Finalizzazione...'}</span></div>)}
+                    {finalizationError && !isFinalizing && ( <div style={modalStyles.errorBox}><AlertCircle size={20} style={{marginRight: '10px'}}/><span>{finalizationError}</span></div> )}
 
-                <div style={modalStyles.body}> {/* Body scrollabile */}
-                    {topicDistribution.map((dayPlan) => {
-                        // --- CORREZIONE CONDIZIONE IF ---
-                        // Controlla se non ci sono assignedTopics O se l'UNICO topic è di ripasso
-                        const isReviewDay = dayPlan.assignedTopics?.length === 1 && dayPlan.assignedTopics[0].title?.toLowerCase().includes("ripasso");
-                        const isEmptyDay = !dayPlan.assignedTopics || dayPlan.assignedTopics.length === 0;
+                    <div style={modalStyles.body}> {/* Body scrollabile */}
+                        {topicDistribution.map((dayPlan) => {
+                            // --- CORREZIONE CONDIZIONE IF ---
+                            // Controlla se non ci sono assignedTopics O se l'UNICO topic è di ripasso
+                            const isReviewDay = dayPlan.assignedTopics?.length === 1 && dayPlan.assignedTopics[0].title?.toLowerCase().includes("ripasso");
+                            const isEmptyDay = !dayPlan.assignedTopics || dayPlan.assignedTopics.length === 0;
 
-                        if (isEmptyDay && !isReviewDay) {
-                            // Se è vuoto e non è un giorno di ripasso esplicitamente definito, non mostrare nulla
-                            return null;
-                        }
+                            if (isEmptyDay && !isReviewDay) {
+                                // Se è vuoto e non è un giorno di ripasso esplicitamente definito, non mostrare nulla
+                                return null;
+                            }
 
-                        // Mostra giorni di ripasso se presenti
-                         if (isReviewDay) {
-                             return (
-                                 <div key={`review-day-${dayPlan.day}`} style={modalStyles.daySection}>
-                                     <h3 style={modalStyles.dayHeader}><Calendar size={16} style={{marginRight:'6px'}}/> Giorno {dayPlan.day} - Ripasso</h3>
-                                     <p style={{marginLeft: '10px', fontStyle:'italic'}}>Ripasso generale degli argomenti precedenti.</p>
-                                 </div>
-                             );
-                         }
-                         // ----------------------------------
+                            // Mostra giorni di ripasso se presenti
+                            if (isReviewDay) {
+                                return (
+                                    <div key={`review-day-${dayPlan.day}`} style={modalStyles.daySection}>
+                                        <h3 style={modalStyles.dayHeader}><Calendar size={16} style={{marginRight:'6px'}}/> Giorno {dayPlan.day} - Ripasso</h3>
+                                        <p style={{marginLeft: '10px', fontStyle:'italic'}}>Ripasso generale degli argomenti precedenti.</p>
+                                    </div>
+                                );
+                            }
+                            // ----------------------------------
 
-                        // Se è un giorno di studio normale, procedi
-                        return (
-                            <div key={`review-day-${dayPlan.day}`} style={modalStyles.daySection}>
-                                <h3 style={modalStyles.dayHeader}><Calendar size={16} style={{marginRight:'6px'}}/> Giorno {dayPlan.day}</h3>
-                                {dayPlan.assignedTopics.map((assignedTopic) => {
-                                    const title = assignedTopic.title?.trim();
-                                    if (!title) return null; // Salta se manca titolo
+                            // Se è un giorno di studio normale, procedi
+                            return (
+                                <div key={`review-day-${dayPlan.day}`} style={modalStyles.daySection}>
+                                    <h3 style={modalStyles.dayHeader}><Calendar size={16} style={{marginRight:'6px'}}/> Giorno {dayPlan.day}</h3>
+                                    {dayPlan.assignedTopics.map((assignedTopic) => {
+                                        const title = assignedTopic.title?.trim();
+                                        if (!title) return null; // Salta se manca titolo
 
-                                    const currentSelectedPages = currentUserSelections[title] || [];
-                                    const errorMsg = validationErrors[title];
-                                    const topicDescription = indexTopicMap[title]?.subTopics?.map(st => st.title).join(', ') || '';
-                                    const relevantFile = getOriginalFileForTopic(title);
-                                    const suggestedRange = getSuggestedRange(title); // Marcatori globali
-                                     // Calcola pagine originali suggerite
-                                     const suggestedOriginalPages = [];
-                                     if(suggestedRange.start > 0) { for (let p=suggestedRange.start; p<=suggestedRange.end; p++) { if(pageMapping[p]) suggestedOriginalPages.push(pageMapping[p].pageNum); } }
-                                     const suggestedStartOrig = suggestedOriginalPages.length > 0 ? Math.min(...suggestedOriginalPages) : 0;
-                                     const suggestedEndOrig = suggestedOriginalPages.length > 0 ? Math.max(...suggestedOriginalPages) : 0;
+                                        const currentSelectedPages = currentUserSelections[title] || [];
+                                        const errorMsg = validationErrors[title];
+                                        const topicDescription = indexTopicMap[title]?.subTopics?.map(st => st.title).join(', ') || '';
+                                        const relevantFile = getOriginalFileForTopic(title);
+                                        const suggestedRange = getSuggestedRange(title); // Marcatori globali
+                                        // Calcola pagine originali suggerite
+                                        const suggestedOriginalPages = [];
+                                        if(suggestedRange.start > 0) { for (let p=suggestedRange.start; p<=suggestedRange.end; p++) { if(pageMapping[p]) suggestedOriginalPages.push(pageMapping[p].pageNum); } }
+                                        const suggestedStartOrig = suggestedOriginalPages.length > 0 ? Math.min(...suggestedOriginalPages) : 0;
+                                        const suggestedEndOrig = suggestedOriginalPages.length > 0 ? Math.max(...suggestedOriginalPages) : 0;
+                                        
+                                        // Controlla se questo topic è attualmente espanso
+                                        const isExpanded = expandedTopicId === title;
 
-                                    return (
-                                        // Aggiungi ID univoco al topic item per scrollIntoView
-                                        <div key={`review-topic-${title}`} id={`topic-item-${title.replace(/\s+/g, '-')}`} style={modalStyles.topicItem}>
-                                            <h4 style={modalStyles.topicTitle}>
-                                                <BookOpen size={14} style={{ marginRight: '6px' }}/> {title}
-                                            </h4>
-                                            {topicDescription && <p style={{ fontSize: '0.9em', color: '#555', margin: '0 0 8px 0' }}>{topicDescription}</p>}
-
-                                            <div style={modalStyles.pageSelectorContainer}>
-                                                <div style={modalStyles.pageSelectorHeader}>
-                                                    <Edit3 size={14} style={{ marginRight: '5px'}} />
-                                                    <strong>Seleziona Pagine Rilevanti:</strong>
-                                                    <span style={{marginLeft:'auto', fontSize:'0.8em', color:'#555'}}>{relevantFile ? relevantFile.name : ''}</span>
+                                        return (
+                                            // Aggiungi ID univoco al topic item per scrollIntoView
+                                            <div key={`review-topic-${title}`} id={`topic-item-${title.replace(/\s+/g, '-')}`} style={modalStyles.topicItem}>
+                                                {/* Titolo cliccabile per espandere/contrarre */}
+                                                <div 
+                                                  onClick={() => toggleTopicExpansion(title)}
+                                                  style={modalStyles.topicTitle}
+                                                  title="Clicca per espandere/chiudere"
+                                                >
+                                                    {/* Icona per espandere/contrarre */}
+                                                    {isExpanded ? 
+                                                        <ChevronDown size={16} style={{ marginRight: '5px', color: '#666' }}/> : 
+                                                        <ChevronRight size={16} style={{ marginRight: '5px', color: '#666' }}/>
+                                                    }
+                                                    <BookOpen size={14} style={{ marginRight: '6px' }}/> {title}
+                                                    {errorMsg && <span style={{ color: '#dc3545', marginLeft: '8px', fontSize: '0.85em' }}>⚠️ {errorMsg}</span>}
                                                 </div>
-                                                {suggestedStartOrig > 0 && (
-                                                     <div style={modalStyles.suggestedPages}>
-                                                        (Suggerimento AI indica Pagine Orig. circa: {suggestedStartOrig} - {suggestedEndOrig})
-                                                     </div>
-                                                 )}
-                                                 {!suggestedStartOrig && ( <div style={modalStyles.suggestedPages}> (Suggerimento AI non disponibile) </div> )}
-
-                                                {relevantFile ? (
-                                                    <PageSelector
-                                                        key={`${title}-${relevantFile.name}-${suggestedStartOrig}`}
-                                                        pdfFile={relevantFile}
-                                                        suggestedStartPage={suggestedStartOrig > 0 ? suggestedStartOrig : 1}
-                                                        suggestedEndPage={suggestedEndOrig > 0 ? suggestedEndOrig : (relevantFile ? 10 : 1)} // Limita default end
-                                                        selectedPages={currentSelectedPages}
-                                                        onSelectionChange={(newSelection) => handleSelectionChange(title, newSelection)}
-                                                        isFinalizing={isFinalizing} // Passa lo stato per disabilitare click
-                                                    />
-                                                ) : (
-                                                    <p style={modalStyles.error}><AlertCircle size={14} /> Anteprima non disponibile (file non trovato).</p>
+                                                
+                                                {/* Descrizione sempre visibile */}
+                                                {topicDescription && <p style={{ fontSize: '0.9em', color: '#555', margin: '5px 0 8px 26px' }}>{topicDescription}</p>}
+                                                
+                                                {/* Mostra informazioni sull'attuale selezione anche quando contratto */}
+                                                {!isExpanded && currentSelectedPages.length > 0 && (
+                                                    <div style={{ fontSize: '0.85em', color: '#555', marginLeft: '26px' }}>
+                                                        <span>Pagine selezionate: {currentSelectedPages.length} pagine</span>
+                                                        <button 
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                toggleTopicExpansion(title);
+                                                            }} 
+                                                            style={modalStyles.openEditorButton}
+                                                        >
+                                                            <Edit3 size={14} style={{marginRight: '5px'}} />
+                                                            Modifica selezione
+                                                        </button>
+                                                    </div>
                                                 )}
-                                                 {errorMsg && <p style={modalStyles.error}>{errorMsg}</p>}
-                                            </div>
-                                        </div> // fine topicItem
-                                    );
-                                })}
-                            </div> // fine daySection
-                        );
-                    })}
-                </div> {/* fine modalStyles.body */}
+                                                
+                                                {/* Mostra pulsante per selezionare pagine se non ci sono selezioni */}
+                                                {!isExpanded && currentSelectedPages.length === 0 && (
+                                                    <button 
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            toggleTopicExpansion(title);
+                                                        }} 
+                                                        style={modalStyles.openEditorButton}
+                                                    >
+                                                        <Edit3 size={14} style={{marginRight: '5px'}} />
+                                                        Seleziona pagine
+                                                    </button>
+                                                )}
 
-                {/* Azioni Modale */}
-                <div style={modalStyles.actions}>
-                     <button onClick={onCancel} style={modalStyles.cancelButton} disabled={isFinalizing}> Annulla </button>
-                     <button onClick={handleInternalConfirm} style={{...modalStyles.confirmButton, opacity: isFinalizing ? 0.6 : 1}} disabled={isFinalizing}>
-                         {isFinalizing ? 'Attendere...' : 'Conferma e Genera'}
-                     </button>
-                 </div>
+                                                {/* Contenuto espandibile - PageSelector viene caricato solo se questo topic è espanso */}
+                                                {isExpanded && (
+                                                    <div style={modalStyles.pageSelectorContainer}>
+                                                        <div style={modalStyles.pageSelectorHeader}>
+                                                            <Edit3 size={14} style={{ marginRight: '5px'}} />
+                                                            <strong>Seleziona Pagine Rilevanti:</strong>
+                                                            <span style={{marginLeft:'auto', fontSize:'0.8em', color:'#555'}}>{relevantFile ? relevantFile.name : ''}</span>
+                                                        </div>
+                                                        {suggestedStartOrig > 0 && (
+                                                            <div style={modalStyles.suggestedPages}>
+                                                                (Suggerimento AI indica Pagine Orig. circa: {suggestedStartOrig} - {suggestedEndOrig})
+                                                            </div>
+                                                        )}
+                                                        {!suggestedStartOrig && ( <div style={modalStyles.suggestedPages}> (Suggerimento AI non disponibile) </div> )}
 
-            </div> {/* fine modalStyles.content */}
-        </div> 
+                                                        {relevantFile ? (
+                                                            <>
+                                                                <div style={{display: 'flex', justifyContent: 'flex-end', marginBottom: '10px'}}>
+                                                                    <button 
+                                                                        onClick={() => {
+                                                                            const pageSelector = document.querySelector(`#page-selector-${title.replace(/\s+/g, '-')}`);
+                                                                            if (pageSelector && pageSelector.__pageImages) {
+                                                                                enterFullscreenMode(title, pageSelector.__pageImages);
+                                                                            }
+                                                                        }} 
+                                                                        style={modalStyles.fullscreenButton}
+                                                                        title="Visualizza a schermo intero"
+                                                                    >
+                                                                        <Maximize2 size={16} style={{marginRight: '5px'}} />
+                                                                        Schermo Intero
+                                                                    </button>
+                                                                </div>
+                                                                <PageSelector
+                                                                    id={`page-selector-${title.replace(/\s+/g, '-')}`}
+                                                                    key={`${title}-${relevantFile.name}-${suggestedStartOrig}-${isExpanded}`}
+                                                                    pdfFile={relevantFile}
+                                                                    suggestedStartPage={suggestedStartOrig > 0 ? suggestedStartOrig : 1}
+                                                                    suggestedEndPage={suggestedEndOrig > 0 ? suggestedEndOrig : (relevantFile ? 10 : 1)} // Limita default end
+                                                                    selectedPages={currentSelectedPages}
+                                                                    onSelectionChange={(newSelection) => handleSelectionChange(title, newSelection)}
+                                                                    isFinalizing={isFinalizing} // Passa lo stato per disabilitare click
+                                                                    onImagesReady={(pageImages) => {
+                                                                        // Memorizza le immagini delle pagine per un uso successivo in modalità a schermo intero
+                                                                        const pageSelector = document.querySelector(`#page-selector-${title.replace(/\s+/g, '-')}`);
+                                                                        if (pageSelector) {
+                                                                            pageSelector.__pageImages = pageImages;
+                                                                        }
+                                                                    }}
+                                                                    onToggleFullscreen={(pageImages, initialPage) => {
+                                                                        handleToggleFullscreen(title, pageImages, initialPage);
+                                                                    }}
+                                                                />
+                                                            </>
+                                                        ) : (
+                                                            <p style={modalStyles.error}><AlertCircle size={14} /> Anteprima non disponibile (file non trovato).</p>
+                                                        )}
+                                                        {errorMsg && <p style={modalStyles.error}>{errorMsg}</p>}
+                                                    </div>
+                                                )}
+                                            </div> // fine topicItem
+                                        );
+                                    })}
+                                </div> // fine daySection
+                            );
+                        })}
+                    </div> {/* fine modalStyles.body */}
+
+                    {/* Azioni Modale */}
+                    <div style={modalStyles.actions}>
+                        <button onClick={onCancel} style={modalStyles.cancelButton} disabled={isFinalizing}> Annulla </button>
+                        <button onClick={handleInternalConfirm} style={{...modalStyles.confirmButton, opacity: isFinalizing ? 0.6 : 1}} disabled={isFinalizing}>
+                            {isFinalizing ? 'Attendere...' : 'Conferma e Genera'}
+                        </button>
+                    </div>
+
+                </div> {/* fine modalStyles.content */}
+            </div>
+
+            {/* Modalità a schermo intero */}
+            {fullscreenMode && (
+                <div style={modalStyles.fullscreenOverlay}>
+                    <div style={modalStyles.fullscreenHeader}>
+                        <h3 style={{margin: 0, fontWeight: '500'}}>
+                            {currentFullscreenData.topicTitle} - Pagina {currentFullscreenData.currentPage} di {currentFullscreenData.totalPages}
+                        </h3>
+                        <button 
+                            onClick={exitFullscreenMode} 
+                            style={modalStyles.fullscreenCloseButton}
+                            title="Chiudi visualizzazione a schermo intero"
+                        >
+                            <X size={24} />
+                        </button>
+                    </div>
+                    
+                    <div style={modalStyles.fullscreenContent}>
+                        {currentFullscreenData.pageImages && currentFullscreenData.pageImages.length > 0 && (
+                            <img 
+                                src={currentFullscreenData.pageImages[currentFullscreenData.currentPage - 1]} 
+                                alt={`Pagina ${currentFullscreenData.currentPage}`} 
+                                style={modalStyles.fullscreenImage} 
+                            />
+                        )}
+                        
+                        <div style={modalStyles.fullscreenNavigation}>
+                            <button 
+                                onClick={goToPrevPage} 
+                                style={{
+                                    ...modalStyles.fullscreenNavButton,
+                                    opacity: currentFullscreenData.currentPage <= 1 ? 0.5 : 1
+                                }}
+                                disabled={currentFullscreenData.currentPage <= 1}
+                                title="Pagina precedente"
+                            >
+                                <ArrowLeft size={24} />
+                            </button>
+                            
+                            <div style={modalStyles.pageSelectionControls}>
+                                {currentFullscreenData.selectedPages.includes(currentFullscreenData.currentPage) ? (
+                                    <button 
+                                        onClick={() => togglePageSelection(currentFullscreenData.currentPage)} 
+                                        style={modalStyles.fullscreenUnselectButton}
+                                        title="Rimuovi questa pagina dalla selezione"
+                                    >
+                                        Deseleziona pagina
+                                    </button>
+                                ) : (
+                                    <button 
+                                        onClick={() => togglePageSelection(currentFullscreenData.currentPage)} 
+                                        style={modalStyles.fullscreenSelectButton}
+                                        title="Aggiungi questa pagina alla selezione"
+                                    >
+                                        Seleziona pagina
+                                    </button>
+                                )}
+                            </div>
+                            
+                            <div style={modalStyles.fullscreenPageInfo}>
+                                {currentFullscreenData.currentPage} / {currentFullscreenData.totalPages}
+                            </div>
+                            
+                            <button 
+                                onClick={goToNextPage} 
+                                style={{
+                                    ...modalStyles.fullscreenNavButton,
+                                    opacity: currentFullscreenData.currentPage >= currentFullscreenData.totalPages ? 0.5 : 1
+                                }}
+                                disabled={currentFullscreenData.currentPage >= currentFullscreenData.totalPages}
+                                title="Pagina successiva"
+                            >
+                                <ArrowRight size={24} />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
     );
 };
 

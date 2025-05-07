@@ -85,7 +85,7 @@ export const generateContentIndex = async (examName, pdfFullText, pageMapping) =
           ]
         }
 
-        IMPORTANTE: Assicurati di coprire TUTTI gli argomenti. 'startPageMarker' è fondamentale.
+        IMPORTANTE: Assicurati di coprire TUTTI gli argomenti. 'startPageMarker' è fondamentale. Se gli argomenti sono semplici aggregane di più insieme altrimenti se sono difficili aggregane di meno.
 
         Contesto Estratto e Strutturato:
         --- INIZIO CONTENUTO ---
@@ -97,6 +97,7 @@ export const generateContentIndex = async (examName, pdfFullText, pageMapping) =
       `;
 
     console.log(`GeminiService: Generating content index for "${examName}"...`);
+
     try {
         const result = await model.generateContent(prompt);
         const response = result.response;
@@ -165,7 +166,7 @@ export const distributeTopicsToDays = async (examName, totalDays, tableOfContent
         Distribuisci lo studio di questi ${tableOfContents.length} argomenti sui primi ${studyDays} giorni di un piano di ${totalDays} giorni totali. Gli ultimi ${reviewDays} giorni sono per ripasso generale.
 
         REGOLE:
-        1.  Bilancia il numero di argomenti principali per giorno di studio.
+        1.  Bilancia il numero di argomenti principali per giorno di studio. Se gli argomenti sono facili assegnane di più nello stesso giorno. Se sono più difficili assegnane di meno.
         2.  Mantieni per quanto possibile l'ordine logico dell'elenco.
         3.  TUTTI gli argomenti dell'elenco devono essere assegnati a uno dei ${studyDays} giorni di studio.
         4.  Considera questa nota utente: "${userDescription}".
@@ -193,6 +194,7 @@ export const distributeTopicsToDays = async (examName, totalDays, tableOfContent
     `;
 
     console.log(`GeminiService: Distributing ${tableOfContents.length} topics over ${studyDays} study days...`);
+    console.log(`NUMERO DI GIORNI DI STUDIO " ${studyDays}"` );
     try {
         const result = await model.generateContent(prompt);
         const response = result.response;
