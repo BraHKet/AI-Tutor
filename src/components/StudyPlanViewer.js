@@ -128,7 +128,7 @@ const StudyPlanViewer = () => {
   // --- RENDER PRINCIPALE (Se tutto ok: no loading, no error, project esiste) ---
   return (
     <>
-      
+      <NavBar />
       <div className="study-plan-viewer-container" style={{ padding: '20px', maxWidth: '1000px', margin: 'auto' }}>
 
         {/* Intestazione Progetto - Ora sicuro accedere a project.* */}
@@ -150,7 +150,7 @@ const StudyPlanViewer = () => {
                   ))}
                 </ul>
               </div>
-)}
+            )}
         </div>
 
 

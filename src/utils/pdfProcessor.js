@@ -4,7 +4,6 @@ import * as pdfjsWorker from 'pdfjs-dist/build/pdf.worker.entry'; // Importa il 
 import { PDFDocument } from 'pdf-lib';
 
 // Configura il worker per pdf.js - Fallo una sola volta nell'app, magari qui o nel file principale (index.js)
-// Se lo fai già altrove, puoi rimuovere questa riga
 try {
     if (typeof window !== 'undefined' && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
          console.log("Setting pdfjs worker source");
@@ -12,14 +11,13 @@ try {
     }
 } catch (e) { console.error("Error setting pdfjs worker source:", e); }
 
-
 /**
  * Estrae il testo da un array di oggetti File PDF, mantenendo l'associazione con pagina e file originale.
  * @param {File[]} files - Array di file PDF.
  * @param {function} onProgress - Callback per aggiornamenti sullo stato.
  * @returns {Promise<{fullText: string, pagedTextData: Array<{fileIndex: number, fileName: string, pageNum: number, text: string}>}>}
  */
-export const extractTextFromFiles = async (files, onProgress) => {
+export const extractTextFromFiles = async (files, onProgress) => {              //POTREI ANCHE ELIMINARLO O LASCIARLO NEL CASO IO VOGLIA USARLO SUCCESSIVAMENTE MA PER ADESSO E' INUTILE
     if (!files || files.length === 0) {
         console.log("PDFProcessor/extractText: No files provided.");
         return { fullText: '', pagedTextData: [] };
@@ -88,7 +86,6 @@ export const extractTextFromFiles = async (files, onProgress) => {
     return { fullText, pagedTextData };
 };
 
-
 /**
  * Crea un nuovo file PDF contenente solo le pagine specificate da un file originale.
  * @param {File} originalFile - Il file PDF originale.
@@ -102,13 +99,24 @@ export const createPdfChunk = async (originalFile, pageNumbers, chunkFileName, o
     console.log(`[DEBUG] pdfProcessor/createPdfChunk: Ricevuto originalFile.name: ${originalFile?.name}`);
     console.log(`[DEBUG] pdfProcessor/createPdfChunk: Ricevuto pageNumbers (1-based):`, JSON.stringify(pageNumbers));
 
-    if (!originalFile || typeof originalFile.arrayBuffer !== 'function') { /* ... errore ... */ return null; }
-    if (!pageNumbers || !Array.isArray(pageNumbers) || pageNumbers.length === 0) { /* ... errore ... */ return null; }
+    if (!originalFile || typeof originalFile.arrayBuffer !== 'function') { 
+        console.error("PDFProcessor/createPdfChunk: Invalid original file");
+        return null; 
+    }
+    if (!pageNumbers || !Array.isArray(pageNumbers) || pageNumbers.length === 0) { 
+        console.error("PDFProcessor/createPdfChunk: Invalid page numbers array");
+        return null; 
+    }
 
     // Filtra e converte a 0-based
     const validNumericPageNumbers = pageNumbers.filter(n => typeof n === 'number' && !isNaN(n) && n > 0);
-    if (validNumericPageNumbers.length === 0) { /* ... errore ... */ return null; }
-    if (validNumericPageNumbers.length !== pageNumbers.length) { /* ... warning ... */ }
+    if (validNumericPageNumbers.length === 0) { 
+        console.error("PDFProcessor/createPdfChunk: No valid page numbers");
+        return null; 
+    }
+    if (validNumericPageNumbers.length !== pageNumbers.length) { 
+        console.warn("PDFProcessor/createPdfChunk: Some invalid page numbers were filtered out"); 
+    }
 
     const zeroBasedPageIndices = validNumericPageNumbers.map(n => n - 1);
     console.log(`[DEBUG] pdfProcessor/createPdfChunk: Indici 0-based calcolati per "${chunkFileName}":`, JSON.stringify(zeroBasedPageIndices));
@@ -127,8 +135,13 @@ export const createPdfChunk = async (originalFile, pageNumbers, chunkFileName, o
         const validIndices = zeroBasedPageIndices.filter(index => index >= 0 && index < pageCount);
         console.log(`[DEBUG] pdfProcessor/createPdfChunk: Indici 0-based validati (vs ${pageCount} pagine):`, JSON.stringify(validIndices));
 
-        if (validIndices.length === 0) { /* ... errore ... */ return null; }
-        if (validIndices.length < zeroBasedPageIndices.length) { /* ... warning ... */ }
+        if (validIndices.length === 0) { 
+            console.error("PDFProcessor/createPdfChunk: No valid page indices after validation");
+            return null; 
+        }
+        if (validIndices.length < zeroBasedPageIndices.length) { 
+            console.warn("PDFProcessor/createPdfChunk: Some page indices were out of range and filtered out"); 
+        }
 
         // Crea/Salva chunk
         const chunkDoc = await PDFDocument.create();
