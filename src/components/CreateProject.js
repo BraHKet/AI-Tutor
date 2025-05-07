@@ -3,8 +3,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useGoogleAuth from '../hooks/useGoogleAuth';
 import { googleDriveService } from '../utils/googleDriveService';
-import { extractTextFromFiles, createPdfChunk } from '../utils/pdfProcessor';
-import { generateContentIndex, distributeTopicsToDays } from '../utils/gemini';
+import { createPdfChunk } from '../utils/pdfProcessor';
+import { generateContentIndexFromPDFs, distributeTopicsToDays } from '../utils/gemini';
 import { saveProjectWithPlan } from '../utils/firebase'; // Usa la funzione di salvataggio finale
 import { genAI, model } from '../utils/gemini';
 import { v4 as uuidv4 } from 'uuid';
@@ -14,6 +14,7 @@ import PlanReviewModal from './PlanReviewModal'; // Importa il modale
 import { FilePlus, Upload, X, Calendar, BookOpen, Info, AlertCircle, Loader, BrainCircuit, CopyCheck, FileText, CheckCircle } from 'lucide-react';
 import NavBar from './NavBar';
 import './styles/CreateProject.css'; // Assicurati che questo esista e sia corretto
+
 
 
 const CreateProject = () => {
@@ -161,77 +162,117 @@ const CreateProject = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log('CreateProject V4: Form submitted for PROVISIONAL plan generation');
-
+  
     setError(''); setSuccess(''); setLoading(true); setLoadingMessage('Verifica dati...');
     setUploadProgress({}); setProvisionalPlanData(null); setShowReviewModal(false); setFinalizationError('');
-
+  
     if (!user) { setError('Utente non autenticato.'); setLoading(false); return; }
     if (!formData.title || !formData.examName || !formData.totalDays || formData.totalDays < 1) { setError('Completa Titolo, Esame, Giorni (> 0).'); setLoading(false); return; }
     if (files.length === 0) { setError('Carica almeno un PDF.'); setLoading(false); return; }
     if (!serviceStatus.ready) { setError('Servizio Google Drive non pronto.'); setLoading(false); return; }
     if (!genAI || !model) { setError('Servizio AI Gemini non inizializzato.'); setLoading(false); return; }
-
+  
     console.log('CreateProject: Starting provisional plan generation sequence...');
-    let originalUploadedFilesData = []; let pagedTextData = []; let pageMapping = {};
-    let contentIndex = null; let topicDistribution = null;
-
+    let contentIndex = null;
+    let topicDistribution = null;
+    let pageMapping = {};
+  
     try {
-      // --- FASE 1 - Upload Originali ---
-      setLoadingMessage('Caricamento file originali...');
-       const uploadPromises = files.map((file, index) =>
-           googleDriveService.uploadFile(file, (percent) => progressCallback({ type: 'upload', phase: 'original', fileName: file.name, percent: percent }))
-           .then(result => {
-               progressCallback({ type: 'processing', message: `File originale ${file.name} caricato.` });
-               return {
-                  name: result.name, driveFileId: result.driveFileId || result.id,
-                  size: result.size, type: result.type, webViewLink: result.webViewLink,
-                  originalFileIndex: index // Memorizza indice originale
-               };
-           }).catch(err => { throw new Error(`Errore upload ${file.name}: ${err.message}`); })
-       );
-       originalUploadedFilesData = await Promise.all(uploadPromises);
-       progressCallback({ type: 'processing', message: 'File originali caricati.' });
-
-      // --- FASE 1 - Estrazione Testo e Mapping ---
-      setLoadingMessage('Estrazione testo dettagliata...');
-       const extractionResult = await extractTextFromFiles(files, (message) => progressCallback({type: 'processing', message}));
-       pagedTextData = extractionResult.pagedTextData;
-       const fullTextForAI = extractionResult.fullText;
-       pageMapping = pagedTextData.reduce((map, pageInfo, index) => { map[index + 1] = { ...pageInfo }; return map; }, {});
-       if (pagedTextData.length === 0) throw new Error("Estrazione testo fallita.");
-       progressCallback({ type: 'processing', message: 'Estrazione testo completata.' });
-
-      // --- FASE 1 - AI Passo 1: Indice ---
-      setLoadingMessage('AI - Analisi struttura argomenti...');
-       contentIndex = await generateContentIndex(formData.examName, fullTextForAI, pageMapping);
-       if (!contentIndex || !contentIndex.tableOfContents || contentIndex.tableOfContents.length === 0) throw new Error("AI non ha generato indice argomenti.");
-       progressCallback({ type: 'processing', message: 'Struttura argomenti identificata.' });
-
+      // --- FASE 1 - AI Passo 1: Generazione Indice dai PDF ---
+      setLoadingMessage('AI - Analisi diretta dei PDF...');
+      progressCallback({ type: 'processing', message: 'Analisi dei PDF con Gemini in corso...' });
+      
+      contentIndex = await generateContentIndexFromPDFs(formData.examName, files);
+      if (!contentIndex || !contentIndex.tableOfContents || contentIndex.tableOfContents.length === 0) {
+        throw new Error("AI non ha generato indice argomenti.");
+      }
+      progressCallback({ type: 'processing', message: 'Struttura argomenti identificata.' });
+  
+      // --- Crea mappatura pagine dai dati dell'indice generato ---
+      let pageCounter = 1;
+      pageMapping = {};
+      
+      // Crea una mappa file-specifici per tracciare quante pagine ha ogni file
+      const filePageCounts = {};
+      files.forEach((file, fileIndex) => {
+        filePageCounts[fileIndex] = { fileName: file.name, fileIndex: fileIndex, estimatedPageCount: 0 };
+      });
+      
+      // Popola pageMapping usando l'informazione dall'indice generato
+      contentIndex.tableOfContents.forEach(topic => {
+        if (topic.sourceFile && topic.startPage) {
+          // Trova l'indice del file basato sul nome
+          const fileIndex = files.findIndex(file => file.name === topic.sourceFile);
+          if (fileIndex !== -1) {
+            // Aggiorna il conteggio stimato delle pagine per questo file
+            filePageCounts[fileIndex].estimatedPageCount = Math.max(
+              filePageCounts[fileIndex].estimatedPageCount,
+              topic.startPage
+            );
+            
+            // Aggiungi l'entry alla pageMapping
+            pageMapping[pageCounter] = {
+              fileIndex: fileIndex,
+              fileName: topic.sourceFile,
+              pageNum: topic.startPage,
+              text: `Inizio argomento: ${topic.title}`
+            };
+            pageCounter++;
+          }
+        }
+      });
+      
+      // Assicurati che ci sia almeno una mappatura per ogni file
+      Object.values(filePageCounts).forEach(fileInfo => {
+        if (fileInfo.estimatedPageCount === 0) {
+          // Se non abbiamo informazioni, usa una pagina placeholder
+          pageMapping[pageCounter] = {
+            fileIndex: fileInfo.fileIndex,
+            fileName: fileInfo.fileName,
+            pageNum: 1,
+            text: `File: ${fileInfo.fileName}`
+          };
+          pageCounter++;
+        }
+      });
+  
       // --- FASE 1 - AI Passo 2: Distribuzione ---
       setLoadingMessage('AI - Distribuzione argomenti...');
-       topicDistribution = await distributeTopicsToDays(formData.examName, formData.totalDays, contentIndex.tableOfContents, formData.description);
-       if (!topicDistribution || !topicDistribution.dailyPlan || topicDistribution.dailyPlan.length === 0) throw new Error("AI non ha generato distribuzione giornaliera.");
-       progressCallback({ type: 'processing', message: 'Distribuzione giornaliera completata.' });
-
+      topicDistribution = await distributeTopicsToDays(formData.examName, formData.totalDays, contentIndex.tableOfContents, formData.description);
+      if (!topicDistribution || !topicDistribution.dailyPlan || topicDistribution.dailyPlan.length === 0) {
+        throw new Error("AI non ha generato distribuzione giornaliera.");
+      }
+      progressCallback({ type: 'processing', message: 'Distribuzione giornaliera completata.' });
+  
       // --- FASE 1 - Successo: Prepara dati e Apri Modale ---
       console.log('CreateProject: Provisional plan generated successfully. Opening review modal.');
+      
+      // Prepariamo le informazioni sui file originali (senza link a Drive)
+      const originalFilesInfo = files.map((file, index) => ({
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        originalFileIndex: index
+      }));
+      
       setProvisionalPlanData({
           index: contentIndex.tableOfContents,
           distribution: topicDistribution.dailyPlan,
           pageMapping: pageMapping,
-          originalFilesInfo: originalUploadedFilesData // Passa info file Drive originali
+          originalFilesInfo: originalFilesInfo
       });
+      
       setLoading(false); // Fine loading Fase 1
       setLoadingMessage('');
       setShowReviewModal(true); // APRI IL MODALE!
-
+  
     } catch (error) {
       console.error('CreateProject: Error during provisional plan generation phase:', error);
       setError(`Errore Fase 1: ${error.message}` || 'Errore imprevisto durante la generazione della bozza.');
       setSuccess('');
       setLoading(false); setLoadingMessage(''); setShowReviewModal(false);
     }
-   };
+  };
 
 
   // --- handleConfirmReview (FASE 2: Finalizzazione) ---

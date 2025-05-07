@@ -188,17 +188,81 @@ const PlanReviewModal = ({
     }, [contentIndex]);
 
      // Memoizza funzione per range suggerito (marcatori globali)
-    const getSuggestedRange = useCallback((topicTitle) => {
-        const map = indexTopicMap; const info = map[topicTitle];
-        if (!info || !info.startPageMarker || info.startPageMarker <= 0) return { start: 0, end: 0 };
-        const start = info.startPageMarker; let end = Object.keys(pageMapping).length || start;
-        const toc = contentIndex; const currentIdx = toc.findIndex(t => t.title?.trim() === topicTitle);
-        if (currentIdx !== -1 && currentIdx + 1 < toc.length) {
-            const nextStart = toc[currentIdx + 1].startPageMarker;
-            if (nextStart && nextStart > start) end = nextStart - 1;
+     const getSuggestedRange = useCallback((topicTitle) => {
+        const map = indexTopicMap; 
+        const info = map[topicTitle];
+        
+        if (!info || !info.sourceFile || !info.startPage) return { start: 0, end: 0 };
+        
+        // Trova il file originale e il numero di pagina iniziale
+        const fileIndex = originalFiles.findIndex(file => file.name === info.sourceFile);
+        if (fileIndex === -1) return { start: 0, end: 0 };
+        
+        // Trova il marcatore di pagina corrispondente
+        let startMarker = 0;
+        let pageNum = info.startPage;
+        
+        // Cerca nella pageMapping quale marcatore corrisponde a questo file e pagina
+        Object.entries(pageMapping).forEach(([marker, data]) => {
+            if (data.fileIndex === fileIndex && data.pageNum === pageNum) {
+                startMarker = parseInt(marker, 10);
+            }
+        });
+        
+        if (startMarker <= 0) {
+            // Se non troviamo una corrispondenza esatta, usiamo il primo marker disponibile per questo file
+            Object.entries(pageMapping).forEach(([marker, data]) => {
+                if (data.fileIndex === fileIndex && startMarker <= 0) {
+                    startMarker = parseInt(marker, 10);
+                }
+            });
         }
-        end = Math.max(start, end); return { start, end };
-    }, [indexTopicMap, contentIndex, pageMapping]);
+        
+        // Cerca il topic successivo nello stesso file per trovare la fine
+        let endMarker = Object.keys(pageMapping).length || startMarker;
+        
+        // Trova il prossimo argomento che inizia nello stesso file
+        const toc = contentIndex;
+        const currentIdx = toc.findIndex(t => t.title?.trim() === topicTitle);
+        
+        if (currentIdx !== -1) {
+            // Cerca il prossimo argomento che usa lo stesso file
+            for (let i = currentIdx + 1; i < toc.length; i++) {
+                const nextTopic = toc[i];
+                if (nextTopic.sourceFile === info.sourceFile && nextTopic.startPage > info.startPage) {
+                    // Cerca il marker corrispondente
+                    Object.entries(pageMapping).forEach(([marker, data]) => {
+                        if (data.fileIndex === fileIndex && data.pageNum === nextTopic.startPage) {
+                            endMarker = Math.min(endMarker, parseInt(marker, 10) - 1);
+                        }
+                    });
+                    break;
+                }
+            }
+        }
+        
+        // Se non troviamo un topic successivo, usa tutte le pagine mappate per questo file
+        if (endMarker === startMarker) {
+            Object.entries(pageMapping).forEach(([marker, data]) => {
+                if (data.fileIndex === fileIndex) {
+                    endMarker = Math.max(endMarker, parseInt(marker, 10));
+                }
+            });
+        }
+        
+        endMarker = Math.max(startMarker, endMarker);
+        return { start: startMarker, end: endMarker };
+    }, [indexTopicMap, contentIndex, pageMapping, originalFiles]);
+    
+    // Helper per trovare file originale
+    const getOriginalFileForTopic = useCallback((topicTitle) => {
+        const topicInfo = indexTopicMap[topicTitle];
+        if (!topicInfo || !topicInfo.sourceFile || !originalFiles) return null;
+        
+        // Cerca il file corrispondente
+        const file = originalFiles.find(f => f.name === topicInfo.sourceFile);
+        return file || null;
+    }, [indexTopicMap, originalFiles]);
 
 
     // Inizializza selezioni utente all'apertura basate sui suggerimenti
@@ -354,14 +418,6 @@ const PlanReviewModal = ({
         }
     };
 
-     // Helper per trovare file originale
-    const getOriginalFileForTopic = useCallback((topicTitle) => {
-        const suggestedRange = getSuggestedRange(topicTitle);
-        if (!suggestedRange.start || !originalFiles || originalFiles.length === 0 || !pageMapping) return null;
-        const firstPageInfo = pageMapping[suggestedRange.start];
-        if (!firstPageInfo || typeof firstPageInfo.fileIndex !== 'number' || firstPageInfo.fileIndex >= originalFiles.length) return null;
-        return originalFiles[firstPageInfo.fileIndex];
-    }, [getSuggestedRange, originalFiles, pageMapping]);
 
     // Handler per l'attivazione della modalità schermo intero dal PageSelector
     const handleToggleFullscreen = (topicTitle, pageImages, initialPage = 1) => {

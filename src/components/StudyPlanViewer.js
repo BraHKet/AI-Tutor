@@ -139,15 +139,18 @@ const StudyPlanViewer = () => {
             {project.description && <p style={{ margin: '5px 0' }}><strong>Note/Descrizione:</strong> {project.description}</p>}
             {/* Potresti voler mostrare i file PDF originali qui */}
             {project.originalFiles && project.originalFiles.length > 0 && (
-                <div style={{marginTop: '10px'}}>
-                    <strong>File Originali:</strong>
-                    <ul style={{ listStyle: 'none', paddingLeft: '15px', margin: '5px 0 0 0', fontSize: '0.9em' }}>
-                        {project.originalFiles.map((f, idx) => (
-                            <li key={idx}><LinkIcon size={12}/> <a href={f.webViewLink} target="_blank" rel="noopener noreferrer">{f.name}</a></li>
-                        ))}
-                    </ul>
-                </div>
-            )}
+              <div style={{marginTop: '10px'}}>
+                <strong>File Originali:</strong>
+                <ul style={{ listStyle: 'none', paddingLeft: '15px', margin: '5px 0 0 0', fontSize: '0.9em' }}>
+                  {project.originalFiles.map((f, idx) => (
+                  <li key={idx}>
+                    <FileText size={12} style={{ marginRight: '4px' }}/>
+                    {f.name} {/* Non includiamo il link perché non abbiamo caricato i file originali */}
+                  </li>
+                  ))}
+                </ul>
+              </div>
+)}
         </div>
 
 
