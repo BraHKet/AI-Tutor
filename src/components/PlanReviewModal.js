@@ -198,61 +198,67 @@ const PlanReviewModal = ({
         const fileIndex = originalFiles.findIndex(file => file.name === info.sourceFile);
         if (fileIndex === -1) return { start: 0, end: 0 };
         
-        // Trova il marcatore di pagina corrispondente
-        let startMarker = 0;
-        let pageNum = info.startPage;
+        // Usa direttamente il numero di pagina fornito da Gemini
+        const startPage = info.startPage;
         
-        // Cerca nella pageMapping quale marcatore corrisponde a questo file e pagina
-        Object.entries(pageMapping).forEach(([marker, data]) => {
-            if (data.fileIndex === fileIndex && data.pageNum === pageNum) {
-                startMarker = parseInt(marker, 10);
-            }
-        });
+        // Crea un marcatore con le informazioni dirette da Gemini
+        const startMarker = findOrCreateMarkerForPage(fileIndex, startPage);
         
-        if (startMarker <= 0) {
-            // Se non troviamo una corrispondenza esatta, usiamo il primo marker disponibile per questo file
-            Object.entries(pageMapping).forEach(([marker, data]) => {
-                if (data.fileIndex === fileIndex && startMarker <= 0) {
-                    startMarker = parseInt(marker, 10);
-                }
-            });
-        }
+        // Trova anche la fine dell'argomento (se disponibile)
+        let endPage = startPage + 5; // Stima predefinita: 5 pagine per argomento
         
-        // Cerca il topic successivo nello stesso file per trovare la fine
-        let endMarker = Object.keys(pageMapping).length || startMarker;
-        
-        // Trova il prossimo argomento che inizia nello stesso file
+        // Controlla se l'argomento successivo nello stesso file fornisce un limite
         const toc = contentIndex;
         const currentIdx = toc.findIndex(t => t.title?.trim() === topicTitle);
         
-        if (currentIdx !== -1) {
-            // Cerca il prossimo argomento che usa lo stesso file
+        if (currentIdx !== -1 && currentIdx + 1 < toc.length) {
             for (let i = currentIdx + 1; i < toc.length; i++) {
                 const nextTopic = toc[i];
-                if (nextTopic.sourceFile === info.sourceFile && nextTopic.startPage > info.startPage) {
-                    // Cerca il marker corrispondente
-                    Object.entries(pageMapping).forEach(([marker, data]) => {
-                        if (data.fileIndex === fileIndex && data.pageNum === nextTopic.startPage) {
-                            endMarker = Math.min(endMarker, parseInt(marker, 10) - 1);
-                        }
-                    });
+                if (nextTopic.sourceFile === info.sourceFile && nextTopic.startPage > startPage) {
+                    endPage = nextTopic.startPage - 1;
                     break;
                 }
             }
         }
         
-        // Se non troviamo un topic successivo, usa tutte le pagine mappate per questo file
-        if (endMarker === startMarker) {
-            Object.entries(pageMapping).forEach(([marker, data]) => {
-                if (data.fileIndex === fileIndex) {
-                    endMarker = Math.max(endMarker, parseInt(marker, 10));
-                }
-            });
+        const endMarker = findOrCreateMarkerForPage(fileIndex, endPage);
+        
+        return { 
+            start: startMarker, 
+            end: endMarker,
+            startPage: startPage,  // Aggiungi anche il numero di pagina originale
+            endPage: endPage       // per un accesso più facile
+        };
+    }, [indexTopicMap, contentIndex, originalFiles]);
+    
+    // Funzione helper per trovare o creare un marcatore per una pagina
+    // Questa funzione cerca in pageMapping il marcatore corrispondente o ne crea uno nuovo
+    const findOrCreateMarkerForPage = (fileIndex, pageNum) => {
+        // Prima cerca se esiste già un marcatore per questa pagina
+        let existingMarker = 0;
+        Object.entries(pageMapping).forEach(([marker, data]) => {
+            if (data.fileIndex === fileIndex && data.pageNum === pageNum) {
+                existingMarker = parseInt(marker, 10);
+            }
+        });
+        
+        if (existingMarker > 0) {
+            return existingMarker;
         }
         
-        endMarker = Math.max(startMarker, endMarker);
-        return { start: startMarker, end: endMarker };
-    }, [indexTopicMap, contentIndex, pageMapping, originalFiles]);
+        // Se non esiste, crea un nuovo marcatore
+        // Questo è importante perché la pageMapping potrebbe non contenere
+        // ancora tutti i numeri di pagina forniti da Gemini
+        const newMarker = Object.keys(pageMapping).length + 1;
+        pageMapping[newMarker] = {
+            fileIndex: fileIndex,
+            fileName: originalFiles[fileIndex].name,
+            pageNum: pageNum,
+            text: `Pagina ${pageNum}`
+        };
+        
+        return newMarker;
+    };
     
     // Helper per trovare file originale
     const getOriginalFileForTopic = useCallback((topicTitle) => {
@@ -274,16 +280,36 @@ const PlanReviewModal = ({
                 (day.assignedTopics || []).forEach(topic => {
                     const title = topic.title?.trim();
                     if (title && !title.toLowerCase().includes("ripasso")) {
-                        const suggested = getSuggestedRange(title);
-                        const initialPages = [];
-                        if (suggested.start > 0 && suggested.end >= suggested.start) {
-                            for (let pMarker = suggested.start; pMarker <= suggested.end; pMarker++) {
-                                if (pageMapping[pMarker]) {
-                                    initialPages.push(pageMapping[pMarker].pageNum);
+                        // Cerca l'informazione direttamente dall'indice dei contenuti
+                        const topicInfo = indexTopicMap[title];
+                        if (topicInfo && topicInfo.sourceFile && topicInfo.startPage) {
+                            // Trova il file originale
+                            const fileIndex = originalFiles.findIndex(file => file.name === topicInfo.sourceFile);
+                            if (fileIndex !== -1) {
+                                // Usa direttamente il numero di pagina dal topicInfo
+                                initialSelections[title] = [topicInfo.startPage];
+                                
+                                // Se possiamo stimare una fine, includi anche le pagine successive
+                                let endPage = topicInfo.startPage + 3; // Stima predefinita: 3 pagine
+                                
+                                // Cerca il prossimo argomento nello stesso file
+                                const idx = contentIndex.findIndex(t => t.title?.trim() === title);
+                                if (idx !== -1 && idx + 1 < contentIndex.length) {
+                                    for (let i = idx + 1; i < contentIndex.length; i++) {
+                                        const next = contentIndex[i];
+                                        if (next.sourceFile === topicInfo.sourceFile && next.startPage > topicInfo.startPage) {
+                                            endPage = next.startPage - 1;
+                                            break;
+                                        }
+                                    }
+                                }
+                                
+                                // Aggiungi tutte le pagine nell'intervallo
+                                for (let p = topicInfo.startPage + 1; p <= endPage; p++) {
+                                    initialSelections[title].push(p);
                                 }
                             }
                         }
-                        initialSelections[title] = [...new Set(initialPages)].sort((a,b)=>a-b);
                     }
                 });
             });
@@ -292,7 +318,7 @@ const PlanReviewModal = ({
             setExpandedTopicId(null); // Resetta l'argomento espanso quando si apre il modale
             console.log("PlanReviewModal: Initial page selections (original page numbers):", initialSelections);
         }
-    }, [isOpen, topicDistribution, contentIndex, getSuggestedRange, pageMapping]);
+    }, [isOpen, topicDistribution, contentIndex, indexTopicMap, originalFiles]);
 
 
     // Gestore cambio selezione pagine
