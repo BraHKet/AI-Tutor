@@ -1,56 +1,55 @@
-// src/components/CreateProject.jsx (o .js)
+// src/components/CreateProject.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useGoogleAuth from '../hooks/useGoogleAuth';
 import { googleDriveService } from '../utils/googleDriveService';
-import { extractTextFromFiles, createPdfChunk } from '../utils/pdfProcessor';
+// createPdfChunk è ancora necessario per la Fase 2
+import { createPdfChunk } from '../utils/pdfProcessor';
 import { generateContentIndex, distributeTopicsToDays } from '../utils/gemini';
-import { saveProjectWithPlan } from '../utils/firebase'; // Usa la funzione di salvataggio finale
-import { genAI, model } from '../utils/gemini';
+import { saveProjectWithPlan } from '../utils/firebase';
+// genAI e model non sono usati direttamente qui, ma in utils/gemini.js
+// import { genAI, model } from '../utils/gemini'; // Commentato se non usato direttamente
 import { v4 as uuidv4 } from 'uuid';
 
-import PlanReviewModal from './PlanReviewModal'; // Importa il modale
+import PlanReviewModal from './PlanReviewModal';
 
 import { FilePlus, Upload, X, Calendar, BookOpen, Info, AlertCircle, Loader, BrainCircuit, CopyCheck, FileText, CheckCircle } from 'lucide-react';
 import NavBar from './NavBar';
-import './styles/CreateProject.css'; // Assicurati che questo esista e sia corretto
+import './styles/CreateProject.css';
 
 
 const CreateProject = () => {
   const navigate = useNavigate();
   const { user } = useGoogleAuth();
-  // Stati esistenti
   const [serviceStatus, setServiceStatus] = useState({ ready: false, initializing: false, error: null });
   const [formData, setFormData] = useState({ title: '', examName: '', totalDays: 7, description: '' });
-  const [files, setFiles] = useState([]); // Mantiene gli oggetti File originali
-  const [loading, setLoading] = useState(false); // Loading generale (Fase 1)
+  const [files, setFiles] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(''); // Solo per successo finale
-  const [uploadProgress, setUploadProgress] = useState({}); // { [fileName]: { phase: 'original'|'chunk', percent: number } }
+  const [success, setSuccess] = useState('');
+  const [uploadProgress, setUploadProgress] = useState({});
 
-  // Stati NUOVI per la revisione
   const [showReviewModal, setShowReviewModal] = useState(false);
-  const [provisionalPlanData, setProvisionalPlanData] = useState(null); // { index: [], distribution: [], pageMapping: {}, originalFilesInfo: [] }
-  const [isFinalizing, setIsFinalizing] = useState(false); // Loading specifico per Fase 2 (finalizzazione)
+  const [provisionalPlanData, setProvisionalPlanData] = useState(null);
+  const [isFinalizing, setIsFinalizing] = useState(false);
   const [finalizationError, setFinalizationError] = useState('');
 
-  // --- Inizializzazione Google Drive Service ---
   useEffect(() => {
     console.log('CreateProject: MOUNTED');
-    let isMounted = true; // Flag per evitare setState su componente smontato
+    let isMounted = true;
 
     const initService = async () => {
       console.log('CreateProject: useEffect - initializing Google Drive service');
-      if (!isMounted) return; // Check iniziale
+      if (!isMounted) return;
       setServiceStatus({ ready: false, initializing: true, error: null });
-      setLoadingMessage('Inizializzazione servizio Google Drive...'); // Messaggio iniziale
+      setLoadingMessage('Inizializzazione servizio Google Drive...');
       try {
         await googleDriveService.initialize();
         if (isMounted) {
           console.log('CreateProject: Service initialized successfully');
           setServiceStatus({ ready: true, initializing: false, error: null });
-          setLoadingMessage(''); // Pulisci messaggio se l'init è veloce
+          setLoadingMessage('');
         }
       } catch (err) {
         if (isMounted) {
@@ -61,18 +60,14 @@ const CreateProject = () => {
         }
       }
     };
-
     initService();
-
     return () => {
       console.log('CreateProject: UNMOUNTED');
       isMounted = false;
     };
-  }, []); // Array dipendenze vuoto per eseguire solo al mount
+  }, []);
 
-
-  // --- Funzioni Retry e Init ---
-   const initServiceRetry = async () => { // Rinomina per chiarezza rispetto a quella in useEffect
+  const initServiceRetry = async () => {
     setError('');
     setSuccess('');
     setServiceStatus({ ready: false, initializing: true, error: null });
@@ -87,18 +82,16 @@ const CreateProject = () => {
       console.error('CreateProject: Error retrying Google Drive service init', err);
       setServiceStatus({ ready: false, initializing: false, error: err.message });
       setError('Errore inizializzazione Google Drive: ' + err.message);
-       setLoadingMessage('');
+      setLoadingMessage('');
     }
   };
   const retryInitialization = () => { initServiceRetry(); };
 
-
-  // --- Gestori Form e File ---
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
-      [name]: name === 'totalDays' ? parseInt(value, 10) || 1 : value // Assicura almeno 1 giorno, default a 1 se non numero
+      [name]: name === 'totalDays' ? parseInt(value, 10) || 1 : value
     });
   };
 
@@ -117,9 +110,9 @@ const CreateProject = () => {
         errors.push(`${file.name} supera ${MAX_FILE_SIZE_MB}MB.`);
       } else {
         if (!files.some(existingFile => existingFile.name === file.name) && !validFiles.some(newValidFile => newValidFile.name === file.name)) {
-             validFiles.push(file);
+          validFiles.push(file);
         } else {
-             errors.push(`File "${file.name}" già presente o selezionato.`);
+          errors.push(`File "${file.name}" già presente o selezionato.`);
         }
       }
     });
@@ -127,10 +120,8 @@ const CreateProject = () => {
     if (errors.length > 0) {
       setError(errors.join(' '));
     } else {
-      setError(''); // Pulisci errore solo se non ce ne sono di nuovi
+      setError('');
     }
-
-    // Aggiungi solo i nuovi file validi e non duplicati
     setFiles(prevFiles => [...prevFiles, ...validFiles]);
   };
 
@@ -138,29 +129,24 @@ const CreateProject = () => {
     setFiles(files.filter((_, index) => index !== indexToRemove));
   };
 
+  const progressCallback = useCallback((update) => {
+    console.log("Progress Update:", update);
+    if (update.type === 'upload') {
+      setUploadProgress(prev => ({ ...prev, [update.fileName]: { phase: update.phase, percent: update.percent } }));
+    } else if (update.type === 'processing') {
+      if(isFinalizing || loading){
+         setLoadingMessage(update.message);
+      }
+    } else if (update.type === 'error') {
+      console.error("Progress Callback Error:", update.message);
+    } else if (update.type === 'warning') {
+        console.warn("Progress Callback Warning:", update.message);
+    }
+  }, [isFinalizing, loading]);
 
-  // --- Funzione Callback Progresso ---
-   const progressCallback = useCallback((update) => {
-        console.log("Progress Update:", update);
-        if (update.type === 'upload') {
-          setUploadProgress(prev => ({ ...prev, [update.fileName]: { phase: update.phase, percent: update.percent } }));
-        } else if (update.type === 'processing') {
-          // Aggiorna il messaggio solo se la finalizzazione è in corso o se il loading generale è attivo
-          if(isFinalizing || loading){
-             setLoadingMessage(update.message);
-          }
-        } else if (update.type === 'error') {
-          console.error("Progress Callback Error:", update.message);
-        } else if (update.type === 'warning') {
-            console.warn("Progress Callback Warning:", update.message);
-        }
-    }, [isFinalizing, loading]); // Dipende da isFinalizing e loading
-
-
-  // --- handleSubmit (Fase 1: Generazione Provvisoria) ---
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('CreateProject V4: Form submitted for PROVISIONAL plan generation');
+    console.log('CreateProject V5: Form submitted for PROVISIONAL plan generation (direct PDF to AI)');
 
     setError(''); setSuccess(''); setLoading(true); setLoadingMessage('Verifica dati...');
     setUploadProgress({}); setProvisionalPlanData(null); setShowReviewModal(false); setFinalizationError('');
@@ -169,11 +155,15 @@ const CreateProject = () => {
     if (!formData.title || !formData.examName || !formData.totalDays || formData.totalDays < 1) { setError('Completa Titolo, Esame, Giorni (> 0).'); setLoading(false); return; }
     if (files.length === 0) { setError('Carica almeno un PDF.'); setLoading(false); return; }
     if (!serviceStatus.ready) { setError('Servizio Google Drive non pronto.'); setLoading(false); return; }
-    if (!genAI || !model) { setError('Servizio AI Gemini non inizializzato.'); setLoading(false); return; }
+    // Verifica genAI/model ora è in utils/gemini.js
+    // if (!genAI || !model) { setError('Servizio AI Gemini non inizializzato.'); setLoading(false); return; }
 
-    console.log('CreateProject: Starting provisional plan generation sequence...');
-    let originalUploadedFilesData = []; let pagedTextData = []; let pageMapping = {};
-    let contentIndex = null; let topicDistribution = null;
+
+    console.log('CreateProject: Starting provisional plan generation sequence (with direct PDF to AI)...');
+    let originalUploadedFilesData = [];
+    let pageMapping = {};
+    let contentIndex = null;
+    let topicDistribution = null;
 
     try {
       // --- FASE 1 - Upload Originali ---
@@ -182,272 +172,358 @@ const CreateProject = () => {
            googleDriveService.uploadFile(file, (percent) => progressCallback({ type: 'upload', phase: 'original', fileName: file.name, percent: percent }))
            .then(result => {
                progressCallback({ type: 'processing', message: `File originale ${file.name} caricato.` });
-               return {
-                  name: result.name, driveFileId: result.driveFileId || result.id,
-                  size: result.size, type: result.type, webViewLink: result.webViewLink,
-                  originalFileIndex: index // Memorizza indice originale
+               return { // Queste informazioni sono utili per `generateContentIndex` e la fase di finalizzazione
+                  name: file.name, // Nome file originale fornito dall'utente
+                  driveFileId: result.driveFileId || result.id,
+                  size: file.size, // Dimensione originale
+                  type: file.type, // MimeType originale
+                  webViewLink: result.webViewLink,
+                  originalFileIndex: index // Per riferirsi a `files[index]` se necessario
                };
            }).catch(err => { throw new Error(`Errore upload ${file.name}: ${err.message}`); })
        );
        originalUploadedFilesData = await Promise.all(uploadPromises);
        progressCallback({ type: 'processing', message: 'File originali caricati.' });
 
-      // --- FASE 1 - Estrazione Testo e Mapping ---
-      setLoadingMessage('Estrazione testo dettagliata...');
-       const extractionResult = await extractTextFromFiles(files, (message) => progressCallback({type: 'processing', message}));
-       pagedTextData = extractionResult.pagedTextData;
-       const fullTextForAI = extractionResult.fullText;
-       pageMapping = pagedTextData.reduce((map, pageInfo, index) => { map[index + 1] = { ...pageInfo }; return map; }, {});
-       if (pagedTextData.length === 0) throw new Error("Estrazione testo fallita.");
-       progressCallback({ type: 'processing', message: 'Estrazione testo completata.' });
+      // --- FASE 1 - AI Passo 1: Indice (MODIFICATO PER PASSARE PDF DIRETTAMENTE) ---
+      setLoadingMessage('AI - Analisi struttura argomenti dai PDF...');
+      // `generateContentIndex` ora riceve i `files` (array di File object)
+      // e `originalUploadedFilesData` (che contiene info sui file su Drive).
+      const aiIndexResult = await generateContentIndex(
+          formData.examName,
+          files, // Array di File object
+          originalUploadedFilesData, // Contiene info Drive (driveFileId, name, type, originalFileIndex)
+          formData.description // Note utente opzionali
+      );
 
-      // --- FASE 1 - AI Passo 1: Indice ---
-      setLoadingMessage('AI - Analisi struttura argomenti...');
-       contentIndex = await generateContentIndex(formData.examName, fullTextForAI, pageMapping);
-       if (!contentIndex || !contentIndex.tableOfContents || contentIndex.tableOfContents.length === 0) throw new Error("AI non ha generato indice argomenti.");
-       progressCallback({ type: 'processing', message: 'Struttura argomenti identificata.' });
+      contentIndex = aiIndexResult.tableOfContents;
+      pageMapping = aiIndexResult.pageMapping || {}; // Potrebbe essere vuoto o limitato
+
+      if (!contentIndex || contentIndex.length === 0) throw new Error("AI non ha generato indice argomenti dai PDF.");
+      progressCallback({ type: 'processing', message: 'Struttura argomenti identificata.' });
 
       // --- FASE 1 - AI Passo 2: Distribuzione ---
       setLoadingMessage('AI - Distribuzione argomenti...');
-       topicDistribution = await distributeTopicsToDays(formData.examName, formData.totalDays, contentIndex.tableOfContents, formData.description);
-       if (!topicDistribution || !topicDistribution.dailyPlan || topicDistribution.dailyPlan.length === 0) throw new Error("AI non ha generato distribuzione giornaliera.");
-       progressCallback({ type: 'processing', message: 'Distribuzione giornaliera completata.' });
+      topicDistribution = await distributeTopicsToDays(formData.examName, formData.totalDays, contentIndex, formData.description);
+      if (!topicDistribution || !topicDistribution.dailyPlan || topicDistribution.dailyPlan.length === 0) throw new Error("AI non ha generato distribuzione giornaliera.");
+      progressCallback({ type: 'processing', message: 'Distribuzione giornaliera completata.' });
 
       // --- FASE 1 - Successo: Prepara dati e Apri Modale ---
-      console.log('CreateProject: Provisional plan generated successfully. Opening review modal.');
+      console.log('CreateProject: Provisional plan generated successfully (from PDF direct). Opening review modal.');
       setProvisionalPlanData({
-          index: contentIndex.tableOfContents,
+          index: contentIndex,
           distribution: topicDistribution.dailyPlan,
-          pageMapping: pageMapping,
-          originalFilesInfo: originalUploadedFilesData // Passa info file Drive originali
+          pageMapping: pageMapping, // POTENZIALE ADATTAMENTO NECESSARIO nel Modale se questo è limitato
+          originalFilesInfo: originalUploadedFilesData
       });
-      setLoading(false); // Fine loading Fase 1
+      setLoading(false);
       setLoadingMessage('');
-      setShowReviewModal(true); // APRI IL MODALE!
+      setShowReviewModal(true);
 
     } catch (error) {
-      console.error('CreateProject: Error during provisional plan generation phase:', error);
+      console.error('CreateProject: Error during provisional plan generation phase (from PDF direct):', error);
       setError(`Errore Fase 1: ${error.message}` || 'Errore imprevisto durante la generazione della bozza.');
       setSuccess('');
       setLoading(false); setLoadingMessage(''); setShowReviewModal(false);
     }
-   };
-
-
-  // --- handleConfirmReview (FASE 2: Finalizzazione) ---
-  const handleConfirmReview = async (finalUserSelections) => {
-      console.log('CreateProject: Starting Phase 2 - Finalization with user selections:', finalUserSelections);
-      setShowReviewModal(false);
-      setIsFinalizing(true);
-      setLoadingMessage('Avvio finalizzazione e creazione materiale...');
-      setFinalizationError('');
-      setUploadProgress({}); // Resetta progress per i chunk
-
-      // Recupera dati necessari dallo stato provvisorio e file originali
-      const { index, distribution, pageMapping, originalFilesInfo } = provisionalPlanData || {};
-      const originalFileObjects = files; // ACCESSO AI FILE OBJECT ORIGINALI
-
-      if (!index || !distribution || !pageMapping || !originalFilesInfo || !originalFileObjects || originalFileObjects.length === 0) {
-          console.error("CreateProject/handleConfirmReview: Missing provisional data or original files in state.");
-          setFinalizationError("Errore interno: dati necessari non trovati per finalizzare.");
-          setIsFinalizing(false); setLoadingMessage(''); return;
-      }
-
-      const finalDailyPlanMap = {}; // Mappa Giorno -> [TopicID]
-      const topicsDataForFirestore = []; // Array di oggetti Topic finali
-      const indexTopicMap = index.reduce((map, topic) => { if(topic.title?.trim()) map[topic.title.trim()] = topic; return map; }, {});
-      // const totalSourcePages = Object.keys(pageMapping).length; // Non serve qui
-
-      try {
-          let totalChunksToCreate = 0;
-           distribution.forEach(day => {
-               (day.assignedTopics || []).forEach(topic => {
-                   const title = topic.title?.trim();
-                   if (title && !title.toLowerCase().includes("ripasso") && finalUserSelections[title]?.length > 0) {
-                        const pagesSelected = finalUserSelections[title];
-                        const fileIndicesInvolved = new Set(pagesSelected.map(pageNum => {
-                             const marker = Object.entries(pageMapping).find(([m, info]) => info.pageNum === pageNum && info.fileIndex !== undefined)?.[0];
-                             return marker ? pageMapping[marker]?.fileIndex : undefined;
-                        }).filter(idx => idx !== undefined));
-                         totalChunksToCreate += fileIndicesInvolved.size;
-                   }
-               });
-           });
-           console.log(`CreateProject/handleConfirmReview: Estimated chunks to create: ${totalChunksToCreate}`);
-           let chunksProcessedCount = 0;
-
-          // Itera sulla DISTRIBUZIONE AI
-          for (const dayPlan of distribution) {
-              const dayNumber = dayPlan.day;
-              if (!dayNumber) continue;
-              finalDailyPlanMap[dayNumber] = []; // Inizializza array per il giorno
-
-              // Salta/Gestisci giorni ripasso
-              if (!dayPlan.assignedTopics || dayPlan.assignedTopics.length === 0 || dayPlan.assignedTopics.some(t => t.title?.toLowerCase().includes("ripasso"))) {
-                  if(dayPlan.assignedTopics && dayPlan.assignedTopics.length > 0){
-                      const reviewTopic = dayPlan.assignedTopics.find(t => t.title?.toLowerCase().includes("ripasso"));
-                      if (reviewTopic) {
-                           const topicId = uuidv4();
-                           finalDailyPlanMap[dayNumber].push(topicId);
-                           topicsDataForFirestore.push({
-                               id: topicId, title: reviewTopic.title, description: "Ripasso generale argomenti precedenti.",
-                               assignedDay: dayNumber, orderInDay: 0, isCompleted: false, sources: []
-                           });
-                      }
-                  }
-                  continue;
-              }
-
-              // Itera sugli argomenti assegnati al giorno
-              for (const [topicIndexInDay, assignedTopic] of dayPlan.assignedTopics.entries()) {
-                  const topicTitle = assignedTopic.title?.trim();
-                  if (!topicTitle) continue;
-
-                  const topicId = uuidv4();
-                  finalDailyPlanMap[dayNumber].push(topicId);
-                  let topicSources = []; // Fonti finali per QUESTO topic
-
-                  // *** USA LE SELEZIONI UTENTE RICEVUTE DAL MODALE ***
-                  const selectedPageNumbers = finalUserSelections[topicTitle] || []; // Array di numeri pagina (1-based)
-
-                  console.log(`\n--- Finalizing Topic: "${topicTitle}" (Day ${dayNumber}) ---`);
-                  console.log(`[DEBUG] Finalize: User selected pages:`, JSON.stringify(selectedPageNumbers));
-
-                  // Se l'utente ha selezionato delle pagine, procedi con chunking
-                  if (selectedPageNumbers.length > 0) {
-                      // Raggruppa le pagine selezionate per file originale
-                       const pagesByFile = selectedPageNumbers.reduce((acc, pageNum) => {
-                           let fileIndexFound = -1;
-                           const mappingEntry = Object.values(pageMapping).find(info => info.pageNum === pageNum);
-                           if (mappingEntry) { fileIndexFound = mappingEntry.fileIndex; }
-                           else { console.warn(`[DEBUG] Finalize: Page number ${pageNum} selected for "${topicTitle}" not found in pageMapping!`); }
-
-                           if (fileIndexFound !== -1) {
-                               const fileIndexKey = String(fileIndexFound);
-                               if (!acc[fileIndexKey]) { acc[fileIndexKey] = { fileIndex: fileIndexFound, pages: [] }; }
-                               if (typeof pageNum === 'number' && !isNaN(pageNum)) { acc[fileIndexKey].pages.push(pageNum); }
-                           }
-                           return acc;
-                       }, {});
-                       console.log(`[DEBUG] Finalize: Selected pages grouped by source file for "${topicTitle}":`, pagesByFile);
-
-                       // Crea e carica chunk per ogni file coinvolto
-                       for (const fileIndexStr in pagesByFile) {
-                           chunksProcessedCount++;
-                           const fileData = pagesByFile[fileIndexStr];
-                           const fileIndex = parseInt(fileIndexStr, 10);
-                           const originalFile = originalFileObjects[fileIndex];
-                           const originalFileInfo = originalFilesInfo.find(f => f.originalFileIndex === fileIndex);
-                           let pageNumbersForChunk = [...new Set(fileData.pages)].sort((a, b) => a - b);
-
-                           console.log(`[DEBUG] Finalize: File "${originalFile?.name}" - Chunk pages (1-based):`, JSON.stringify(pageNumbersForChunk));
-
-                           if (pageNumbersForChunk.length > 0 && originalFileInfo && originalFile) {
-                               const firstPage = pageNumbersForChunk[0];
-                               const lastPage = pageNumbersForChunk[pageNumbersForChunk.length - 1];
-                                console.log(`[DEBUG] Finalize: File "${originalFile?.name}" - firstPage: ${firstPage}, lastPage: ${lastPage}`);
-
-                               if (typeof firstPage === 'number' && typeof lastPage === 'number') {
-                                   const safeTitlePart = topicTitle.substring(0, 15).replace(/[^a-zA-Z0-9]/g, '_');
-                                   const chunkFileName = `${originalFile.name.replace(/\.pdf$/i, '')}_${safeTitlePart}_p${firstPage}-${lastPage}.pdf`;
-                                    console.log(`[DEBUG] Finalize: Attempting to create chunk: "${chunkFileName}"`);
-                                   try {
-                                       const progressMsgChunk = `Creazione/Upload chunk ${chunksProcessedCount}/${totalChunksToCreate}: ${chunkFileName.substring(0,30)}...`;
-                                       progressCallback({ type: 'processing', message: progressMsgChunk });
-
-                                       const chunkFile = await createPdfChunk(originalFile, pageNumbersForChunk, chunkFileName, (msg)=>progressCallback({type:'processing', message:msg}));
-                                       if (chunkFile) {
-                                            console.log(`[DEBUG] Finalize: Chunk ${chunkFileName} CREATED (size: ${chunkFile.size}). Uploading...`);
-                                            progressCallback({ type: 'processing', message: `Caricamento chunk ${chunkFileName}...` });
-                                            const uploadedChunk = await googleDriveService.uploadFile(chunkFile, (percent) => progressCallback({ type: 'upload', phase: 'chunk', fileName: chunkFileName, percent: percent }));
-                                            console.log(`[DEBUG] Finalize: Chunk ${chunkFileName} UPLOADED. Info:`, uploadedChunk);
-                                            topicSources.push({
-                                                type: 'pdf_chunk',
-                                                chunkDriveId: uploadedChunk.driveFileId || uploadedChunk.id,
-                                                chunkName: chunkFileName,
-                                                webViewLink: uploadedChunk.webViewLink,
-                                                originalFileId: originalFileInfo.driveFileId,
-                                                originalFileName: originalFileInfo.name,
-                                                pageStart: firstPage,
-                                                pageEnd: lastPage
-                                            });
-                                             progressCallback({ type: 'processing', message: `Chunk ${chunkFileName} caricato.` });
-                                       } else {
-                                            console.error(`[DEBUG] Finalize: createPdfChunk returned null for "${chunkFileName}".`);
-                                            topicSources.push({ type: 'error_chunk', name: chunkFileName, error: 'Creazione fallita (pdfProcessor)', originalFileId: originalFileInfo.driveFileId, originalFileName: originalFileInfo.name });
-                                       }
-                                   } catch (chunkError) {
-                                       console.error(`Finalize: ERROR during chunk handling for ${chunkFileName}`, chunkError);
-                                       progressCallback({ type: 'error', message: `Errore chunk ${chunkFileName}: ${chunkError.message}` });
-                                       topicSources.push({ type: 'error_chunk', name: chunkFileName, error: chunkError.message, originalFileId: originalFileInfo.driveFileId, originalFileName: originalFileInfo.name });
-                                   }
-                               } else {
-                                    console.error(`[DEBUG] Finalize: Invalid firstPage (${firstPage}) or lastPage (${lastPage}) for chunk.`);
-                                    topicSources.push({ type: 'error_chunk', name: `Chunk_ErrPag_${topicTitle.substring(0,10)}`, error: 'Pagine inizio/fine non valide', originalFileId: originalFileInfo?.driveFileId, originalFileName: originalFileInfo?.name });
-                               }
-                           } else {
-                                console.warn(`[DEBUG] Finalize: Skipping chunk creation for file index ${fileIndexStr}. Invalid data. Pgs: ${pageNumbersForChunk?.join(',')}, FileInfo: ${!!originalFileInfo}, FileObj: ${!!originalFile}`);
-                           }
-                       } // fine loop files per topic
-                  } else { // Se l'utente non ha selezionato pagine
-                     console.warn(`Finalize: No pages selected by user for topic "${topicTitle}" (Day ${dayNumber}). Applying fallback.`);
-                     topicSources.push(...originalFilesInfo.map(f => ({ type: 'pdf_original', driveFileId: f.driveFileId, name: f.name, webViewLink: f.webViewLink })));
-                  }
-
-                  console.log(`[DEBUG] Finalize: Final sources collected for topic "${topicTitle}" (Day ${dayNumber}):`, JSON.stringify(topicSources));
-
-                  // Prepara topic finale per Firestore
-                  topicsDataForFirestore.push({
-                    id: topicId,
-                    title: topicTitle,
-                    description: indexTopicMap[topicTitle]?.subTopics?.map(st => st.title).join(', ') || assignedTopic.description || '',
-                    assignedDay: dayNumber,
-                    orderInDay: topicIndexInDay, // Usa indice da loop `entries`
-                    isCompleted: false,
-                    sources: topicSources // Salva le fonti (chunk, errori o originali)
-                  });
-                  console.log(`--- Finished Finalizing Topic: "${topicTitle}" ---`);
-              } // fine loop assignedTopics
-          } // fine loop giorni
-
-          // --- Prepara dati progetto finale ---
-           const projectCoreData = {
-             title: formData.title, examName: formData.examName, totalDays: formData.totalDays,
-             description: formData.description, userId: user.uid,
-             originalFiles: originalFilesInfo.map(({originalFileIndex, ...rest}) => rest), // Rimuovi indice temp
-             aiModelUsed: 'gemini-1.5-flash-latest (2-step, reviewed)',
-             dailyPlan: finalDailyPlanMap, // Mappa Giorno -> [TopicID] finale
-           };
-
-          // --- Salvataggio Finale su Firestore ---
-          setLoadingMessage('Salvataggio finale del piano...');
-          console.log("CreateProject/handleConfirmReview: Saving final plan to Firestore...");
-          console.log("[DEBUG] Finalize: Final Project Data to Save:", projectCoreData);
-          console.log("[DEBUG] Finalize: Final Topics Data to Save:", topicsDataForFirestore);
-          const finalProjectId = await saveProjectWithPlan(projectCoreData, topicsDataForFirestore);
-          console.log("CreateProject/handleConfirmReview: Final plan saved! Project ID:", finalProjectId);
-
-          // Successo Finale
-          setLoadingMessage('');
-          setIsFinalizing(false);
-          setSuccess('Piano finalizzato e materiale generato con successo! Reindirizzamento...');
-          setTimeout(() => { navigate(`/projects/${finalProjectId}/plan`); }, 1500);
-
-      } catch(error) {
-          console.error("CreateProject/handleConfirmReview: Error during finalization phase:", error);
-          setFinalizationError(`Errore Fase 2: ${error.message}` || 'Errore imprevisto durante la finalizzazione.');
-          setIsFinalizing(false); setLoadingMessage('');
-      }
   };
 
-  // --- Gestore Annulla Modale ---
+  // Fix per la funzione handleConfirmReview in CreateProject.js
+
+const handleConfirmReview = async (finalUserSelections) => {
+  console.log('CreateProject: Starting Phase 2 - Finalization with user selections:', finalUserSelections);
+  setShowReviewModal(false);
+  setIsFinalizing(true);
+  setLoadingMessage('Avvio finalizzazione e creazione materiale...');
+  setFinalizationError('');
+  setUploadProgress({});
+
+  const { index: aiGeneratedIndex, distribution, pageMapping, originalFilesInfo } = provisionalPlanData || {};
+  const originalFileObjects = files; // Oggetti File originali
+
+  if (!aiGeneratedIndex || !distribution || !originalFilesInfo || !originalFileObjects || originalFileObjects.length === 0) {
+      console.error("CreateProject/handleConfirmReview: Missing provisional data or original files in state.");
+      setFinalizationError("Errore interno: dati necessari non trovati per finalizzare.");
+      setIsFinalizing(false); setLoadingMessage(''); return;
+  }
+
+  const finalDailyPlanMap = {};
+  const topicsDataForFirestore = [];
+  // Creare una mappa per accedere facilmente ai dati degli argomenti generati dall'AI (incluso pages_info)
+  const aiTopicDetailsMap = aiGeneratedIndex.reduce((map, topic) => {
+      if (topic.title?.trim()) map[topic.title.trim()] = topic;
+      return map;
+  }, {});
+
+  try {
+      // Calcola il numero totale di chunks da creare in base alle selezioni dell'utente
+      let totalChunksToCreate = 0;
+      Object.entries(finalUserSelections).forEach(([topicTitle, fileSelections]) => {
+          if (Array.isArray(fileSelections)) {
+              fileSelections.forEach(fileEntry => {
+                  if (fileEntry && fileEntry.pages && fileEntry.pages.length > 0) {
+                      totalChunksToCreate++;
+                  }
+              });
+          }
+      });
+      console.log(`CreateProject/handleConfirmReview: Estimated chunks to create: ${totalChunksToCreate}`);
+      let chunksProcessedCount = 0;
+      
+      for (const dayPlan of distribution) {
+          const dayNumber = dayPlan.day;
+          if (!dayNumber) continue;
+          finalDailyPlanMap[dayNumber] = [];
+
+          // Gestione dei giorni di ripasso
+          if (!dayPlan.assignedTopics || dayPlan.assignedTopics.length === 0 || dayPlan.assignedTopics.some(t => t.title?.toLowerCase().includes("ripasso"))) {
+              if(dayPlan.assignedTopics && dayPlan.assignedTopics.length > 0){
+                  const reviewTopic = dayPlan.assignedTopics.find(t => t.title?.toLowerCase().includes("ripasso"));
+                  if (reviewTopic) {
+                       const topicId = uuidv4();
+                       finalDailyPlanMap[dayNumber].push(topicId);
+                       topicsDataForFirestore.push({
+                           id: topicId, title: reviewTopic.title, description: "Ripasso generale argomenti precedenti.",
+                           assignedDay: dayNumber, orderInDay: 0, isCompleted: false, sources: []
+                       });
+                  }
+              }
+              continue;
+          }
+
+          // Per ogni topic assegnato al giorno
+          for (const [topicIndexInDay, assignedTopic] of dayPlan.assignedTopics.entries()) {
+              const topicTitle = assignedTopic.title?.trim();
+              if (!topicTitle) continue;
+
+              const topicId = uuidv4();
+              finalDailyPlanMap[dayNumber].push(topicId);
+              let topicSources = [];
+              const topicDetailsFromAI = aiTopicDetailsMap[topicTitle]; // Contiene pages_info
+
+              // Ottieni le selezioni utente per questo topic dal modal
+              const userSelectionsForTopic = finalUserSelections[topicTitle] || [];
+              
+              console.log(`\n--- Finalizing Topic: "${topicTitle}" (Day ${dayNumber}) ---`);
+              console.log(`[DEBUG] Finalize: User selections for "${topicTitle}":`, JSON.stringify(userSelectionsForTopic));
+              
+
+              // Verifica se si tratta di un ripasso o di una simulazione d'esame
+const isReview = topicTitle.toLowerCase().includes("ripasso");
+const isExamSimulation = topicTitle.toLowerCase().includes("simulazione") || 
+                         topicTitle.toLowerCase().includes("esame") ||
+                         assignedTopic.description?.toLowerCase().includes("esercizi") ||
+                         assignedTopic.description?.toLowerCase().includes("simulazione");
+
+// Se è una simulazione d'esame, non creare chunks PDF
+if (isExamSimulation) {
+    console.log(`[DEBUG] Finalize: Detected exam simulation topic "${topicTitle}" - skipping PDF chunk creation`);
+    
+    // Non creiamo chunks ma aggiungiamo una nota esplicativa
+    topicSources = [{
+        type: 'note',
+        noteType: 'exam_simulation',
+        description: 'Simulazione d\'esame - Prova a risolvere esercizi senza consultare il materiale.'
+    }];
+} 
+// Se è un ripasso, non creare chunks (questo è per i giorni che non sono stati già gestiti in precedenza)
+else if (isReview) {
+    console.log(`[DEBUG] Finalize: Detected review topic "${topicTitle}" - no PDF chunks needed`);
+    // Lascia sources vuoto o aggiungi una nota di ripasso
+    topicSources = [{
+        type: 'note',
+        noteType: 'review',
+        description: 'Ripasso generale argomenti precedenti.'
+    }];
+}
+else {
+              if (userSelectionsForTopic.length > 0) {
+                  // Per ogni file selezionato per questo topic
+                  for (const fileSelection of userSelectionsForTopic) {
+                      const { fileIndex, fileName, pages } = fileSelection;
+                      
+                      if (!pages || pages.length === 0) continue;
+                      
+                      // Ottieni il file originale e le sue info
+                      const originalFile = originalFileObjects[fileIndex];
+                      const originalFileInfoFromDrive = originalFilesInfo.find(f => f.originalFileIndex === fileIndex);
+                      
+                      if (!originalFile || !originalFileInfoFromDrive) {
+                          console.warn(`Finalize: Missing file data for fileIndex ${fileIndex}`);
+                          continue;
+                      }
+
+                      // Ordina le pagine in ordine crescente
+                      const sortedPages = [...pages].sort((a, b) => a - b);
+                      const firstPage = sortedPages[0];
+                      const lastPage = sortedPages[sortedPages.length - 1];
+                      
+                      // Crea un nome significativo per il chunk
+                      const safeTitlePart = topicTitle.substring(0, 15).replace(/[^a-zA-Z0-9]/g, '_');
+                      const chunkFileName = `${originalFile.name.replace(/\.pdf$/i, '')}_${safeTitlePart}_p${firstPage}-${lastPage}.pdf`;
+                      
+                      chunksProcessedCount++;
+                      try {
+                          const progressMsgChunk = `Creazione/Upload chunk ${chunksProcessedCount}/${totalChunksToCreate || '?'}: ${chunkFileName.substring(0,30)}...`;
+                          progressCallback({ type: 'processing', message: progressMsgChunk });
+
+                          const chunkFile = await createPdfChunk(originalFile, sortedPages, chunkFileName, (msg) => progressCallback({type:'processing', message:msg}));
+                          if (chunkFile) {
+                              progressCallback({ type: 'processing', message: `Caricamento chunk ${chunkFileName}...` });
+                              const uploadedChunk = await googleDriveService.uploadFile(chunkFile, (percent) => progressCallback({ type: 'upload', phase: 'chunk', fileName: chunkFileName, percent: percent }));
+                              topicSources.push({
+                                  type: 'pdf_chunk',
+                                  chunkDriveId: uploadedChunk.driveFileId || uploadedChunk.id,
+                                  chunkName: chunkFileName,
+                                  webViewLink: uploadedChunk.webViewLink,
+                                  originalFileId: originalFileInfoFromDrive.driveFileId,
+                                  originalFileName: originalFileInfoFromDrive.name,
+                                  pageStart: firstPage,
+                                  pageEnd: lastPage
+                              });
+                              progressCallback({ type: 'processing', message: `Chunk ${chunkFileName} caricato.` });
+                          } else {
+                              topicSources.push({ 
+                                  type: 'error_chunk', 
+                                  name: chunkFileName, 
+                                  error: 'Creazione fallita (pdfProcessor)', 
+                                  originalFileId: originalFileInfoFromDrive.driveFileId, 
+                                  originalFileName: originalFileInfoFromDrive.name 
+                              });
+                          }
+                      } catch (chunkError) {
+                          console.error(`Finalize: ERROR during chunk handling for ${chunkFileName}`, chunkError);
+                          progressCallback({ type: 'error', message: `Errore chunk ${chunkFileName}: ${chunkError.message}` });
+                          topicSources.push({ 
+                              type: 'error_chunk', 
+                              name: chunkFileName, 
+                              error: chunkError.message, 
+                              originalFileId: originalFileInfoFromDrive.driveFileId, 
+                              originalFileName: originalFileInfoFromDrive.name 
+                          });
+                      }
+                  }
+              } else if (topicDetailsFromAI?.pages_info && topicDetailsFromAI.pages_info.length > 0) {
+                  // Fallback - se l'utente non ha selezionato pagine, usa i suggerimenti AI originali
+                  console.log(`Finalize: No user selections for topic "${topicTitle}", using AI suggestions.`);
+                  
+                  for (const pInfo of topicDetailsFromAI.pages_info) {
+                      const originalFile = originalFileObjects[pInfo.pdf_index];
+                      const originalFileInfoFromDrive = originalFilesInfo.find(f => f.originalFileIndex === pInfo.pdf_index);
+                      
+                      if (!originalFile || !originalFileInfoFromDrive) continue;
+                      
+                      const pageNumbers = [];
+                      for (let i = pInfo.start_page; i <= pInfo.end_page; i++) {
+                          pageNumbers.push(i);
+                      }
+                      
+                      if (pageNumbers.length === 0) continue;
+                      
+                      const firstPage = Math.min(...pageNumbers);
+                      const lastPage = Math.max(...pageNumbers);
+                      const safeTitlePart = topicTitle.substring(0, 15).replace(/[^a-zA-Z0-9]/g, '_');
+                      const chunkFileName = `${originalFile.name.replace(/\.pdf$/i, '')}_${safeTitlePart}_p${firstPage}-${lastPage}.pdf`;
+                      
+                      chunksProcessedCount++;
+                      try {
+                          const progressMsgChunk = `Creazione/Upload chunk ${chunksProcessedCount}/${totalChunksToCreate || '?'}: ${chunkFileName.substring(0,30)}...`;
+                          progressCallback({ type: 'processing', message: progressMsgChunk });
+
+                          const chunkFile = await createPdfChunk(originalFile, pageNumbers, chunkFileName, (msg) => progressCallback({type:'processing', message:msg}));
+                          // Resto del codice per upload e gestione errori come sopra
+                          if (chunkFile) {
+                              progressCallback({ type: 'processing', message: `Caricamento chunk ${chunkFileName}...` });
+                              const uploadedChunk = await googleDriveService.uploadFile(chunkFile, (percent) => progressCallback({ type: 'upload', phase: 'chunk', fileName: chunkFileName, percent: percent }));
+                              topicSources.push({
+                                  type: 'pdf_chunk',
+                                  chunkDriveId: uploadedChunk.driveFileId || uploadedChunk.id,
+                                  chunkName: chunkFileName,
+                                  webViewLink: uploadedChunk.webViewLink,
+                                  originalFileId: originalFileInfoFromDrive.driveFileId,
+                                  originalFileName: originalFileInfoFromDrive.name,
+                                  pageStart: firstPage,
+                                  pageEnd: lastPage
+                              });
+                              progressCallback({ type: 'processing', message: `Chunk ${chunkFileName} caricato.` });
+                          } else {
+                              topicSources.push({ 
+                                  type: 'error_chunk', 
+                                  name: chunkFileName, 
+                                  error: 'Creazione fallita (pdfProcessor)', 
+                                  originalFileId: originalFileInfoFromDrive.driveFileId, 
+                                  originalFileName: originalFileInfoFromDrive.name 
+                              });
+                          }
+                      } catch (chunkError) {
+                          console.error(`Finalize: ERROR during chunk handling for ${chunkFileName}`, chunkError);
+                          progressCallback({ type: 'error', message: `Errore chunk ${chunkFileName}: ${chunkError.message}` });
+                          topicSources.push({ 
+                              type: 'error_chunk', 
+                              name: chunkFileName, 
+                              error: chunkError.message, 
+                              originalFileId: originalFileInfoFromDrive.driveFileId, 
+                              originalFileName: originalFileInfoFromDrive.name 
+                          });
+                      }
+                  }
+              } else {
+                  // Caso estremo: nessuna selezione e nessun suggerimento AI
+                  console.warn(`Finalize: No user selections or AI suggestions for topic "${topicTitle}" (Day ${dayNumber}). Applying fallback to original files.`);
+                  topicSources.push(...originalFilesInfo.map(f => ({ 
+                      type: 'pdf_original', 
+                      driveFileId: f.driveFileId, 
+                      name: f.name, 
+                      webViewLink: f.webViewLink 
+                  })));
+              }
+            }
+              console.log(`[DEBUG] Finalize: Final sources collected for topic "${topicTitle}" (Day ${dayNumber}):`, JSON.stringify(topicSources));
+              topicsDataForFirestore.push({
+                  id: topicId,
+                  title: topicTitle,
+                  description: topicDetailsFromAI?.description || assignedTopic.description || '',
+                  assignedDay: dayNumber,
+                  orderInDay: topicIndexInDay,
+                  isCompleted: false,
+                  sources: topicSources
+              });
+              console.log(`--- Finished Finalizing Topic: "${topicTitle}" ---`);
+          }
+      }
+
+      const projectCoreData = {
+         title: formData.title, examName: formData.examName, totalDays: formData.totalDays,
+         description: formData.description, userId: user.uid,
+         originalFiles: originalFilesInfo.map(({originalFileIndex, ...rest}) => rest),
+         aiModelUsed: 'gemini-1.5-flash-latest (direct PDF, 2-step, reviewed)', // Aggiorna modello usato
+         dailyPlan: finalDailyPlanMap,
+      };
+
+      setLoadingMessage('Salvataggio finale del piano...');
+      console.log("CreateProject/handleConfirmReview: Saving final plan to Firestore...");
+      const finalProjectId = await saveProjectWithPlan(projectCoreData, topicsDataForFirestore);
+      console.log("CreateProject/handleConfirmReview: Final plan saved! Project ID:", finalProjectId);
+
+      setLoadingMessage('');
+      setIsFinalizing(false);
+      setSuccess('Piano finalizzato e materiale generato con successo! Reindirizzamento...');
+      setTimeout(() => { navigate(`/projects/${finalProjectId}/plan`); }, 1500);
+
+  } catch(error) {
+      console.error("CreateProject/handleConfirmReview: Error during finalization phase:", error);
+      setFinalizationError(`Errore Fase 2: ${error.message}` || 'Errore imprevisto durante la finalizzazione.');
+      setIsFinalizing(false); setLoadingMessage('');
+  }
+  
+};
+
   const handleCancelReview = () => {
       console.log("CreateProject: Review cancelled by user.");
       setShowReviewModal(false);
       setProvisionalPlanData(null);
   };
 
-  // --- JSX ---
   return (
     <>
       <NavBar />
@@ -455,10 +531,9 @@ const CreateProject = () => {
         <div className="create-project-container">
           <div className="create-project-header">
             <h1 className="page-title">Genera Piano di Studio (AI + Revisione)</h1>
-            <p className="page-subtitle">Carica i PDF, l'AI proporrà una struttura, tu confermerai le pagine.</p>
+            <p className="page-subtitle">Carica i PDF, l'AI analizzerà direttamente i file e proporrà una struttura, tu confermerai.</p>
           </div>
 
-           {/* Messaggi di Stato */}
            {error && !isFinalizing && (
                 <div className="message error-message">
                     <AlertCircle size={20} /> <span>{error}</span>
@@ -475,11 +550,9 @@ const CreateProject = () => {
                </div>
            )}
 
-          {/* Form */}
           <form className="create-project-form" onSubmit={handleSubmit}>
               <fieldset disabled={serviceStatus.initializing || loading || isFinalizing} style={{ border: 'none', padding: 0, margin: 0 }}>
                   <div className="form-grid">
-                      {/* Sezione Info Base */}
                       <div className="form-section">
                           <h2 className="section-title">Informazioni Base</h2>
                           <div className="form-group">
@@ -512,7 +585,6 @@ const CreateProject = () => {
                           </div>
                       </div>
 
-                      {/* Sezione Materiale Studio */}
                       <div className="form-section">
                           <h2 className="section-title">Materiale Studio</h2>
                           <div className="form-group">
@@ -524,7 +596,6 @@ const CreateProject = () => {
                                   </div>
                                   <p className="file-upload-info">Carica libri, dispense, appunti.<br /><small>Max {googleDriveService.MAX_FILE_SIZE_MB || 50}MB/file.</small></p>
                               </div>
-                              {/* Lista File e Progress Upload */}
                               {files.length > 0 && (
                                   <div className="file-list">
                                       <h3>File Selezionati ({files.length}):</h3>
@@ -537,7 +608,6 @@ const CreateProject = () => {
                                                       {isOriginalUploaded ? <CopyCheck size={16} className="file-icon" color="green"/> : <FilePlus size={16} className="file-icon" />}
                                                       <span className="file-name" title={file.name}>{file.name.length > 35 ? file.name.substring(0,32)+'...' : file.name}</span>
                                                       <span className="file-size">{(file.size / (1024 * 1024)).toFixed(2)} MB</span>
-                                                      {/* Barra progresso originale */}
                                                       {progressInfo?.phase === 'original' && !isOriginalUploaded && (
                                                            <div className="upload-progress-bar-container" title="Caricamento originale">
                                                                <div className="upload-progress-bar" style={{ width: `${Math.round(progressInfo.percent)}%` }}></div>
@@ -550,7 +620,6 @@ const CreateProject = () => {
                                               );
                                           })}
                                       </ul>
-                                      {/* Lista progress chunk */}
                                        {Object.values(uploadProgress).some(p => p.phase === 'chunk') && (
                                            <div className="chunk-progress-list" style={{marginTop: '15px'}}>
                                                <h4>Progresso upload sezioni PDF:</h4>
@@ -578,7 +647,6 @@ const CreateProject = () => {
                       </div>
                   </div>
 
-                   {/* Pulsante Submit (Avvia Fase 1) */}
                    <div className="form-actions">
                      <button type="button" className="cancel-btn" onClick={() => navigate('/projects')} > Annulla </button>
                      <button type="submit" className="submit-btn" disabled={!serviceStatus.ready || files.length === 0 || loading || isFinalizing || serviceStatus.initializing}>
@@ -593,11 +661,10 @@ const CreateProject = () => {
         </div>
       </div>
 
-       {/* --- MODALE DI REVISIONE --- */}
        <PlanReviewModal
            isOpen={showReviewModal}
            provisionalPlanData={provisionalPlanData}
-           originalFiles={files} // <-- Passa l'array di File object originali
+           originalFiles={files}
            onConfirm={handleConfirmReview}
            onCancel={handleCancelReview}
            isFinalizing={isFinalizing}

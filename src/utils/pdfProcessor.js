@@ -89,6 +89,8 @@ export const extractTextFromFiles = async (files, onProgress) => {
 };
 
 
+// Correzione per la funzione createPdfChunk in pdfProcessor.js
+
 /**
  * Crea un nuovo file PDF contenente solo le pagine specificate da un file originale.
  * @param {File} originalFile - Il file PDF originale.
@@ -102,13 +104,29 @@ export const createPdfChunk = async (originalFile, pageNumbers, chunkFileName, o
     console.log(`[DEBUG] pdfProcessor/createPdfChunk: Ricevuto originalFile.name: ${originalFile?.name}`);
     console.log(`[DEBUG] pdfProcessor/createPdfChunk: Ricevuto pageNumbers (1-based):`, JSON.stringify(pageNumbers));
 
-    if (!originalFile || typeof originalFile.arrayBuffer !== 'function') { /* ... errore ... */ return null; }
-    if (!pageNumbers || !Array.isArray(pageNumbers) || pageNumbers.length === 0) { /* ... errore ... */ return null; }
+    if (!originalFile || typeof originalFile.arrayBuffer !== 'function') {
+        console.error(`pdfProcessor/createPdfChunk: Invalid originalFile object for ${chunkFileName}`);
+        return null;
+    }
+    
+    if (!pageNumbers || !Array.isArray(pageNumbers) || pageNumbers.length === 0) {
+        console.error(`pdfProcessor/createPdfChunk: Invalid pageNumbers array for ${chunkFileName}:`, pageNumbers);
+        return null;
+    }
 
     // Filtra e converte a 0-based
-    const validNumericPageNumbers = pageNumbers.filter(n => typeof n === 'number' && !isNaN(n) && n > 0);
-    if (validNumericPageNumbers.length === 0) { /* ... errore ... */ return null; }
-    if (validNumericPageNumbers.length !== pageNumbers.length) { /* ... warning ... */ }
+    const validNumericPageNumbers = pageNumbers
+        .filter(n => typeof n === 'number' && !isNaN(n) && n > 0)
+        .map(n => Math.floor(n)); // Assicura che siano interi
+
+    if (validNumericPageNumbers.length === 0) {
+        console.error(`pdfProcessor/createPdfChunk: No valid page numbers found in:`, pageNumbers);
+        return null;
+    }
+    
+    if (validNumericPageNumbers.length !== pageNumbers.length) {
+        console.warn(`pdfProcessor/createPdfChunk: Some invalid page numbers were filtered out from:`, pageNumbers);
+    }
 
     const zeroBasedPageIndices = validNumericPageNumbers.map(n => n - 1);
     console.log(`[DEBUG] pdfProcessor/createPdfChunk: Indici 0-based calcolati per "${chunkFileName}":`, JSON.stringify(zeroBasedPageIndices));
@@ -116,10 +134,9 @@ export const createPdfChunk = async (originalFile, pageNumbers, chunkFileName, o
     onProgress?.(`Creazione chunk PDF: ${chunkFileName}...`);
     console.log(`PDFProcessor: Creating chunk ${chunkFileName} with valid pages (1-based): ${validNumericPageNumbers.join(',')}`);
 
-    let pdfDoc = null;
     try {
         const arrayBuffer = await originalFile.arrayBuffer();
-        pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
+        const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
         const pageCount = pdfDoc.getPageCount();
         console.log(`[DEBUG] pdfProcessor/createPdfChunk: Documento "${originalFile.name}" caricato (pdf-lib). Pagine: ${pageCount}`);
 
@@ -127,8 +144,14 @@ export const createPdfChunk = async (originalFile, pageNumbers, chunkFileName, o
         const validIndices = zeroBasedPageIndices.filter(index => index >= 0 && index < pageCount);
         console.log(`[DEBUG] pdfProcessor/createPdfChunk: Indici 0-based validati (vs ${pageCount} pagine):`, JSON.stringify(validIndices));
 
-        if (validIndices.length === 0) { /* ... errore ... */ return null; }
-        if (validIndices.length < zeroBasedPageIndices.length) { /* ... warning ... */ }
+        if (validIndices.length === 0) {
+            console.error(`pdfProcessor/createPdfChunk: No valid page indices found for document with ${pageCount} pages.`);
+            return null;
+        }
+        
+        if (validIndices.length < zeroBasedPageIndices.length) {
+            console.warn(`pdfProcessor/createPdfChunk: Some page indices were out of range for document with ${pageCount} pages.`);
+        }
 
         // Crea/Salva chunk
         const chunkDoc = await PDFDocument.create();
@@ -146,7 +169,6 @@ export const createPdfChunk = async (originalFile, pageNumbers, chunkFileName, o
         onProgress?.(`Errore creazione chunk: ${chunkFileName}.`);
         return null;
     } finally {
-        pdfDoc = null;
         console.log(`[DEBUG] pdfProcessor/createPdfChunk: FINE per "${chunkFileName}"`);
     }
 };

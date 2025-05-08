@@ -219,6 +219,24 @@ const StudyPlanViewer = () => {
                                         <span style={{ color: 'red', fontStyle: 'italic' }}>Link fonte mancante</span>
                                      </>
                                  )}
+                                 {/* NUOVO: Gestione specifica per le note di simulazione d'esame */}
+{source.type === 'note' && source.noteType === 'exam_simulation' && (
+    <>
+      <FileText size={12} style={{ marginRight: '4px', color: '#ff9800', flexShrink: 0 }}/>
+      <span style={{ fontStyle: 'italic', color: '#ff9800' }}>
+        {source.description || 'Simulazione d\'esame - Nessun materiale specifico collegato.'}
+      </span>
+    </>
+)}
+{/* NUOVO: Gestione specifica per le note di ripasso */}
+{source.type === 'note' && source.noteType === 'review' && (
+    <>
+      <BookOpen size={12} style={{ marginRight: '4px', color: '#4caf50', flexShrink: 0 }}/>
+      <span style={{ fontStyle: 'italic', color: '#4caf50' }}>
+        {source.description || 'Ripasso generale argomenti precedenti.'}
+      </span>
+    </>
+)}
                               </li>
                             ))}
                          </ul>
