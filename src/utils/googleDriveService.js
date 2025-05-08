@@ -10,6 +10,7 @@ class GoogleDriveService {
   static MAX_INITIALIZATION_ATTEMPTS = 3;
   static gapiLoaded = false;
   static gsiLoaded = false;
+  static tokenPromise = null; 
   
   constructor() {
     // Implementazione del pattern singleton
@@ -284,49 +285,75 @@ class GoogleDriveService {
 
   // Ottieni il token di accesso usando Google Identity Services (GSI)
   async getAccessToken() {
+    // Se abbiamo già un token valido (non scaduto), restituiscilo.
+    // NOTA: questo codice non verifica la scadenza del token. Per una maggiore robustezza,
+    // si potrebbe aggiungere un controllo sulla scadenza o invalidare il token in caso di errore 401.
     if (this.accessToken) {
-      console.log('GoogleDriveService: Using existing access token');
-      return this.accessToken;
+        console.log('GoogleDriveService: Using existing access token');
+        return this.accessToken;
     }
 
-    return new Promise((resolve, reject) => {
-      try {
-        // Verifica che GSI sia caricato
-        if (!window.google || !window.google.accounts || !window.google.accounts.oauth2) {
-          reject(new Error('Google Identity Services non è caricato'));
-          return;
-        }
-        
-        // Crea un tokenClient solo se non esiste
-        if (!this.tokenClient) {
-          this.tokenClient = window.google.accounts.oauth2.initTokenClient({
-            client_id: this.CLIENT_ID,
-            scope: this.SCOPES,
-            callback: (response) => {
-              console.log('GoogleDriveService: Token response received');
-              if (response.access_token) {
-                this.accessToken = response.access_token;
-                resolve(response.access_token);
-              } else {
-                reject(new Error('Failed to get access token'));
-              }
-            },
-            error_callback: (error) => {
-              console.error('GoogleDriveService: Token error', error);
-              reject(error);
-            }
-          });
-        }
+    // Se una richiesta di token è già in corso, attendi quella promise esistente.
+    if (GoogleDriveService.tokenPromise) {
+        console.log('GoogleDriveService: Access token request already in progress, returning existing promise');
+        return GoogleDriveService.tokenPromise;
+    }
 
-        // Richiedi il token
-        console.log('GoogleDriveService: Requesting access token...');
-        this.tokenClient.requestAccessToken();
-      } catch (error) {
-        console.error('GoogleDriveService: Error creating token client', error);
-        reject(error);
-      }
+    console.log('GoogleDriveService: Creating new access token promise');
+    // Crea una nuova promise per questa richiesta di token e memorizzala staticamente.
+    GoogleDriveService.tokenPromise = new Promise((resolve, reject) => {
+        try {
+            if (!window.google || !window.google.accounts || !window.google.accounts.oauth2) {
+                GoogleDriveService.tokenPromise = null; // Resetta in caso di errore immediato
+                reject(new Error('Google Identity Services non è caricato'));
+                return;
+            }
+
+            // Inizializza tokenClient solo se non esiste.
+            // La callback di initTokenClient verrà usata per risolvere/rigettare la promise condivisa.
+            if (!this.tokenClient) {
+                console.log('GoogleDriveService: Initializing token client for getAccessToken');
+                this.tokenClient = window.google.accounts.oauth2.initTokenClient({
+                    client_id: this.CLIENT_ID,
+                    scope: this.SCOPES,
+                    callback: (response) => { // Questa callback viene chiamata da GSI
+                        console.log('GoogleDriveService: Token response received from GSI callback');
+                        if (response.access_token) {
+                            this.accessToken = response.access_token;
+                            console.log('GoogleDriveService: Access token obtained and stored.');
+                            GoogleDriveService.tokenPromise = null; // Resetta la promise condivisa per future richieste
+                            resolve(this.accessToken);
+                        } else {
+                            console.error('GoogleDriveService: GSI callback - Failed to get access token, response:', response);
+                            GoogleDriveService.tokenPromise = null;
+                            reject(new Error('Failed to get access token from GSI callback'));
+                        }
+                    },
+                    error_callback: (error) => {
+                        console.error('GoogleDriveService: GSI Token error_callback', error);
+                        GoogleDriveService.tokenPromise = null; // Resetta la promise condivisa
+                        reject(new Error(`GSI token error: ${error.type || error.message || 'Unknown error'}`));
+                    }
+                });
+                console.log('GoogleDriveService: Token client initialized.');
+            } else {
+                console.log('GoogleDriveService: Using existing token client.');
+            }
+            
+            console.log('GoogleDriveService: Requesting access token via GSI...');
+            // Richiedi il token. Se l'utente non è loggato o il consenso non è dato,
+            // GSI gestirà il flusso (es. mostrando un popup).
+            // Aggiungere {prompt: ''} può tentare di ottenere il token senza interazione utente se possibile.
+            this.tokenClient.requestAccessToken({ prompt: '' });
+
+        } catch (error) {
+            console.error('GoogleDriveService: Error in getAccessToken promise setup', error);
+            GoogleDriveService.tokenPromise = null; // Resetta la promise condivisa
+            reject(error);
+        }
     });
-  }
+    return GoogleDriveService.tokenPromise;
+}
 
   // Verifica se l'utente è autenticato
   async ensureAuthenticated() {
