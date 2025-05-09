@@ -1,18 +1,23 @@
-// src/components/StudyPlanViewer.jsx (o .js)
-import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { doc, getDoc, collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { db } from '../utils/firebase'; // Assicurati che il percorso sia corretto
-import NavBar from './NavBar'; // Importa NavBar se la usi qui
-import { Loader, BookOpen, Calendar, CheckSquare, Square, Link as LinkIcon, FileText, AlertTriangle } from 'lucide-react';
-// import './styles/StudyPlanViewer.css'; // Decommenta se crei un file CSS dedicato
+// src/components/StudyPlanViewer.jsx
+import React, { useState, useEffect } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { doc, getDoc, collection, getDocs, query, orderBy, updateDoc } from 'firebase/firestore';
+import { db } from '../utils/firebase';
+import NavBar from './NavBar';
+import { 
+  Loader, BookOpen, Calendar, CheckSquare, Square, Link as LinkIcon, 
+  FileText, AlertTriangle, ArrowLeft, Clock, Book
+} from 'lucide-react';
+import './styles/StudyPlanViewer.css';
 
 const StudyPlanViewer = () => {
-  const { projectId } = useParams(); // Ottiene projectId dall'URL
-  const [project, setProject] = useState(null); // Inizia come null
+  const { projectId } = useParams();
+  const navigate = useNavigate();
+  const [project, setProject] = useState(null);
   const [topics, setTopics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [currentDay, setCurrentDay] = useState(1); // Per navigare tra i giorni
 
   useEffect(() => {
     const fetchPlanData = async () => {
@@ -21,12 +26,10 @@ const StudyPlanViewer = () => {
         setLoading(false);
         return;
       }
-      console.log(`StudyPlanViewer: Fetching data for project ID: ${projectId}`);
+      
       setLoading(true);
       setError('');
-      setProject(null); // Resetta project prima di un nuovo fetch
-      setTopics([]);    // Resetta topics
-
+      
       try {
         // Fetch project details
         const projectRef = doc(db, 'projects', projectId);
@@ -36,232 +39,358 @@ const StudyPlanViewer = () => {
           console.error(`StudyPlanViewer: Project with ID ${projectId} not found.`);
           throw new Error("Progetto non trovato.");
         }
+        
         const projectData = projectSnap.data();
-        console.log("StudyPlanViewer: Project data fetched:", projectData);
-        setProject(projectData); // Imposta lo stato project QUI
-
+        setProject(projectData);
+        
         // Fetch topics from subcollection, ordered
         const topicsRef = collection(db, 'projects', projectId, 'topics');
-        const q = query(topicsRef, orderBy("assignedDay"), orderBy("orderInDay")); // Ordina per giorno e poi per ordine interno
+        const q = query(topicsRef, orderBy("assignedDay"), orderBy("orderInDay"));
         const topicsSnap = await getDocs(q);
 
-        const topicsData = topicsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        console.log("StudyPlanViewer: Topics data fetched:", topicsData);
-        setTopics(topicsData); // Imposta lo stato topics QUI
+        const topicsData = topicsSnap.docs.map(doc => ({ 
+          id: doc.id, 
+          ...doc.data() 
+        }));
+        
+        setTopics(topicsData);
+        
+        // Imposta il giorno corrente alla giornata attuale (se c'è)
+        if (topicsData.length > 0) {
+          const uniqueDays = [...new Set(topicsData.map(topic => topic.assignedDay))];
+          if (uniqueDays.length > 0) {
+            setCurrentDay(uniqueDays[0]);
+          }
+        }
 
       } catch (err) {
         console.error("StudyPlanViewer: Error fetching study plan:", err);
         setError("Impossibile caricare i dati del piano di studio: " + err.message);
-        setProject(null); // Assicura che project sia null in caso di errore
+        setProject(null);
         setTopics([]);
       } finally {
-        setLoading(false); // Fine caricamento (sia successo che errore)
+        setLoading(false);
       }
     };
 
     fetchPlanData();
-  }, [projectId]); // Esegui effetto quando projectId cambia
+  }, [projectId]);
 
-  // Funzione helper per raggruppare i topic per giorno
-  const groupTopicsByDay = () => {
-    if (!topics || topics.length === 0) return {};
-    return topics.reduce((acc, topic) => {
-      const day = topic.assignedDay;
-      if (!acc[day]) {
-        acc[day] = [];
-      }
-      acc[day].push(topic);
-      // Assicurati che siano ordinati per orderInDay (anche se la query dovrebbe già farlo)
-      // Potrebbe non essere necessario se la query è affidabile
-      // acc[day].sort((a, b) => a.orderInDay - b.orderInDay);
-      return acc;
-    }, {});
+  // Ottieni gli argomenti per il giorno selezionato
+  const topicsForCurrentDay = topics.filter(topic => topic.assignedDay === currentDay);
+  
+  // Giorni disponibili nel piano
+  const availableDays = [...new Set(topics.map(topic => topic.assignedDay))].sort((a, b) => a - b);
+  
+  // Naviga al giorno precedente se disponibile
+  const goToPreviousDay = () => {
+    const currentIndex = availableDays.indexOf(currentDay);
+    if (currentIndex > 0) {
+      setCurrentDay(availableDays[currentIndex - 1]);
+    }
   };
-
-  const groupedTopics = groupTopicsByDay(); // Calcola i gruppi
+  
+  // Naviga al giorno successivo se disponibile
+  const goToNextDay = () => {
+    const currentIndex = availableDays.indexOf(currentDay);
+    if (currentIndex < availableDays.length - 1) {
+      setCurrentDay(availableDays[currentIndex + 1]);
+    }
+  };
+  
+  // Gestisce il cambio di stato "completato" di un argomento
+  const toggleTopicCompleted = async (topicId, currentStatus) => {
+    try {
+      const topicRef = doc(db, 'projects', projectId, 'topics', topicId);
+      await updateDoc(topicRef, {
+        isCompleted: !currentStatus
+      });
+      
+      // Aggiorna lo stato locale
+      setTopics(topics.map(topic => 
+        topic.id === topicId 
+          ? { ...topic, isCompleted: !currentStatus } 
+          : topic
+      ));
+    } catch (err) {
+      console.error("Error updating topic status:", err);
+      // Mostra un messaggio all'utente se necessario
+    }
+  };
+  
+  // Formatta la data in modo più leggibile
+  const formatDate = (timestamp) => {
+    if (!timestamp) return 'Data sconosciuta';
+    
+    // Converte in data se è un timestamp Firebase
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    
+    return date.toLocaleDateString('it-IT', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
 
   // --- RENDER CONDITIONALS ---
 
   // 1. Stato di Caricamento
   if (loading) {
     return (
-      <>
-        <NavBar />
-        <div className="loading-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh', flexDirection: 'column' }}>
-          <Loader size={48} className="spin-icon" />
-          <span style={{ marginTop: '15px', fontSize: '1.2em' }}>Caricamento piano di studio...</span>
-        </div>
-      </>
+      <div className="study-plan-loading">
+        <Loader size={48} className="spin-icon" />
+        <span>Caricamento piano di studio...</span>
+      </div>
     );
   }
 
   // 2. Stato di Errore (durante il fetch)
   if (error) {
     return (
-      <>
+      <div className="study-plan-container">
         <NavBar />
-        <div className="error-container" style={{ padding: '20px', color: '#dc3545', textAlign: 'center', border: '1px solid #f5c6cb', backgroundColor: '#f8d7da', borderRadius: '5px', maxWidth: '600px', margin: '20px auto' }}>
-           <h2 style={{color: '#721c24'}}>Errore nel Caricamento</h2>
-           <p>{error}</p>
-           <Link to="/projects" style={{color: '#0056b3', textDecoration: 'underline'}}>Torna alla lista dei progetti</Link>
+        <div className="error-container">
+          <AlertTriangle size={36} />
+          <h2>Errore nel Caricamento</h2>
+          <p>{error}</p>
+          <button onClick={() => navigate('/projects')} className="back-button">
+            <ArrowLeft size={16} />
+            Torna alla lista dei progetti
+          </button>
         </div>
-      </>
+      </div>
     );
   }
 
-  // 3. Stato Progetto Non Trovato (se fetch ok ma progetto non esiste o è null)
-  // Questo è il controllo cruciale aggiunto
+  // 3. Stato Progetto Non Trovato
   if (!project) {
-     return (
-       <>
-         <NavBar />
-         <div className="error-container" style={{ padding: '20px', textAlign: 'center', color: '#856404', border: '1px solid #ffeeba', backgroundColor: '#fff3cd', borderRadius: '5px', maxWidth: '600px', margin: '20px auto' }}>
-            <h2>Progetto non trovato</h2>
-            <p>Non è stato possibile trovare i dettagli per il progetto con ID: <strong>{projectId}</strong>.</p>
-            <p>Potrebbe essere stato eliminato o l'ID potrebbe essere errato.</p>
-            <Link to="/projects" style={{color: '#0056b3', textDecoration: 'underline'}}>Torna alla lista dei progetti</Link>
-         </div>
-       </>
-     );
+    return (
+      <div className="study-plan-container">
+        <NavBar />
+        <div className="error-container">
+          <AlertTriangle size={36} />
+          <h2>Progetto non trovato</h2>
+          <p>Non è stato possibile trovare i dettagli per il progetto con ID: <strong>{projectId}</strong>.</p>
+          <button onClick={() => navigate('/projects')} className="back-button">
+            <ArrowLeft size={16} />
+            Torna alla lista dei progetti
+          </button>
+        </div>
+      </div>
+    );
   }
 
-  // --- RENDER PRINCIPALE (Se tutto ok: no loading, no error, project esiste) ---
+  // --- RENDER PRINCIPALE ---
   return (
-    <>
+    <div className="study-plan-container">
+      <NavBar />
       
-      <div className="study-plan-viewer-container" style={{ padding: '20px', maxWidth: '1000px', margin: 'auto' }}>
-
-        {/* Intestazione Progetto - Ora sicuro accedere a project.* */}
-        <h1 style={{ borderBottom: '2px solid #eee', paddingBottom: '10px', marginBottom: '15px' }}>{project.title}</h1>
-        <div style={{ marginBottom: '20px', paddingBottom: '15px', borderBottom: '1px dashed #ccc' }}>
-            <p style={{ margin: '5px 0' }}><strong>Esame:</strong> {project.examName}</p>
-            <p style={{ margin: '5px 0' }}><strong>Giorni totali previsti:</strong> {project.totalDays}</p>
-            {project.description && <p style={{ margin: '5px 0' }}><strong>Note/Descrizione:</strong> {project.description}</p>}
-            {/* Potresti voler mostrare i file PDF originali qui */}
-            {project.originalFiles && project.originalFiles.length > 0 && (
-                <div style={{marginTop: '10px'}}>
-                    <strong>File Originali:</strong>
-                    <ul style={{ listStyle: 'none', paddingLeft: '15px', margin: '5px 0 0 0', fontSize: '0.9em' }}>
-                        {project.originalFiles.map((f, idx) => (
-                            <li key={idx}><LinkIcon size={12}/> <a href={f.webViewLink} target="_blank" rel="noopener noreferrer">{f.name}</a></li>
-                        ))}
-                    </ul>
-                </div>
+      <div className="study-plan-content">
+        <div className="study-plan-header">
+          <div className="plan-info">
+            <h1>{project.title}</h1>
+            <div className="plan-details">
+              <div className="plan-detail">
+                <BookOpen size={16} />
+                <span>Esame: {project.examName}</span>
+              </div>
+              
+              <div className="plan-detail">
+                <Calendar size={16} />
+                <span>Giorni: {project.totalDays}</span>
+              </div>
+              
+              <div className="plan-detail">
+                <Clock size={16} />
+                <span>Creato il: {formatDate(project.createdAt)}</span>
+              </div>
+            </div>
+            
+            {project.description && (
+              <div className="plan-description">
+                <p>{project.description}</p>
+              </div>
             )}
+          </div>
+          
+          <div className="navigation-controls">
+            <button 
+              onClick={goToPreviousDay} 
+              className="nav-button"
+              disabled={availableDays.indexOf(currentDay) === 0}
+            >
+              Giorno Precedente
+            </button>
+            
+            <div className="day-selector">
+              <span>Giorno</span>
+              <select 
+                value={currentDay} 
+                onChange={(e) => setCurrentDay(parseInt(e.target.value))}
+              >
+                {availableDays.map(day => (
+                  <option key={day} value={day}>
+                    {day}
+                  </option>
+                ))}
+              </select>
+              <span>di {availableDays.length}</span>
+            </div>
+            
+            <button 
+              onClick={goToNextDay} 
+              className="nav-button"
+              disabled={availableDays.indexOf(currentDay) === availableDays.length - 1}
+            >
+              Giorno Successivo
+            </button>
+          </div>
         </div>
-
-
-        <h2 style={{ marginTop: '30px' }}>Piano Giornaliero Dettagliato</h2>
-
-        {/* Mappa dei Giorni e Topic */}
-        {Object.keys(groupedTopics).length > 0 ? (
-          Object.keys(groupedTopics).sort((a, b) => parseInt(a) - parseInt(b)).map(day => (
-            <div key={day} className="day-section" style={{ marginBottom: '30px', border: '1px solid #ddd', padding: '15px', borderRadius: '8px', backgroundColor: '#fdfdfd' }}>
-              <h3 style={{ marginTop: 0, borderBottom: '1px solid #eee', paddingBottom: '8px', display: 'flex', alignItems: 'center' }}>
-                  <Calendar size={18} style={{ marginRight: '8px', verticalAlign: 'bottom', color: '#555' }}/> Giorno {day}
-              </h3>
-              {groupedTopics[day].map((topic, topicIdx) => (
-                <div key={topic.id || topicIdx} className="topic-item" style={{ marginLeft: '10px', marginBottom: '15px', paddingLeft: '10px', borderLeft: '3px solid #007bff' }}>
-                  <h4 style={{ marginBottom: '5px', display: 'flex', alignItems: 'center' }}>
-                     {/* TODO: Aggiungere funzionalità onClick per cambiare stato isCompleted */}
-                     {topic.isCompleted ?
-                         <CheckSquare size={16} style={{ marginRight: '7px', color: 'green', cursor: 'pointer' }} title="Segna come non completato"/>
-                         :
-                         <Square size={16} style={{ marginRight: '7px', color: '#aaa', cursor: 'pointer' }} title="Segna come completato"/>
-                     }
-                     <BookOpen size={16} style={{ marginRight: '5px', verticalAlign: 'bottom', color: '#007bff' }}/>
-                     {topic.title}
-                  </h4>
-                   {topic.description && <p style={{ fontSize: '0.9em', color: '#555', margin: '0 0 8px 28px' }}>{topic.description}</p>}
-
-                   {/* Sezione Fonti per il Topic */}
-                   {topic.sources && topic.sources.length > 0 && (
-                      <div className="topic-sources" style={{ marginLeft: '28px', fontSize:'0.85em' }}>
-                         <strong>Materiale di Studio:</strong>
-                         <ul style={{ listStyle: 'none', paddingLeft: '10px', margin: '5px 0 0 0' }}>
-                            {topic.sources.map((source, idx) => (
-                              <li key={idx} style={{ margin: '3px 0', display: 'flex', alignItems: 'center' }}>
-                                {source.type === 'pdf_chunk' && source.webViewLink && (
-                                  <>
-                                    <FileText size={12} style={{ marginRight: '4px', color: '#0056b3', flexShrink: 0 }}/>
-                                    <a href={source.webViewLink} target="_blank" rel="noopener noreferrer" title={`Apri sezione: ${source.chunkName || 'Sezione PDF'}`}>
-                                      {source.chunkName || `Sezione PDF (p${source.pageStart}-${source.pageEnd})`}
-                                    </a>
-                                    {source.originalFileName && <span style={{ fontSize: '0.9em', color: '#666', marginLeft: '5px' }}> (da: {source.originalFileName})</span>}
-                                  </>
+        
+        <div className="day-content">
+          <h2 className="day-title">
+            <Calendar size={20} />
+            Giorno {currentDay}
+          </h2>
+          
+          {topicsForCurrentDay.length === 0 ? (
+            <div className="empty-day">
+              <Book size={36} strokeWidth={1} />
+              <p>Nessun argomento pianificato per questo giorno.</p>
+            </div>
+          ) : (
+            <div className="topics-list">
+              {topicsForCurrentDay.map(topic => (
+                <div 
+                  key={topic.id} 
+                  className={`topic-item ${topic.isCompleted ? 'completed' : ''}`}
+                >
+                  <div className="topic-header">
+                    <div 
+                      className="topic-checkbox" 
+                      onClick={() => toggleTopicCompleted(topic.id, topic.isCompleted)}
+                    >
+                      {topic.isCompleted ? (
+                        <CheckSquare size={20} className="checkbox-icon" />
+                      ) : (
+                        <Square size={20} className="checkbox-icon" />
+                      )}
+                    </div>
+                    
+                    <h3 className="topic-title">{topic.title}</h3>
+                    
+                    {topic.isCompleted ? (
+                      <span className="completed-badge">Completato</span>
+                    ) : null}
+                  </div>
+                  
+                  {topic.description && (
+                    <p className="topic-description">{topic.description}</p>
+                  )}
+                  
+                  {topic.sources && topic.sources.length > 0 ? (
+                    <div className="topic-sources">
+                      <h4>Materiale di Studio:</h4>
+                      <ul className="sources-list">
+                        {topic.sources.map((source, idx) => (
+                          <li key={idx} className={`source-item source-type-${source.type}`}>
+                            {source.type === 'pdf_chunk' && source.webViewLink && (
+                              <>
+                                <FileText size={16} className="source-icon" />
+                                <a 
+                                  href={source.webViewLink} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  className="source-link"
+                                >
+                                  {source.chunkName || `Sezione PDF (p${source.pageStart}-${source.pageEnd})`}
+                                </a>
+                                {source.originalFileName && (
+                                  <span className="source-origin">
+                                    da: {source.originalFileName}
+                                  </span>
                                 )}
-                                {source.type === 'pdf_original' && source.webViewLink && ( // Fallback
-                                  <>
-                                    <FileText size={12} style={{ marginRight: '4px', color: '#666', flexShrink: 0 }}/>
-                                    <a href={source.webViewLink} target="_blank" rel="noopener noreferrer" title={`Apri file completo: ${source.name}`}>
-                                      {source.name} <em style={{color:'#555'}}>(File Intero)</em>
-                                    </a>
-                                  </>
-                                )}
-                                 {source.type === 'web_link' && source.url && ( // Per future aggiunte manuali
-                                    <>
-                                      <LinkIcon size={12} style={{ marginRight: '4px', flexShrink: 0 }}/>
-                                      <a href={source.url} target="_blank" rel="noopener noreferrer">{source.title || source.url}</a>
-                                    </>
-                                 )}
-                                 {source.type === 'error_chunk' && ( // Mostra errore se chunk fallito
-                                     <>
-                                        <AlertTriangle size={12} style={{ marginRight: '4px', color: 'orange', flexShrink: 0 }}/>
-                                        <span style={{ color: 'orange', fontStyle: 'italic' }} title={source.error}>
-                                            Errore creazione sezione: {source.name || 'N/D'} {source.originalFileName ? `(da ${source.originalFileName})` : ''}
-                                        </span>
-                                     </>
-                                 )}
-                                 {/* Caso per tipo fonte non riconosciuto o link mancante */}
-                                 {(!source.webViewLink && !source.url && source.type !== 'error_chunk') && (
-                                     <>
-                                        <AlertTriangle size={12} style={{ marginRight: '4px', color: 'red', flexShrink: 0 }}/>
-                                        <span style={{ color: 'red', fontStyle: 'italic' }}>Link fonte mancante</span>
-                                     </>
-                                 )}
-                                 {/* NUOVO: Gestione specifica per le note di simulazione d'esame */}
-{source.type === 'note' && source.noteType === 'exam_simulation' && (
-    <>
-      <FileText size={12} style={{ marginRight: '4px', color: '#ff9800', flexShrink: 0 }}/>
-      <span style={{ fontStyle: 'italic', color: '#ff9800' }}>
-        {source.description || 'Simulazione d\'esame - Nessun materiale specifico collegato.'}
-      </span>
-    </>
-)}
-{/* NUOVO: Gestione specifica per le note di ripasso */}
-{source.type === 'note' && source.noteType === 'review' && (
-    <>
-      <BookOpen size={12} style={{ marginRight: '4px', color: '#4caf50', flexShrink: 0 }}/>
-      <span style={{ fontStyle: 'italic', color: '#4caf50' }}>
-        {source.description || 'Ripasso generale argomenti precedenti.'}
-      </span>
-    </>
-)}
-                              </li>
-                            ))}
-                         </ul>
-                      </div>
-                   )}
-                   {/* Se non ci sono fonti per un topic */}
-                   {(!topic.sources || topic.sources.length === 0) && (
-                       <p style={{ marginLeft: '28px', fontSize:'0.85em', color: '#888', fontStyle: 'italic' }}>Nessun materiale specifico collegato.</p>
-                   )}
-
-                </div> // Fine topic-item
+                              </>
+                            )}
+                            
+                            {source.type === 'pdf_original' && source.webViewLink && (
+                              <>
+                                <FileText size={16} className="source-icon" />
+                                <a 
+                                  href={source.webViewLink} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="source-link"
+                                >
+                                  {source.name} <span className="source-note">(File Intero)</span>
+                                </a>
+                              </>
+                            )}
+                            
+                            {source.type === 'web_link' && source.url && (
+                              <>
+                                <LinkIcon size={16} className="source-icon" />
+                                <a 
+                                  href={source.url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="source-link"
+                                >
+                                  {source.title || source.url}
+                                </a>
+                              </>
+                            )}
+                            
+                            {source.type === 'error_chunk' && (
+                              <>
+                                <AlertTriangle size={16} className="source-icon" />
+                                <span className="source-error" title={source.error}>
+                                  Errore creazione sezione: {source.name || 'N/D'} 
+                                  {source.originalFileName && ` (da ${source.originalFileName})`}
+                                </span>
+                              </>
+                            )}
+                            
+                            {source.type === 'note' && source.noteType === 'exam_simulation' && (
+                              <>
+                                <FileText size={16} className="source-icon" />
+                                <span className="source-note exam-note">
+                                  {source.description || 'Simulazione d\'esame - Nessun materiale specifico collegato.'}
+                                </span>
+                              </>
+                            )}
+                            
+                            {source.type === 'note' && source.noteType === 'review' && (
+                              <>
+                                <BookOpen size={16} className="source-icon" />
+                                <span className="source-note review-note">
+                                  {source.description || 'Ripasso generale argomenti precedenti.'}
+                                </span>
+                              </>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : (
+                    <p className="no-sources">Nessun materiale di studio specificato.</p>
+                  )}
+                </div>
               ))}
-            </div> // Fine day-section
-          ))
-        ) : (
-          <p style={{ fontStyle: 'italic', color: '#666', marginTop: '20px' }}>Nessun argomento trovato nel piano di studio. L'AI potrebbe non aver generato un piano valido.</p>
-        )}
-
-        {/* Link per tornare indietro */}
-         <Link to="/projects" style={{marginTop: '30px', display:'inline-block', padding: '8px 15px', backgroundColor: '#6c757d', color: 'white', textDecoration: 'none', borderRadius: '4px'}}>
-             « Torna alla Lista Progetti
-         </Link>
-
-      </div> {/* Fine study-plan-viewer-container */}
-    </>
+            </div>
+          )}
+        </div>
+        
+        <div className="plan-footer">
+          <button className="back-button" onClick={() => navigate('/projects')}>
+            <ArrowLeft size={16} />
+            Torna alla lista dei progetti
+          </button>
+          
+          {/* Aggiungi qui altri pulsanti o azioni se necessario */}
+        </div>
+      </div>
+    </div>
   );
 };
 

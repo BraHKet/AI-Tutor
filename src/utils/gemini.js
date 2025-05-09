@@ -60,7 +60,14 @@ REGOLE IMPORTANTI PER LA SUDDIVISIONE DEGLI ARGOMENTI:
 3. Evita di duplicare gli stessi argomenti con nomi diversi.
 4. Ogni pagina del PDF deve essere assegnata al massimo a UN SOLO argomento.
 5. Gli intervalli di pagine devono essere contigui per ogni argomento (es. pagine 1-5, non 1,3,5).
-6. Dividi il materiale in unità didattiche coerenti che possano essere studiate in una singola sessione.
+
+REGOLE SPECIFICHE PER LA DIMENSIONE E COERENZA DEGLI ARGOMENTI:
+1. DIMENSIONE IDEALE: Ogni argomento dovrebbe idealmente comprendere tra 8 e 15 pagine.
+2. DIMENSIONE MINIMA: Evita argomenti troppo piccoli (meno di 5 pagine), a meno che non si tratti di sezioni chiaramente distinte come introduzioni o appendici.
+3. DIMENSIONE MASSIMA: Evita argomenti troppo grandi (più di 20 pagine). Se una sezione è più lunga, suddividila in sotto-argomenti logici.
+4. COERENZA CONCETTUALE: Ogni argomento deve rappresentare un'unità concettuale coerente, non solo una suddivisione arbitraria di pagine.
+5. RICONOSCIMENTO DELLA STRUTTURA: Utilizza titoli di capitoli, sezioni e sottosezioni presenti nei PDF per guidare la suddivisione.
+6. NUMERO TOTALE DI ARGOMENTI: Mira a creare tra 5 e 15 argomenti totali, per rendere il piano di studio gestibile.
 
 Per CIASCUN argomento identificato, devi indicare:
 1. Un titolo conciso e specifico per l'argomento (max 100 caratteri).
@@ -387,9 +394,10 @@ export const distributeTopicsToDays = async (examName, totalDays, topics, userDe
       REGOLE IMPORTANTI:
       1. Ogni argomento deve apparire UNA SOLA VOLTA in tutto il piano. NON ripetere MAI gli stessi argomenti in giorni diversi.
       2. Cerca di bilanciare il carico di lavoro giornaliero in base alla complessità degli argomenti e al numero di pagine.
-      3. Se ci sono meno argomenti che giorni disponibili, alcuni giorni possono rimanere vuoti. È meglio avere giorni vuoti che ripetere gli argomenti.
-      4. Puoi aggiungere giorni di "Ripasso" verso la fine del piano (dopo aver distribuito tutti gli argomenti unici), con un titolo come "Ripasso Argomenti Giorni X-Y".
-      5. L'obiettivo principale è una distribuzione efficace dell'apprendimento, non riempire forzatamente tutti i giorni.
+      3. NON creare giorni extra oltre i ${totalDays} specificati.
+      4. NON aggiungere giorni di "Ripasso" automaticamente. Lascia i giorni vuoti se ci sono meno argomenti che giorni disponibili.
+      5. Assicurati di usare ESATTAMENTE ${totalDays} giorni, numerati da 1 a ${totalDays}. Non aggiungere giorni aggiuntivi.
+      6. Distribuisci gli argomenti in modo equo e logico, considerando la loro complessità e relazione tematica.
       
       Restituisci il risultato ESCLUSIVAMENTE in formato JSON.
       L'oggetto JSON radice deve contenere una chiave "dailyPlan".
@@ -403,7 +411,9 @@ export const distributeTopicsToDays = async (examName, totalDays, topics, userDe
           }
         ]
       }
-      Se un giorno è di ripasso, "assignedTopics" può contenere un solo oggetto con title="Ripasso..." e una description appropriata.
+      
+      IMPORTANTE: "dailyPlan" DEVE contenere esattamente ${totalDays} oggetti, con giorni numerati da 1 a ${totalDays}. Se ci sono meno argomenti che giorni, alcuni giorni avranno "assignedTopics" come array vuoto [].
+      
       Assicurati che TUTTI gli argomenti forniti siano presenti nel piano UNA SOLA VOLTA.
       Non includere preamboli o testo al di fuori dell'oggetto JSON. Solo il JSON.
   `;
@@ -551,8 +561,41 @@ export const distributeTopicsToDays = async (examName, totalDays, topics, userDe
           console.log("distributeTopicsToDays: Piano aggiornato con l'aggiunta degli argomenti mancanti.");
       }
 
+      // Assicurati che il risultato abbia esattamente totalDays
+      const ensureExactDayCount = (parsedResponse, requestedDays) => {
+        if (!parsedResponse.dailyPlan || !Array.isArray(parsedResponse.dailyPlan)) {
+          console.error("distributeTopicsToDays: ensureExactDayCount - input non valido", parsedResponse);
+          return parsedResponse;
+        }
+
+        const existingDays = new Set(parsedResponse.dailyPlan.map(day => day.day));
+        const result = { dailyPlan: [...parsedResponse.dailyPlan] };
+
+        // Controlla che abbiamo esattamente il numero di giorni richiesto
+        for (let i = 1; i <= requestedDays; i++) {
+          if (!existingDays.has(i)) {
+            // Aggiungi giorni mancanti con array vuoto
+            console.log(`distributeTopicsToDays: ensureExactDayCount - Aggiunto giorno mancante ${i}`);
+            result.dailyPlan.push({
+              day: i,
+              assignedTopics: []
+            });
+          }
+        }
+
+        // Rimuovi eventuali giorni in eccesso
+        result.dailyPlan = result.dailyPlan
+          .filter(day => day.day <= requestedDays)
+          .sort((a, b) => a.day - b.day);
+
+        console.log(`distributeTopicsToDays: ensureExactDayCount - Risultato finale: ${result.dailyPlan.length} giorni`);
+        return result;
+      };
+
       console.log("distributeTopicsToDays: Successfully parsed AI response for daily plan.");
-      return parsedResponse;
+      // Assicurati che il risultato abbia esattamente totalDays
+      const finalResponse = ensureExactDayCount(parsedResponse, totalDays);
+      return finalResponse;
 
   } catch (error) {
       console.error('distributeTopicsToDays: Error during AI daily plan generation:', error);

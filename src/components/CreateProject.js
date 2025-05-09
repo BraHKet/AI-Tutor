@@ -248,15 +248,30 @@ const CreateProject = () => {
 
       // --- FASE 1 - Successo: Prepara dati e Apri Modale ---
       console.log('CreateProject: Provisional plan generated successfully (from PDF direct). Opening review modal.');
-      setProvisionalPlanData({
-          index: contentIndex,
-          distribution: topicDistribution.dailyPlan,
-          pageMapping: pageMapping, // POTENZIALE ADATTAMENTO NECESSARIO nel Modale se questo è limitato
-          originalFilesInfo: originalUploadedFilesData
-      });
-      setLoading(false);
-      setLoadingMessage('');
-      setShowReviewModal(true);
+      const planData = {
+  index: contentIndex,
+  distribution: topicDistribution.dailyPlan,
+  pageMapping: pageMapping,
+  originalFilesInfo: originalUploadedFilesData
+};
+
+setLoading(false);
+setLoadingMessage('');
+
+// Naviga alla pagina di revisione con i dati
+navigate('/plan-review', { 
+  state: { 
+    provisionalPlanData: planData,
+    originalFiles: files,
+    totalDays: formData.totalDays,
+    projectData: {
+      title: formData.title,
+      examName: formData.examName,
+      totalDays: formData.totalDays,
+      description: formData.description
+    }
+  }
+});
 
     } catch (error) {
       console.error('CreateProject: Error during provisional plan generation phase (from PDF direct):', error);
@@ -568,10 +583,24 @@ const CreateProject = () => {
   const handleCancel = () => {
     console.log("CreateProject: User cancelled project creation, resetting all state.");
     resetAllState();
-    navigate('/projects');
+    navigate('/create-project');
   };
 
   return (
+    <>
+    {/* Mostra o il form di creazione progetto o il modale di revisione */}
+    {showReviewModal ? (
+      <PlanReviewModal
+        provisionalPlanData={provisionalPlanData}
+        originalFiles={files}
+        onConfirm={handleConfirmReview}
+        onCancel={handleCancelReview}
+        isFinalizing={isFinalizing}
+        finalizationMessage={loadingMessage}
+        finalizationError={finalizationError}
+        totalDays={formData.totalDays}
+      />
+    ) : (
     <>
       <NavBar />
       <div className="create-project-wrapper">
@@ -708,18 +737,11 @@ const CreateProject = () => {
         </div>
       </div>
 
-       <PlanReviewModal
-           isOpen={showReviewModal}
-           provisionalPlanData={provisionalPlanData}
-           originalFiles={files}
-           onConfirm={handleConfirmReview}
-           onCancel={handleCancelReview}
-           isFinalizing={isFinalizing}
-           finalizationMessage={loadingMessage}
-           finalizationError={finalizationError}
-       />
+       
     </>
-  );
+  )}
+  </>
+);
 };
 
 export default CreateProject;

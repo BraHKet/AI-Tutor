@@ -1,112 +1,86 @@
 // src/components/PlanReviewModal.jsx
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import PageSelector from './PageSelector'; // Assicurati che questo possa gestire File object
-import { Loader, AlertCircle, Edit3, XCircle, Calendar, BookOpen, ChevronDown, ChevronRight, Maximize2, X, ArrowLeft, ArrowRight } from 'lucide-react';
-
-// Stili per il modale (come forniti)
-const modalStyles = {
-  overlay: { position: 'fixed', inset: 0, backgroundColor: 'rgba(0, 0, 0, 0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px' },
-  content: { backgroundColor: 'white', padding: '25px 30px', borderRadius: '8px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', width: '95%', maxWidth: '950px', position: 'relative', boxShadow: '0 5px 15px rgba(0,0,0,0.2)' },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #eee', paddingBottom: '10px', marginBottom: '15px'},
-  closeButton: { position: 'absolute', top: '10px', right: '10px', background: 'none', border: 'none', cursor: 'pointer', padding: 0, lineHeight: 0, color: '#aaa', '&:hover': {color: '#333'} },
-  body: { overflowY: 'auto', flexGrow: 1, paddingRight: '10px', marginRight: '-10px'}, // Per barra di scorrimento interna
-  daySection: { marginBottom: '20px', border: '1px solid #eee', padding: '10px 15px', borderRadius: '5px', backgroundColor: '#fdfdfd' },
-  dayHeader: { marginTop: 0, borderBottom: '1px solid #eee', paddingBottom: '8px', display: 'flex', alignItems: 'center', fontSize: '1.1em', fontWeight: '600', color: '#333' },
-  topicItem: { marginBottom: '15px', paddingLeft: '10px', borderLeft: '3px solid #ffc107', paddingTop: '8px', paddingBottom: '8px' },
-  topicTitle: { marginBottom: '8px', display: 'flex', alignItems: 'center', fontWeight: 'bold', fontSize: '1.05em', color: '#212529', cursor: 'pointer' },
-  pageSelectorContainer: { marginTop: '10px', border: '1px solid #e0e0e0', borderRadius: '4px', padding: '10px' },
-  pageSelectorHeader: { display:'flex', alignItems:'center', marginBottom:'8px', fontSize: '0.9em', fontWeight: '500' },
-  suggestedPages: { fontSize: '0.8em', color: '#666', fontStyle: 'italic', marginBottom: '10px', marginTop:'5px' },
-  actions: { marginTop: '20px', textAlign: 'right', borderTop: '1px solid #eee', paddingTop: '15px' },
-  confirmButton: { padding: '8px 18px', fontSize: '1em', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', marginLeft: '10px' },
-  cancelButton: { padding: '8px 18px', fontSize: '1em', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' },
-  error: { color: '#dc3545', fontSize: '0.85em', marginTop: '5px', fontWeight: '500'},
-  loadingBox: {marginBottom: '15px', padding: '10px', backgroundColor: '#e9ecef', borderRadius: '5px', display: 'flex', alignItems: 'center'},
-  errorBox: {marginBottom: '15px', padding: '10px', backgroundColor: '#f8d7da', color: '#721c24', borderRadius: '5px', display: 'flex', alignItems: 'center'},
-  openEditorButton: { display: 'inline-flex', alignItems: 'center', padding: '5px 12px', fontSize: '0.9em', backgroundColor: '#f8f9fa', color: '#0d6efd', border: '1px solid #dee2e6', borderRadius: '4px', cursor: 'pointer', marginTop: '8px', marginBottom: '8px', transition: 'all 0.2s' },
-  fullscreenButton: { display: 'inline-flex', alignItems: 'center', padding: '5px 10px', fontSize: '0.85em', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', marginLeft: 'auto', marginRight: '5px' },
-  fullscreenOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.9)', zIndex: 2000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' },
-  fullscreenHeader: { position: 'absolute', top: 0, left: 0, right: 0, padding: '15px 20px', backgroundColor: 'rgba(0, 0, 0, 0.7)', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  fullscreenContent: { width: '90%', height: '80%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative' },
-  fullscreenImage: { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', boxShadow: '0 5px 15px rgba(0, 0, 0, 0.5)' },
-  fullscreenNavigation: { position: 'absolute', bottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10px', backgroundColor: 'rgba(0, 0, 0, 0.7)', borderRadius: '5px' },
-  fullscreenNavButton: { background: 'none', border: 'none', color: 'white', cursor: 'pointer', margin: '0 15px', padding: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  fullscreenPageInfo: { color: 'white', margin: '0 15px', fontSize: '1.1em' },
-  fullscreenCloseButton: { background: 'none', border: 'none', color: 'white', cursor: 'pointer' },
-  pageSelectionControls: { display: 'flex', alignItems: 'center', gap: '10px' },
-  fullscreenSelectButton: { padding: '6px 12px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', marginRight: '10px' },
-  fullscreenUnselectButton: { padding: '6px 12px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }
-};
+import { useNavigate, useLocation } from 'react-router-dom';
+import PageSelector from './PageSelector';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { Loader, AlertCircle, Edit3, XCircle, Calendar, BookOpen, ChevronDown, ChevronRight, Maximize2, X, ArrowLeft, ArrowRight, Info, Save, FileText } from 'lucide-react';
+import NavBar from './NavBar';
+import './styles/PlanReviewModal.css';
 
 const PlanReviewModal = ({
-    isOpen,
     provisionalPlanData,
     originalFiles,
     onConfirm,
     onCancel,
     isFinalizing,
     finalizationMessage,
-    finalizationError
+    finalizationError,
+    projectData,
+    totalDays // Numero di giorni specificato nel form
 }) => {
-    console.log("PlanReviewModal: Props received -> isOpen:", isOpen, "provisionalPlanData exists:", !!provisionalPlanData, "originalFiles count:", originalFiles?.length, "OriginalFiles:", originalFiles);
+    const navigate = useNavigate();
+    const location = useLocation();
 
+    // Usa i dati dalla location se forniti (quando viene aperto come pagina)
+    const locationState = location.state || {};
+    const provPlanData = provisionalPlanData || locationState.provisionalPlanData;
+    const origFiles = originalFiles || locationState.originalFiles;
+    const projData = projectData || locationState.projectData;
+    const days = totalDays || (locationState.totalDays || (projData?.totalDays || 7));
+    const isStandalone = !onConfirm || !onCancel; // True se usato come pagina standalone
+
+    // State locale
+    const [localIsFinalizing, setLocalIsFinalizing] = useState(false);
+    const [localFinalizationMessage, setLocalFinalizationMessage] = useState('');
+    const [localFinalizationError, setLocalFinalizationError] = useState('');
+    
+    // Usa il valore appropriato in base alla modalità
+    const effectiveIsFinalizing = isFinalizing || localIsFinalizing;
+    const effectiveFinalizationMessage = finalizationMessage || localFinalizationMessage;
+    const effectiveFinalizationError = finalizationError || localFinalizationError;
+
+    // State per la selezione delle pagine e la validazione
     const [currentUserSelections, setCurrentUserSelections] = useState({});
     const [validationErrors, setValidationErrors] = useState({});
     const [expandedTopicId, setExpandedTopicId] = useState(null);
+    // State per la visualizzazione a schermo intero delle pagine
     const [fullscreenMode, setFullscreenMode] = useState(false);
     const [currentFullscreenData, setCurrentFullscreenData] = useState({
-      topicTitle: '', fileIndex: -1, currentPage: 1, totalPagesInFile: 1, pageImages: [], selectedPagesInCurrentFile: []
+        topicTitle: '', fileIndex: -1, currentPage: 1, totalPagesInFile: 1, pageImages: [], selectedPagesInCurrentFile: []
     });
+    // State per la distribuzione degli argomenti nei giorni
+    const [dayAssignments, setDayAssignments] = useState({});
+    const [unassignedTopics, setUnassignedTopics] = useState([]);
 
-    // Memoized data from props
+    // Memoized data from props/state
     const topics = useMemo(() => {
-        const pTopics = provisionalPlanData?.index || [];
-        console.log("PlanReviewModal: Memoized topics:", pTopics);
-        return pTopics;
-    }, [provisionalPlanData]);
+        return provPlanData?.index || [];
+    }, [provPlanData]);
 
     const distribution = useMemo(() => {
-        const pDistribution = provisionalPlanData?.distribution || [];
-        console.log("PlanReviewModal: Memoized distribution:", pDistribution);
-        return pDistribution;
-    }, [provisionalPlanData]);
+        return provPlanData?.distribution || [];
+    }, [provPlanData]);
 
-    // Questo pageMapping è quello ricevuto da CreateProject.jsx
-    // Potrebbe essere limitato o diverso da quello che ci si aspettava in passato.
-    // Nel nuovo flusso di CreateProject, è un mapping pageCounter -> {fileIndex, fileName, pageNum (originale), text}
-    // Non lo useremo più per derivare i range suggeriti qui, ma lo logghiamo per debug.
-    const pageMappingFromProps = useMemo(() => {
-        const pMapping = provisionalPlanData?.pageMapping || {};
-        console.log("PlanReviewModal: Memoized pageMappingFromProps:", pMapping);
-        return pMapping;
-    }, [provisionalPlanData]);
-
-
-    // Initialize/Reset selections when modal opens or data changes
+    // Initialize/Reset selections when data changes
     useEffect(() => {
-        if (isOpen && topics.length > 0 && originalFiles && originalFiles.length > 0) {
-            console.log("PlanReviewModal [useEffect isOpen]: Initializing user selections. Topics count:", topics.length, "Original files count:", originalFiles.length);
+        if (topics.length > 0 && origFiles && origFiles.length > 0) {
+            console.log("PlanReviewModal: Initializing user selections. Topics count:", topics.length, "Original files count:", origFiles.length);
+            
+            // Inizializza le selezioni delle pagine per ogni argomento
             const initialSelections = {};
             topics.forEach(topic => {
-                if (!topic.title) {
-                    console.warn("PlanReviewModal [useEffect isOpen]: Topic without title found:", topic);
-                    return;
-                }
-                console.log(`PlanReviewModal [useEffect isOpen]: Processing topic "${topic.title}" for initial selections. Topic pages_info:`, topic.pages_info);
-
+                if (!topic.title) return;
+                
                 if (topic.pages_info && Array.isArray(topic.pages_info)) {
                     initialSelections[topic.title] = topic.pages_info
                         .filter(pInfo => {
                             const isValidPInfo = typeof pInfo.pdf_index === 'number' &&
-                                              pInfo.pdf_index >= 0 && // Aggiunto controllo >= 0
-                                              pInfo.pdf_index < originalFiles.length &&
-                                              typeof pInfo.start_page === 'number' && // Verificato che siano numeri
+                                              pInfo.pdf_index >= 0 &&
+                                              pInfo.pdf_index < origFiles.length &&
+                                              typeof pInfo.start_page === 'number' &&
                                               typeof pInfo.end_page === 'number' &&
-                                              pInfo.start_page > 0 && // Pagine sono 1-based
+                                              pInfo.start_page > 0 &&
                                               pInfo.end_page >= pInfo.start_page;
-                            if (!isValidPInfo) {
-                                console.warn(`PlanReviewModal [useEffect isOpen]: Invalid or incomplete pInfo for topic "${topic.title}":`, pInfo, `originalFiles.length: ${originalFiles.length}`);
-                            }
                             return isValidPInfo;
                         })
                         .map(pInfo => {
@@ -114,36 +88,83 @@ const PlanReviewModal = ({
                             for (let i = pInfo.start_page; i <= pInfo.end_page; i++) {
                                 pages.push(i);
                             }
-                            const fileName = originalFiles[pInfo.pdf_index]?.name || pInfo.original_filename || 'Nome file sconosciuto';
-                            console.log(`PlanReviewModal [useEffect isOpen]: Topic "${topic.title}", file "${fileName}" (index ${pInfo.pdf_index}), initial pages derived from pages_info:`, pages);
+                            const fileName = origFiles[pInfo.pdf_index]?.name || pInfo.original_filename || 'Nome file sconosciuto';
                             return {
                                 fileIndex: pInfo.pdf_index,
                                 fileName: fileName,
-                                pages: pages.sort((a, b) => a - b) // Assicura ordine
+                                pages: pages.sort((a, b) => a - b)
                             };
                         });
                 } else {
-                    console.log(`PlanReviewModal [useEffect isOpen]: No pages_info for topic "${topic.title}", initializing empty selection array.`);
                     initialSelections[topic.title] = [];
                 }
             });
             setCurrentUserSelections(initialSelections);
             setValidationErrors({});
+            
             // Espandi il primo topic che ha suggerimenti o il primo topic in assoluto
             const firstTopicWithSuggestions = topics.find(t => initialSelections[t.title]?.length > 0);
             const firstTopicTitle = firstTopicWithSuggestions?.title || topics[0]?.title;
             setExpandedTopicId(firstTopicTitle || null);
-            console.log("PlanReviewModal [useEffect isOpen]: Initial currentUserSelections set:", JSON.parse(JSON.stringify(initialSelections)), "Expanded topic ID:", firstTopicTitle);
-        } else if (!isOpen) {
-            console.log("PlanReviewModal [useEffect isOpen]: Modal closed, resetting states.");
-            setCurrentUserSelections({});
-            setValidationErrors({});
-            setExpandedTopicId(null);
-            setFullscreenMode(false);
+            
+            // Inizializza la distribuzione degli argomenti nei giorni
+            initializeDayAssignments();
         }
-    }, [isOpen, topics, originalFiles]); // Aggiunto originalFiles
+    }, [topics, origFiles]);
 
+    // Calcola il numero totale di pagine selezionate per un argomento
+    const getTotalSelectedPages = useCallback((topicTitle) => {
+        const selections = currentUserSelections[topicTitle] || [];
+        return selections.reduce((total, fileEntry) => {
+            return total + (fileEntry.pages?.length || 0);
+        }, 0);
+    }, [currentUserSelections]);
 
+    // Inizializza la distribuzione degli argomenti nei giorni
+    const initializeDayAssignments = useCallback(() => {
+        // Crea un oggetto con il numero esatto di giorni specificato
+        const initialDays = {};
+        for (let i = 1; i <= days; i++) {
+            initialDays[i] = [];
+        }
+        
+        const initialUnassigned = [];
+        const assignedTopics = new Set();
+        
+        // Assegna gli argomenti in base alla distribuzione iniziale dell'AI
+        if (distribution && distribution.length > 0) {
+            distribution.forEach(dayPlan => {
+                const day = dayPlan.day;
+                // Verifica che il giorno sia incluso nel nostro range
+                if (day && day <= days) {
+                    // Filtra argomenti di ripasso e aggiungi solo argomenti validi
+                    const validTopics = (dayPlan.assignedTopics || [])
+                        .filter(topic => {
+                            // Escludiamo gli argomenti di ripasso
+                            const title = topic.title?.trim();
+                            return title && !title.toLowerCase().includes("ripasso");
+                        })
+                        .map(topic => topic.title.trim());
+                    
+                    // Aggiungi al giorno corrispondente
+                    initialDays[day] = validTopics;
+                    validTopics.forEach(title => assignedTopics.add(title));
+                }
+            });
+        }
+        
+        // Aggiungi tutti gli argomenti che non sono stati assegnati all'elenco unassigned
+        topics.forEach(topic => {
+            if (topic.title && !assignedTopics.has(topic.title)) {
+                initialUnassigned.push(topic.title);
+            }
+        });
+        
+        setDayAssignments(initialDays);
+        setUnassignedTopics(initialUnassigned);
+    }, [distribution, topics, days]);
+
+    // Gestisce il cambio di selezione delle pagine per un argomento
     const handlePageSelectionChangeForTopicAndFile = useCallback((topicTitle, fileIndexToUpdate, newSelectedPagesArray) => {
         console.log(`PlanReviewModal: Selection change for topic "${topicTitle}", fileIndex ${fileIndexToUpdate}. New pages:`, newSelectedPagesArray);
         
@@ -167,7 +188,7 @@ const PlanReviewModal = ({
                     // Aggiungi nuova entry
                     selectionsForTopic.push({
                         fileIndex: fileIndexToUpdate,
-                        fileName: originalFiles[fileIndexToUpdate]?.name || `File Indice ${fileIndexToUpdate}`,
+                        fileName: origFiles[fileIndexToUpdate]?.name || `File Indice ${fileIndexToUpdate}`,
                         pages: sortedValidPages
                     });
                 }
@@ -176,7 +197,6 @@ const PlanReviewModal = ({
                 selectionsForTopic.splice(existingFileEntryIndex, 1);
             }
             
-            console.log(`PlanReviewModal: Updated selections for topic "${topicTitle}":`, selectionsForTopic);
             return { ...prevSelections, [topicTitle]: selectionsForTopic };
         });
     
@@ -187,32 +207,80 @@ const PlanReviewModal = ({
         });
     
         if (fullscreenMode && currentFullscreenData.topicTitle === topicTitle && currentFullscreenData.fileIndex === fileIndexToUpdate) {
-            console.log("PlanReviewModal: Updating fullscreen selected pages due to change.");
             setCurrentFullscreenData(prev => ({ 
                 ...prev, 
                 selectedPagesInCurrentFile: newSelectedPagesArray || [] 
             }));
         }
-    }, [fullscreenMode, currentFullscreenData.topicTitle, currentFullscreenData.fileIndex, originalFiles]);
+    }, [fullscreenMode, currentFullscreenData.topicTitle, currentFullscreenData.fileIndex, origFiles]);
 
-
+    // Gestisce l'apertura/chiusura dei dettagli di un argomento
     const toggleTopicExpansion = (topicId) => {
-        console.log(`PlanReviewModal: Toggling expansion for topicId "${topicId}". Current expanded: "${expandedTopicId}"`);
         setExpandedTopicId(prev => (prev === topicId ? null : topicId));
     };
 
+    // Implementazione ottimale della gestione drag and drop
+    const handleDragEnd = (result) => {
+        const { source, destination } = result;
+        
+        // Se non c'è destinazione, non fare nulla
+        if (!destination) return;
+        
+        // Ottieni l'elemento da spostare in base alla sorgente
+        const getItemFromSource = () => {
+            if (source.droppableId === 'unassigned') {
+                return unassignedTopics[source.index];
+            } else {
+                return dayAssignments[source.droppableId]?.[source.index];
+            }
+        };
+        
+        const draggedItem = getItemFromSource();
+        if (!draggedItem) return; // Sicurezza extra
+        
+        // Copia profonda dello stato attuale
+        const newUnassigned = [...unassignedTopics];
+        const newDayAssignments = Object.entries(dayAssignments).reduce((acc, [day, topics]) => {
+            acc[day] = [...topics]; // copia profonda di ogni array di giorno
+            return acc;
+        }, {});
+        
+        // 1. RIMUOVI dalla sorgente
+        if (source.droppableId === 'unassigned') {
+            newUnassigned.splice(source.index, 1);
+        } else {
+            if (newDayAssignments[source.droppableId]) {
+                newDayAssignments[source.droppableId].splice(source.index, 1);
+            }
+        }
+        
+        // 2. AGGIUNGI alla destinazione
+        if (destination.droppableId === 'unassigned') {
+            newUnassigned.splice(destination.index, 0, draggedItem);
+        } else {
+            // Assicurati che esista l'array per quel giorno
+            if (!newDayAssignments[destination.droppableId]) {
+                newDayAssignments[destination.droppableId] = [];
+            }
+            newDayAssignments[destination.droppableId].splice(destination.index, 0, draggedItem);
+        }
+        
+        // 3. AGGIORNA gli stati
+        setUnassignedTopics(newUnassigned);
+        setDayAssignments(newDayAssignments);
+    };
+
+    // Fullscreen mode functions
     const enterFullscreenModeInternal = (topicTitle, fileIndex, pageImagesData, initialPage = 1, totalPagesInFile) => {
-        console.log(`PlanReviewModal: Entering fullscreen for topic "${topicTitle}", fileIndex ${fileIndex}, initialPage ${initialPage}, totalPages ${totalPagesInFile}. Images count: ${pageImagesData?.length}`);
         const selectionsForTopic = currentUserSelections[topicTitle] || [];
         const fileSelectionEntry = selectionsForTopic.find(s => s.fileIndex === fileIndex);
         const selectedPgs = fileSelectionEntry ? fileSelectionEntry.pages : [];
-        console.log(`PlanReviewModal: Selected pages for fullscreen (topic "${topicTitle}", fileIndex ${fileIndex}):`, selectedPgs);
 
         setCurrentFullscreenData({
             topicTitle,
             fileIndex,
             currentPage: initialPage,
-            totalPagesInFile: totalPagesInFile || 1, // Assicura che non sia 0 o undefined
+            totalPagesInFile: totalPagesInFile || 1,
             pageImages: pageImagesData || [],
             selectedPagesInCurrentFile: selectedPgs
         });
@@ -220,14 +288,12 @@ const PlanReviewModal = ({
     };
 
     const exitFullscreenMode = useCallback(() => {
-        console.log("PlanReviewModal: Exiting fullscreen mode.");
         setFullscreenMode(false);
     }, []);
 
     const goToNextPageFullscreen = useCallback(() => {
         setCurrentFullscreenData(prev => {
             const nextPage = Math.min(prev.currentPage + 1, prev.totalPagesInFile);
-            console.log(`PlanReviewModal [Fullscreen]: Next page. From ${prev.currentPage} to ${nextPage}. Total: ${prev.totalPagesInFile}`);
             return {...prev, currentPage: nextPage };
         });
     }, []);
@@ -235,14 +301,12 @@ const PlanReviewModal = ({
     const goToPrevPageFullscreen = useCallback(() => {
         setCurrentFullscreenData(prev => {
             const prevPage = Math.max(prev.currentPage - 1, 1);
-            console.log(`PlanReviewModal [Fullscreen]: Prev page. From ${prev.currentPage} to ${prevPage}.`);
             return {...prev, currentPage: prevPage };
         });
     }, []);
 
     const togglePageSelectionFullscreen = useCallback(() => {
         const { topicTitle, fileIndex, currentPage, selectedPagesInCurrentFile } = currentFullscreenData;
-        console.log(`PlanReviewModal [Fullscreen]: Toggling selection for page ${currentPage} of topic "${topicTitle}", fileIndex ${fileIndex}. Currently selected:`, selectedPagesInCurrentFile);
         const isSelected = selectedPagesInCurrentFile.includes(currentPage);
         let newSelectedPages;
         if (isSelected) {
@@ -253,68 +317,7 @@ const PlanReviewModal = ({
         handlePageSelectionChangeForTopicAndFile(topicTitle, fileIndex, newSelectedPages);
     }, [currentFullscreenData, handlePageSelectionChangeForTopicAndFile]);
 
-    const validateSelections = () => {
-        console.log("PlanReviewModal: Validating selections. CurrentUserSelections:", currentUserSelections);
-        const errors = {}; 
-        let isValid = true;
-        
-        distribution.forEach(day => {
-            (day.assignedTopics || []).forEach(assignedTopic => {
-                const title = assignedTopic.title?.trim();
-                if (title && !title.toLowerCase().includes("ripasso")) {
-                    const selectionsForTopic = currentUserSelections[title];
-                    // Verifica che ci sia almeno una selezione con pagine per questo topic
-                    const hasSelections = selectionsForTopic && 
-                        selectionsForTopic.some(fileEntry => fileEntry.pages && fileEntry.pages.length > 0);
-                    
-                    if (!hasSelections) {
-                        console.log(`PlanReviewModal [Validation]: No pages selected for topic "${title}".`);
-                        errors[title] = "Selezionare almeno una pagina per questo argomento.";
-                        isValid = false;
-                    }
-                }
-            });
-        });
-        
-        setValidationErrors(errors);
-        console.log("PlanReviewModal [Validation]: Validation result:", isValid, "Errors:", errors);
-        return isValid;
-    };
-
-    const handleInternalConfirm = () => {
-        if (validateSelections()) {
-            console.log("PlanReviewModal [handleInternalConfirm]: Validation PASSED. Calling onConfirm with currentUserSelections:", JSON.parse(JSON.stringify(currentUserSelections)));
-            
-            // Assicura che la struttura dei dati sia esattamente quella attesa da CreateProject.js
-            const formattedSelections = {};
-            
-            Object.entries(currentUserSelections).forEach(([topicTitle, fileEntries]) => {
-                // Filtra solo le entries che hanno effettivamente delle pagine selezionate
-                const validFileEntries = fileEntries.filter(entry => 
-                    entry && entry.pages && Array.isArray(entry.pages) && entry.pages.length > 0
-                );
-                
-                if (validFileEntries.length > 0) {
-                    formattedSelections[topicTitle] = validFileEntries.map(entry => ({
-                        fileIndex: entry.fileIndex,
-                        fileName: entry.fileName,
-                        pages: [...entry.pages].sort((a, b) => a - b) // Assicura l'ordine crescente
-                    }));
-                }
-            });
-            
-            onConfirm(formattedSelections);
-        } else {
-            const firstErrorKey = Object.keys(validationErrors)[0];
-            if (firstErrorKey) {
-                console.warn("PlanReviewModal [handleInternalConfirm]: Validation FAILED. First error on topic:", firstErrorKey);
-                setExpandedTopicId(firstErrorKey);
-                const errorElement = document.getElementById(`topic-item-${firstErrorKey.replace(/\s+/g, '-')}`);
-                errorElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        }
-    };
-
+    // Keyboard event handlers for fullscreen mode
     useEffect(() => {
         const handleKeyDown = (e) => {
             if (!fullscreenMode) return;
@@ -330,259 +333,555 @@ const PlanReviewModal = ({
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [fullscreenMode, exitFullscreenMode, goToNextPageFullscreen, goToPrevPageFullscreen, togglePageSelectionFullscreen]);
 
-    if (!isOpen) return null;
-    if (!provisionalPlanData || !originalFiles) {
-        console.warn("PlanReviewModal: Rendering null or loading message because provisionalPlanData or originalFiles is missing.");
-        return ( <div style={modalStyles.overlay}><div style={modalStyles.content}>Caricamento dati modale o dati preliminari mancanti...</div></div> );
-    }
-    if (topics.length === 0 && distribution.length > 0) { // Se ci sono giorni ma non argomenti (improbabile se logica CreateProject è ok)
-        console.warn("PlanReviewModal: No topics to display, but distribution exists. Might be an issue with AI content generation.");
-    }
-    if (originalFiles.length === 0 && topics.some(t => t.pages_info && t.pages_info.length > 0)) {
-        console.error("PlanReviewModal: Topics have page_info referencing pdf_index, but originalFiles array is empty!");
+    // Validazione delle selezioni e preparazione dati per il salvataggio
+    const validateAndPrepare = () => {
+        console.log("PlanReviewModal: Validating selections. CurrentUserSelections:", currentUserSelections);
+        const errors = {}; 
+        let isValid = true;
+        
+        // Verifica che ogni argomento assegnato abbia delle pagine selezionate
+        Object.keys(dayAssignments).forEach(day => {
+            dayAssignments[day].forEach(topicTitle => {
+                const selectionsForTopic = currentUserSelections[topicTitle];
+                // Verifica che ci sia almeno una selezione con pagine per questo topic
+                const hasSelections = selectionsForTopic && 
+                    selectionsForTopic.some(fileEntry => fileEntry.pages && fileEntry.pages.length > 0);
+                
+                if (!hasSelections) {
+                    console.log(`PlanReviewModal [Validation]: No pages selected for topic "${topicTitle}".`);
+                    errors[topicTitle] = "Selezionare almeno una pagina per questo argomento.";
+                    isValid = false;
+                }
+            });
+        });
+        
+        // Verifica anche gli argomenti non assegnati, se presenti
+        unassignedTopics.forEach(topicTitle => {
+            const selectionsForTopic = currentUserSelections[topicTitle];
+            const hasSelections = selectionsForTopic && 
+                selectionsForTopic.some(fileEntry => fileEntry.pages && fileEntry.pages.length > 0);
+            
+            if (!hasSelections) {
+                console.log(`PlanReviewModal [Validation]: No pages selected for unassigned topic "${topicTitle}".`);
+                errors[topicTitle] = "Selezionare almeno una pagina per questo argomento.";
+                isValid = false;
+            }
+        });
+        
+        setValidationErrors(errors);
+        
+        if (isValid) {
+            // Prepara i dati formattati per il salvataggio
+            const formattedSelections = {};
+            const finalDistribution = [];
+            
+            // Formatta le selezioni delle pagine
+            Object.entries(currentUserSelections).forEach(([topicTitle, fileEntries]) => {
+                const validFileEntries = fileEntries.filter(entry => 
+                    entry && entry.pages && Array.isArray(entry.pages) && entry.pages.length > 0
+                );
+                
+                if (validFileEntries.length > 0) {
+                    formattedSelections[topicTitle] = validFileEntries.map(entry => ({
+                        fileIndex: entry.fileIndex,
+                        fileName: entry.fileName,
+                        pages: [...entry.pages].sort((a, b) => a - b)
+                    }));
+                }
+            });
+            
+            // Crea la distribuzione finale in base alle assegnazioni attuali
+            Object.entries(dayAssignments).forEach(([day, assignedTopicTitles]) => {
+                if (assignedTopicTitles.length > 0) {
+                    finalDistribution.push({
+                        day: parseInt(day),
+                        assignedTopics: assignedTopicTitles.map(title => ({
+                            title: title,
+                            description: topics.find(t => t.title === title)?.description || ""
+                        }))
+                    });
+                } else {
+                    // Includi anche i giorni vuoti
+                    finalDistribution.push({
+                        day: parseInt(day),
+                        assignedTopics: []
+                    });
+                }
+            });
+            
+            return {
+                valid: true,
+                selections: formattedSelections,
+                distribution: finalDistribution
+            };
+        }
+        
+        // Se la validazione fallisce, scorri al primo errore
+        const firstErrorKey = Object.keys(errors)[0];
+        if (firstErrorKey) {
+            console.warn("PlanReviewModal [validateAndPrepare]: Validation FAILED. First error on topic:", firstErrorKey);
+            setExpandedTopicId(firstErrorKey);
+            const errorElement = document.getElementById(`topic-item-${firstErrorKey.replace(/\s+/g, '-')}`);
+            errorElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        
+        return { valid: false };
+    };
+
+    // Gestisce la conferma finale
+    const handleConfirm = () => {
+        const result = validateAndPrepare();
+        if (result.valid) {
+            if (onConfirm) {
+                // Se usato come modale, usa la funzione prop
+                onConfirm(result.selections, result.distribution);
+            } else {
+                // Se usato come pagina autonoma
+                console.log("PlanReviewModal: Gestione conferma come pagina autonoma");
+                setLocalIsFinalizing(true);
+                setLocalFinalizationMessage("Finalizzazione piano di studio...");
+                
+                // Per questo esempio, simulo un ritardo e poi navigo alla home
+                setTimeout(() => {
+                    setLocalIsFinalizing(false);
+                    navigate('/projects');
+                }, 2000);
+            }
+        }
+    };
+
+    // Gestisce l'annullamento
+    const handleCancel = () => {
+        if (onCancel) {
+            onCancel();
+        } else {
+            // Se usato come pagina autonoma
+            navigate('/create-project');
+        }
+    };
+
+    // Se i dati non sono pronti, mostra un messaggio di caricamento
+    if (!provPlanData || !origFiles) {
+        return (
+            <div className="plan-review-loading">
+                <Loader size={32} className="spin-icon" />
+                <span>Caricamento dati in corso...</span>
+            </div>
+        );
     }
 
     return (
         <>
-            <div style={modalStyles.overlay}>
-                <div style={modalStyles.content}>
-                    <div style={modalStyles.header}>
-                        <h2>Revisione Piano e Pagine</h2>
-                        <button onClick={onCancel} style={modalStyles.closeButton} disabled={isFinalizing} title="Annulla revisione"><XCircle size={22} color="#888" /></button>
+            
+            <div className="plan-review-screen">
+                <div className="plan-review-header">
+                    <h1>Revisione Piano di Studio</h1>
+                    <p className="subtitle">Trascina gli argomenti per organizzare il tuo piano. Espandi ogni argomento per selezionare le pagine da studiare.</p>
+                </div>
+
+                {effectiveIsFinalizing && (
+                    <div className="status-message loading">
+                        <Loader size={20} className="spin-icon" />
+                        <span>{effectiveFinalizationMessage || 'Finalizzazione...'}</span>
                     </div>
+                )}
+                
+                {effectiveFinalizationError && !effectiveIsFinalizing && (
+                    <div className="status-message error">
+                        <AlertCircle size={20} />
+                        <span>{effectiveFinalizationError}</span>
+                    </div>
+                )}
 
-                    {isFinalizing && ( <div style={modalStyles.loadingBox}><Loader size={20} className="spin-icon" style={{marginRight: '10px'}}/><span>{finalizationMessage || 'Finalizzazione...'}</span></div>)}
-                    {finalizationError && !isFinalizing && ( <div style={modalStyles.errorBox}><AlertCircle size={20} style={{marginRight: '10px'}}/><span>{finalizationError}</span></div> )}
+                <div className="plan-review-content">
+                    <DragDropContext onDragEnd={handleDragEnd}>
+                        <div className="plan-days-container">
+                            {Object.keys(dayAssignments)
+                                .sort((a, b) => parseInt(a) - parseInt(b))
+                                .map(day => (
+                                    <Droppable droppableId={day} key={`day-${day}`}>
+                                        {(provided, snapshot) => (
+                                            <div 
+                                                ref={provided.innerRef}
+                                                {...provided.droppableProps}
+                                                className={`plan-day ${snapshot.isDraggingOver ? 'dragging-over' : ''}`}
+                                            >
+                                                <h3 className="day-header">
+                                                    <Calendar size={18} />
+                                                    <span>Giorno {day}</span>
+                                                    <span className="topic-count">{dayAssignments[day].length} argomenti</span>
+                                                </h3>
+                                                <div className="day-topics">
+                                                    {dayAssignments[day].length === 0 ? (
+                                                        <div className="empty-day-message">
+                                                            <Info size={16} />
+                                                            <span>Trascina qui gli argomenti</span>
+                                                        </div>
+                                                    ) : (
+                                                        dayAssignments[day].map((topicTitle, index) => (
+                                                            <Draggable 
+                                                                key={`topic-${topicTitle}-${day}-${index}`} 
+                                                                draggableId={`topic-${topicTitle}-${day}-${index}`} 
+                                                                index={index}
+                                                                isDragDisabled={effectiveIsFinalizing}
+                                                            >
+                                                                {(provided, snapshot) => (
+                                                                    <div
+                                                                        ref={provided.innerRef}
+                                                                        {...provided.draggableProps}
+                                                                        {...provided.dragHandleProps}
+                                                                        className={`topic-card ${snapshot.isDragging ? 'dragging' : ''} ${validationErrors[topicTitle] ? 'has-error' : ''}`}
+                                                                        id={`topic-item-${topicTitle.replace(/\s+/g, '-')}`}
+                                                                    >
+                                                                        <div 
+                                                                            className="topic-header"
+                                                                            onClick={() => toggleTopicExpansion(topicTitle)}
+                                                                        >
+                                                                            {expandedTopicId === topicTitle ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                                                                            <BookOpen size={14} />
+                                                                            <h4>{topicTitle}</h4>
+                                                                            
+                                                                            {/* Mostra il numero di pagine selezionate */}
+                                                                            <div className="topic-pages-count">
+                                                                                <FileText size={12} />
+                                                                                <span>{getTotalSelectedPages(topicTitle)} </span>
+                                                                            </div>
+                                                                            
+                                                                            {validationErrors[topicTitle] && <AlertCircle size={16} className="error-icon" />}
+                                                                        </div>
 
-                    <div style={modalStyles.body}>
-                        {console.log("PlanReviewModal: Rendering modal body. Distribution length:", distribution.length, "Topics length:", topics.length)}
-                        {distribution.length === 0 && topics.length > 0 && <p>Nessun piano giornaliero generato, ma ci sono argomenti. Controlla la fase di distribuzione.</p>}
-                        {distribution.map((dayPlan, dayIdx) => {
-                            const dayKey = `day-${dayPlan.day || dayIdx}`;
-                            const isReviewDay = dayPlan.assignedTopics?.length === 1 && dayPlan.assignedTopics[0].title?.toLowerCase().includes("ripasso");
-                            const isEmptyNonReviewDay = (!dayPlan.assignedTopics || dayPlan.assignedTopics.length === 0) && !isReviewDay;
-
-                            if (isEmptyNonReviewDay) {
-                                console.log(`PlanReviewModal: Day ${dayPlan.day} is empty and not a review day, skipping render.`);
-                                return null;
-                            }
-
-                            if (isReviewDay) {
-                                console.log(`PlanReviewModal: Rendering Review Day ${dayPlan.day}.`);
-                                return (
-                                    <div key={dayKey} style={modalStyles.daySection}>
-                                        <h3 style={modalStyles.dayHeader}><Calendar size={16} style={{marginRight:'6px'}}/> Giorno {dayPlan.day} - {dayPlan.assignedTopics[0].title}</h3>
-                                        <p style={{marginLeft: '10px', fontStyle:'italic'}}>{dayPlan.assignedTopics[0].description || "Ripasso generale degli argomenti precedenti."}</p>
-                                    </div>
-                                );
-                            }
-
-                            console.log(`PlanReviewModal: Rendering Study Day ${dayPlan.day}. Assigned topics count: ${dayPlan.assignedTopics?.length}`);
-                            return (
-                                <div key={dayKey} style={modalStyles.daySection}>
-                                    <h3 style={modalStyles.dayHeader}><Calendar size={16} style={{marginRight:'6px'}}/> Giorno {dayPlan.day}</h3>
-                                    {(dayPlan.assignedTopics || []).map((assignedTopic) => {
-                                        const title = assignedTopic.title?.trim();
-                                        if (!title) return null;
-
-                                        const topicDetails = topics.find(t => t.title === title);
-                                        if (!topicDetails) {
-                                            console.warn(`PlanReviewModal: Details not found in 'topics' for assigned topic title: "${title}". Assigned topic:`, assignedTopic);
-                                            // Potresti voler mostrare comunque il titolo assegnato se i dettagli mancano
-                                            // return <div key={`missing-details-${title}`} style={modalStyles.topicItem}>Topic (dettagli mancanti): {title}</div>;
-                                        }
-                                        const selectionsForThisTopic = currentUserSelections[title] || [];
-                                        const errorMsg = validationErrors[title];
-                                        const isExpanded = expandedTopicId === title;
-                                        const totalSelectedPagesForTopic = selectionsForThisTopic.reduce((sum, s) => sum + s.pages.length, 0);
-
-                                        console.log(`PlanReviewModal: Topic "${title}". Expanded: ${isExpanded}. Details:`, topicDetails, "Selections:", selectionsForThisTopic);
-
-                                        return (
-                                            <div key={title} id={`topic-item-${title.replace(/\s+/g, '-')}`} style={modalStyles.topicItem}>
-                                                <div onClick={() => toggleTopicExpansion(title)} style={modalStyles.topicTitle} title="Espandi/Chiudi Dettagli">
-                                                    {isExpanded ? <ChevronDown size={16} style={{color: '#555'}} /> : <ChevronRight size={16} style={{color: '#555'}} />}
-                                                    <BookOpen size={14} style={{ margin: '0 6px' }}/> {title}
-                                                    {totalSelectedPagesForTopic > 0 && <span className="page-count-badge" style={{marginLeft:'8px', fontSize:'0.8em', backgroundColor:'#e0e0e0', padding:'2px 6px', borderRadius:'4px'}}>{totalSelectedPagesForTopic} pag.</span>}
-                                                    {errorMsg && <span style={{ color: '#dc3545', marginLeft: '8px', fontSize: '0.85em' }}>⚠️</span>}
+                                                                        {expandedTopicId === topicTitle && (
+                                                                            <TopicDetailSection 
+                                                                                topicTitle={topicTitle}
+                                                                                topicDetails={topics.find(t => t.title === topicTitle)}
+                                                                                originalFiles={origFiles}
+                                                                                currentUserSelections={currentUserSelections}
+                                                                                handlePageSelectionChangeForTopicAndFile={handlePageSelectionChangeForTopicAndFile}
+                                                                                enterFullscreenModeInternal={enterFullscreenModeInternal}
+                                                                                isFinalizing={effectiveIsFinalizing}
+                                                                                validationError={validationErrors[topicTitle]}
+                                                                            />
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </Draggable>
+                                                        ))
+                                                    )}
+                                                    {provided.placeholder}
                                                 </div>
-
-                                                {topicDetails?.description && <p style={{ fontSize: '0.9em', color: '#555', margin: '5px 0 8px 26px' }}>{topicDetails.description}</p>}
-
-                                                {!isExpanded && (
-                                                     <button onClick={(e) => { e.stopPropagation(); toggleTopicExpansion(title); }} style={modalStyles.openEditorButton}>
-                                                        <Edit3 size={14} style={{marginRight: '5px'}} />
-                                                        {totalSelectedPagesForTopic > 0 ? 'Modifica Pagine Selezionate' : 'Seleziona Pagine dall\'Originale'}
-                                                    </button>
-                                                )}
-
-                                                {isExpanded && (
-                                                    <div style={modalStyles.pageSelectorContainer}>
-                                                        {console.log(`PlanReviewModal: Rendering PageSelectors for expanded topic "${title}". Topic details pages_info:`, topicDetails?.pages_info)}
-                                                        {(!topicDetails?.pages_info || topicDetails.pages_info.length === 0) && (
-                                                            <p style={modalStyles.suggestedPages}>L'AI non ha suggerito pagine specifiche per questo argomento. Puoi selezionarle manualmente dai file PDF disponibili qui sotto, se presenti.</p>
-                                                        )}
-
-                                                        {/* Sezione per pages_info suggerite dall'AI */}
-                                                        {(topicDetails?.pages_info || []).map((pInfo, pInfoIdx) => {
-                                                            console.log(`PlanReviewModal: Processing pInfo[${pInfoIdx}] for topic "${title}":`, pInfo);
-                                                            if (typeof pInfo.pdf_index !== 'number' || pInfo.pdf_index < 0 || pInfo.pdf_index >= originalFiles.length) {
-                                                                console.error(`PlanReviewModal: Invalid pdf_index in pInfo for topic "${title}". pdf_index: ${pInfo.pdf_index}, originalFiles length: ${originalFiles.length}`);
-                                                                return <p key={`pinfo-err-${title}-${pInfoIdx}`} style={modalStyles.error}>Dati file sorgente non validi per questo suggerimento AI.</p>;
-                                                            }
-                                                            const relevantFile = originalFiles[pInfo.pdf_index];
-                                                            if (!relevantFile) { // Doppio controllo
-                                                                console.error(`PlanReviewModal: Could not find originalFile at index ${pInfo.pdf_index} for topic "${title}".`);
-                                                                return <p key={`file-obj-err-${title}-${pInfoIdx}`} style={modalStyles.error}>Oggetto file originale non trovato per l'indice {pInfo.pdf_index}.</p>;
-                                                            }
-                                                            const currentFileSelections = selectionsForThisTopic.find(s => s.fileIndex === pInfo.pdf_index)?.pages || [];
-                                                            console.log(`PlanReviewModal: For topic "${title}", pInfo file "${relevantFile.name}" (index ${pInfo.pdf_index}), PageSelector selectedPages prop:`, currentFileSelections);
-
-                                                            return (
-                                                                <div key={`selector-ai-${title}-${pInfo.pdf_index}`} className="page-selector-instance" style={{marginBottom: '15px'}}>
-                                                                    <div style={modalStyles.pageSelectorHeader}>
-                                                                        <Edit3 size={14} style={{ marginRight: '5px'}} />
-                                                                        <strong>File (Suggerimento AI): {relevantFile.name}</strong>
-                                                                        <button
-                                                                            onClick={() => {
-                                                                                const psId = `page-selector-${title.replace(/\s+/g, '-')}-ai-${pInfo.pdf_index}`;
-                                                                                const pageSelectorInstance = document.getElementById(psId);
-                                                                                if (pageSelectorInstance && pageSelectorInstance.__pageImages && typeof pageSelectorInstance.__totalPagesInFile === 'number') {
-                                                                                    console.log(`PlanReviewModal: Entering fullscreen from AI suggestion for ${title}, file ${relevantFile.name}. Images: ${pageSelectorInstance.__pageImages.length}, Total Pages: ${pageSelectorInstance.__totalPagesInFile}`);
-                                                                                    enterFullscreenModeInternal(title, pInfo.pdf_index, pageSelectorInstance.__pageImages, pInfo.start_page || 1, pageSelectorInstance.__totalPagesInFile);
-                                                                                } else {
-                                                                                     console.warn(`PlanReviewModal: Cannot enter fullscreen for ${psId}. pageImages or totalPagesInFile missing from instance.`, pageSelectorInstance?.__pageImages, pageSelectorInstance?.__totalPagesInFile);
-                                                                                }
-                                                                            }}
-                                                                            style={modalStyles.fullscreenButton} title="Visualizza a schermo intero">
-                                                                            <Maximize2 size={16} style={{marginRight: '5px'}} /> Schermo Intero
-                                                                        </button>
-                                                                    </div>
-                                                                    <div style={modalStyles.suggestedPages}>
-                                                                        (AI suggerisce Pagine Originali: {pInfo.start_page} - {pInfo.end_page})
-                                                                    </div>
-                                                                    <PageSelector
-                                                                        id={`page-selector-${title.replace(/\s+/g, '-')}-ai-${pInfo.pdf_index}`}
-                                                                        key={`key-ai-${title}-${relevantFile.name}-${pInfo.start_page}-${pInfo.end_page}`}
-                                                                        pdfFile={relevantFile}
-                                                                        suggestedStartPage={pInfo.start_page || 1}
-                                                                        suggestedEndPage={pInfo.end_page || (pInfo.start_page || 0) + 9 } // Limita default se end_page manca
-                                                                        selectedPages={currentFileSelections}
-                                                                        onSelectionChange={(newSelection) => handlePageSelectionChangeForTopicAndFile(title, pInfo.pdf_index, newSelection)}
-                                                                        isFinalizing={isFinalizing}
-                                                                        onImagesReady={(pageImages, totalPages) => {
-                                                                            console.log(`PlanReviewModal: PageSelector (AI) for "${title}" file "${relevantFile.name}" reported onImagesReady. Images count: ${pageImages?.length}, Total pages: ${totalPages}`);
-                                                                            const psId = `page-selector-${title.replace(/\s+/g, '-')}-ai-${pInfo.pdf_index}`;
-                                                                            const pageSelectorInstance = document.getElementById(psId);
-                                                                            if (pageSelectorInstance) {
-                                                                                pageSelectorInstance.__pageImages = pageImages;
-                                                                                pageSelectorInstance.__totalPagesInFile = totalPages;
-                                                                            }
-                                                                        }}
-                                                                    />
-                                                                </div>
-                                                            );
-                                                        })}
-
-                                                        {/* Sezione per selezione manuale da TUTTI i file disponibili, se non ci sono pages_info */}
-                                                        {(!topicDetails?.pages_info || topicDetails.pages_info.length === 0) && originalFiles.map((file, manualFileIndex) => {
-                                                            console.log(`PlanReviewModal: Rendering MANUAL PageSelector for topic "${title}", file "${file.name}" (index ${manualFileIndex}) because no AI pages_info.`);
-                                                            const currentManualFileSelections = selectionsForThisTopic.find(s => s.fileIndex === manualFileIndex)?.pages || [];
-                                                            return (
-                                                                <div key={`selector-manual-${title}-${manualFileIndex}`} className="page-selector-instance" style={{ marginTop: '10px', borderTop: '1px dashed #ccc', paddingTop: '10px'}}>
-                                                                    <div style={modalStyles.pageSelectorHeader}>
-                                                                        <Edit3 size={14} style={{ marginRight: '5px'}} />
-                                                                        <strong>Seleziona da File: {file.name}</strong>
-                                                                         <button
-                                                                            onClick={() => {
-                                                                                const psId = `page-selector-${title.replace(/\s+/g, '-')}-manual-${manualFileIndex}`;
-                                                                                const pageSelectorInstance = document.getElementById(psId);
-                                                                                if (pageSelectorInstance && pageSelectorInstance.__pageImages && typeof pageSelectorInstance.__totalPagesInFile === 'number') {
-                                                                                    console.log(`PlanReviewModal: Entering fullscreen from MANUAL selection for ${title}, file ${file.name}. Images: ${pageSelectorInstance.__pageImages.length}, Total Pages: ${pageSelectorInstance.__totalPagesInFile}`);
-                                                                                    enterFullscreenModeInternal(title, manualFileIndex, pageSelectorInstance.__pageImages, 1, pageSelectorInstance.__totalPagesInFile);
-                                                                                } else {
-                                                                                     console.warn(`PlanReviewModal: Cannot enter fullscreen for ${psId}. pageImages or totalPagesInFile missing from instance.`, pageSelectorInstance?.__pageImages, pageSelectorInstance?.__totalPagesInFile);
-                                                                                }
-                                                                            }}
-                                                                            style={modalStyles.fullscreenButton} title="Visualizza a schermo intero">
-                                                                            <Maximize2 size={16} style={{marginRight: '5px'}} /> Schermo Intero
-                                                                        </button>
-                                                                    </div>
-                                                                    <PageSelector
-                                                                        id={`page-selector-${title.replace(/\s+/g, '-')}-manual-${manualFileIndex}`}
-                                                                        key={`key-manual-${title}-${file.name}`}
-                                                                        pdfFile={file}
-                                                                        suggestedStartPage={1} // Per selezione manuale, suggerisci dall'inizio
-                                                                        suggestedEndPage={10} // e un range di default
-                                                                        selectedPages={currentManualFileSelections}
-                                                                        onSelectionChange={(newSelection) => handlePageSelectionChangeForTopicAndFile(title, manualFileIndex, newSelection)}
-                                                                        isFinalizing={isFinalizing}
-                                                                        onImagesReady={(pageImages, totalPages) => {
-                                                                            console.log(`PlanReviewModal: PageSelector (Manual) for "${title}" file "${file.name}" reported onImagesReady. Images: ${pageImages?.length}, Total pages: ${totalPages}`);
-                                                                            const psId = `page-selector-${title.replace(/\s+/g, '-')}-manual-${manualFileIndex}`;
-                                                                            const pageSelectorInstance = document.getElementById(psId);
-                                                                            if (pageSelectorInstance) {
-                                                                                pageSelectorInstance.__pageImages = pageImages;
-                                                                                pageSelectorInstance.__totalPagesInFile = totalPages;
-                                                                            }
-                                                                        }}
-                                                                    />
-                                                                </div>
-                                                            );
-                                                        })}
-                                                        {validationErrors[title] && <p style={modalStyles.error}>{validationErrors[title]}</p>}
-                                                    </div>
-                                                )}
                                             </div>
-                                        );
-                                    })}
-                                </div>
-                            );
-                        })}
-                        {distribution.length === 0 && <p>Il piano giornaliero non è stato ancora generato o è vuoto.</p>}
-                    </div>
+                                        )}
+                                    </Droppable>
+                                ))}
+                        </div>
 
-                    <div style={modalStyles.actions}>
-                        <button onClick={onCancel} style={modalStyles.cancelButton} disabled={isFinalizing}>Annulla</button>
-                        <button onClick={handleInternalConfirm} style={{...modalStyles.confirmButton, opacity: isFinalizing ? 0.6 : 1}} disabled={isFinalizing}>
-                            {isFinalizing ? <><Loader size={16} className="spin-icon" style={{marginRight:'8px'}} /> Attendere...</> : 'Conferma e Genera'}
-                        </button>
-                    </div>
+                        <div className="unassigned-container">
+                            <h3 className="unassigned-header">Argomenti Non Assegnati</h3>
+                            <Droppable droppableId="unassigned">
+                                {(provided, snapshot) => (
+                                    <div 
+                                        ref={provided.innerRef}
+                                        {...provided.droppableProps}
+                                        className={`unassigned-topics ${snapshot.isDraggingOver ? 'dragging-over' : ''}`}
+                                    >
+                                        {unassignedTopics.length === 0 ? (
+                                            <div className="empty-unassigned-message">
+                                                <Info size={16} />
+                                                <span>Tutti gli argomenti sono stati assegnati</span>
+                                            </div>
+                                        ) : (
+                                            unassignedTopics.map((topicTitle, index) => (
+                                                <Draggable 
+                                                    key={`unassigned-${topicTitle}-${index}`} 
+                                                    draggableId={`unassigned-${topicTitle}-${index}`} 
+                                                    index={index}
+                                                    isDragDisabled={effectiveIsFinalizing}
+                                                >
+                                                    {(provided, snapshot) => (
+                                                        <div
+                                                            ref={provided.innerRef}
+                                                            {...provided.draggableProps}
+                                                            {...provided.dragHandleProps}
+                                                            className={`topic-card unassigned ${snapshot.isDragging ? 'dragging' : ''} ${validationErrors[topicTitle] ? 'has-error' : ''}`}
+                                                            id={`topic-item-${topicTitle.replace(/\s+/g, '-')}`}
+                                                        >
+                                                            <div 
+                                                                className="topic-header"
+                                                                onClick={() => toggleTopicExpansion(topicTitle)}
+                                                            >
+                                                                {expandedTopicId === topicTitle ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                                                                <BookOpen size={14} />
+                                                                <h4>{topicTitle}</h4>
+                                                                
+                                                                {/* Mostra il numero di pagine selezionate */}
+                                                                <div className="topic-pages-count">
+                                                                    <FileText size={12} />
+                                                                    <span>{getTotalSelectedPages(topicTitle)} </span>
+                                                                </div>
+                                                                
+                                                                {validationErrors[topicTitle] && <AlertCircle size={16} className="error-icon" />}
+                                                            </div>
+
+                                                            {expandedTopicId === topicTitle && (
+                                                                <TopicDetailSection 
+                                                                    topicTitle={topicTitle}
+                                                                    topicDetails={topics.find(t => t.title === topicTitle)}
+                                                                    originalFiles={origFiles}
+                                                                    currentUserSelections={currentUserSelections}
+                                                                    handlePageSelectionChangeForTopicAndFile={handlePageSelectionChangeForTopicAndFile}
+                                                                    enterFullscreenModeInternal={enterFullscreenModeInternal}
+                                                                    isFinalizing={effectiveIsFinalizing}
+                                                                    validationError={validationErrors[topicTitle]}
+                                                                />
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </Draggable>
+                                            ))
+                                        )}
+                                        {provided.placeholder}
+                                    </div>
+                                )}
+                            </Droppable>
+                        </div>
+                    </DragDropContext>
+                </div>
+
+<div className="plan-review-actions">
+                    <button 
+                        className="cancel-button" 
+                        onClick={handleCancel} 
+                        disabled={effectiveIsFinalizing}
+                    >
+                        <XCircle size={18} />
+                        Annulla
+                    </button>
+                    <button 
+                        className="confirm-button" 
+                        onClick={handleConfirm} 
+                        disabled={effectiveIsFinalizing}
+                    >
+                        {effectiveIsFinalizing ? (
+                            <>
+                                <Loader size={18} className="spin-icon" />
+                                Attendere...
+                            </>
+                        ) : (
+                            <>
+                                <Save size={18} />
+                                Conferma e Genera
+                            </>
+                        )}
+                    </button>
                 </div>
             </div>
 
             {fullscreenMode && currentFullscreenData.pageImages && currentFullscreenData.pageImages.length > 0 && (
-                <div style={modalStyles.fullscreenOverlay} onClick={(e) => { if(e.target === e.currentTarget) { console.log("Fullscreen: Overlay clicked, exiting."); exitFullscreenMode(); } }}>
-                    <div style={modalStyles.fullscreenHeader}>
-                        <h3 style={{margin: 0, fontWeight: '500', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>
-                            {currentFullscreenData.topicTitle} (File: {originalFiles[currentFullscreenData.fileIndex]?.name || 'Sconosciuto'})
+                <div 
+                    className="fullscreen-overlay" 
+                    onClick={(e) => { if(e.target === e.currentTarget) exitFullscreenMode(); }}
+                >
+                    <div className="fullscreen-header">
+                        <h3>
+                            {currentFullscreenData.topicTitle} (File: {origFiles[currentFullscreenData.fileIndex]?.name || 'Sconosciuto'})
                         </h3>
-                        <button onClick={() => { console.log("Fullscreen: Close button clicked."); exitFullscreenMode(); }} style={modalStyles.fullscreenCloseButton} title="Chiudi (Esc)"> <X size={24} /> </button>
+                        <button 
+                            onClick={exitFullscreenMode} 
+                            className="fullscreen-close-button" 
+                            title="Chiudi (Esc)"
+                        >
+                            <X size={24} />
+                        </button>
                     </div>
-                    <div style={modalStyles.fullscreenContent}>
-                        {console.log("Fullscreen: Rendering page image for current page:", currentFullscreenData.currentPage, "Image URL/data (first 50 chars):", currentFullscreenData.pageImages[currentFullscreenData.currentPage - 1]?.substring(0,50) + "..." )}
+                    <div className="fullscreen-content">
                         <img
                             src={currentFullscreenData.pageImages[currentFullscreenData.currentPage - 1]}
-                            alt={`Pagina ${currentFullscreenData.currentPage} di ${originalFiles[currentFullscreenData.fileIndex]?.name}`}
-                            style={modalStyles.fullscreenImage}
-                            onError={(e) => console.error("Fullscreen: Error loading image for page", currentFullscreenData.currentPage, "from file", originalFiles[currentFullscreenData.fileIndex]?.name, e)}
+                            alt={`Pagina ${currentFullscreenData.currentPage} di ${origFiles[currentFullscreenData.fileIndex]?.name}`}
+                            className="fullscreen-image"
                         />
-                        <div style={modalStyles.fullscreenNavigation}>
-                            <button onClick={() => { console.log("Fullscreen: Prev page clicked."); goToPrevPageFullscreen(); }} style={{...modalStyles.fullscreenNavButton, opacity: currentFullscreenData.currentPage <= 1 ? 0.5 : 1}} disabled={currentFullscreenData.currentPage <= 1} title="Pagina Precedente (←)"> <ArrowLeft size={24} /> </button>
-                            <div style={modalStyles.pageSelectionControls}>
+                        <div className="fullscreen-navigation">
+                            <button 
+                                onClick={goToPrevPageFullscreen} 
+                                className={`fullscreen-nav-button ${currentFullscreenData.currentPage <= 1 ? 'disabled' : ''}`}
+                                disabled={currentFullscreenData.currentPage <= 1}
+                                title="Pagina Precedente (←)"
+                            >
+                                <ArrowLeft size={24} />
+                            </button>
+                            <div className="page-selection-controls">
                                 {(currentFullscreenData.selectedPagesInCurrentFile || []).includes(currentFullscreenData.currentPage) ? (
-                                    <button onClick={() => { console.log("Fullscreen: Unselect page clicked for page", currentFullscreenData.currentPage); togglePageSelectionFullscreen(); }} style={modalStyles.fullscreenUnselectButton} title="Rimuovi Selezione (Spazio)"> Deseleziona Pagina {currentFullscreenData.currentPage} </button>
+                                    <button 
+                                        onClick={togglePageSelectionFullscreen} 
+                                        className="fullscreen-unselect-button" 
+                                        title="Rimuovi Selezione (Spazio)"
+                                    >
+                                        Deseleziona Pagina {currentFullscreenData.currentPage}
+                                    </button>
                                 ) : (
-                                    <button onClick={() => { console.log("Fullscreen: Select page clicked for page", currentFullscreenData.currentPage); togglePageSelectionFullscreen(); }} style={modalStyles.fullscreenSelectButton} title="Seleziona Pagina (Spazio)"> Seleziona Pagina {currentFullscreenData.currentPage} </button>
+                                    <button 
+                                        onClick={togglePageSelectionFullscreen} 
+                                        className="fullscreen-select-button" 
+                                        title="Seleziona Pagina (Spazio)"
+                                    >
+                                        Seleziona Pagina {currentFullscreenData.currentPage}
+                                    </button>
                                 )}
                             </div>
-                            <div style={modalStyles.fullscreenPageInfo}> {currentFullscreenData.currentPage} / {currentFullscreenData.totalPagesInFile || '?'} </div>
-                            <button onClick={() => { console.log("Fullscreen: Next page clicked."); goToNextPageFullscreen(); }} style={{...modalStyles.fullscreenNavButton, opacity: currentFullscreenData.currentPage >= (currentFullscreenData.totalPagesInFile || 1) ? 0.5 : 1}} disabled={currentFullscreenData.currentPage >= (currentFullscreenData.totalPagesInFile || 1)} title="Pagina Successiva (→)"> <ArrowRight size={24} /> </button>
+                            <div className="fullscreen-page-info">
+                                {currentFullscreenData.currentPage} / {currentFullscreenData.totalPagesInFile || '?'}
+                            </div>
+                            <button 
+                                onClick={goToNextPageFullscreen} 
+                                className={`fullscreen-nav-button ${currentFullscreenData.currentPage >= (currentFullscreenData.totalPagesInFile || 1) ? 'disabled' : ''}`}
+                                disabled={currentFullscreenData.currentPage >= (currentFullscreenData.totalPagesInFile || 1)}
+                                title="Pagina Successiva (→)"
+                            >
+                                <ArrowRight size={24} />
+                            </button>
                         </div>
                     </div>
                 </div>
             )}
         </>
+    );
+};
+
+// Componente per i dettagli di un argomento e la selezione delle pagine
+const TopicDetailSection = ({
+    topicTitle,
+    topicDetails,
+    originalFiles,
+    currentUserSelections,
+    handlePageSelectionChangeForTopicAndFile,
+    enterFullscreenModeInternal,
+    isFinalizing,
+    validationError
+}) => {
+    if (!topicDetails) return <div className="topic-detail-error">Dettagli argomento non disponibili</div>;
+    
+    const selectionsForThisTopic = currentUserSelections[topicTitle] || [];
+    
+    return (
+        <div className="topic-detail-section">
+            {topicDetails?.description && (
+                <p className="topic-description">{topicDetails.description}</p>
+            )}
+            
+            <div className="page-selector-container">
+                {(!topicDetails?.pages_info || topicDetails.pages_info.length === 0) && (
+                    <p className="suggested-pages-note">L'AI non ha suggerito pagine specifiche per questo argomento. Puoi selezionarle manualmente dai file PDF disponibili qui sotto.</p>
+                )}
+
+                {/* Sezione per pages_info suggerite dall'AI */}
+                {(topicDetails?.pages_info || []).map((pInfo, pInfoIdx) => {
+                    if (typeof pInfo.pdf_index !== 'number' || pInfo.pdf_index < 0 || pInfo.pdf_index >= originalFiles.length) {
+                        return <p key={`pinfo-err-${topicTitle}-${pInfoIdx}`} className="error-message">Dati file sorgente non validi per questo suggerimento AI.</p>;
+                    }
+                    
+                    const relevantFile = originalFiles[pInfo.pdf_index];
+                    if (!relevantFile) {
+                        return <p key={`file-obj-err-${topicTitle}-${pInfoIdx}`} className="error-message">Oggetto file originale non trovato per l'indice {pInfo.pdf_index}.</p>;
+                    }
+                    
+                    const currentFileSelections = selectionsForThisTopic.find(s => s.fileIndex === pInfo.pdf_index)?.pages || [];
+
+                    return (
+                        <div key={`selector-ai-${topicTitle}-${pInfo.pdf_index}`} className="page-selector-instance">
+                            <div className="page-selector-header">
+                                <Edit3 size={14} />
+                                <strong>File (Suggerimento AI): {relevantFile.name}</strong>
+                                <button
+                                    onClick={() => {
+                                        const psId = `page-selector-${topicTitle.replace(/\s+/g, '-')}-ai-${pInfo.pdf_index}`;
+                                        const pageSelectorInstance = document.getElementById(psId);
+                                        if (pageSelectorInstance && pageSelectorInstance.__pageImages && typeof pageSelectorInstance.__totalPagesInFile === 'number') {
+                                            enterFullscreenModeInternal(topicTitle, pInfo.pdf_index, pageSelectorInstance.__pageImages, pInfo.start_page || 1, pageSelectorInstance.__totalPagesInFile);
+                                        }
+                                    }}
+                                    className="fullscreen-button" 
+                                    title="Visualizza a schermo intero"
+                                >
+                                    <Maximize2 size={16} /> Schermo Intero
+                                </button>
+                            </div>
+                            <div className="suggested-pages">
+                                (AI suggerisce Pagine Originali: {pInfo.start_page} - {pInfo.end_page})
+                            </div>
+                            <PageSelector
+                                id={`page-selector-${topicTitle.replace(/\s+/g, '-')}-ai-${pInfo.pdf_index}`}
+                                key={`key-ai-${topicTitle}-${relevantFile.name}-${pInfo.start_page}-${pInfo.end_page}`}
+                                pdfFile={relevantFile}
+                                suggestedStartPage={pInfo.start_page || 1}
+                                suggestedEndPage={pInfo.end_page || (pInfo.start_page || 0) + 9}
+                                selectedPages={currentFileSelections}
+                                onSelectionChange={(newSelection) => handlePageSelectionChangeForTopicAndFile(topicTitle, pInfo.pdf_index, newSelection)}
+                                isFinalizing={isFinalizing}
+                                onImagesReady={(pageImages) => {
+                                    const psId = `page-selector-${topicTitle.replace(/\s+/g, '-')}-ai-${pInfo.pdf_index}`;
+                                    const pageSelectorInstance = document.getElementById(psId);
+                                    if (pageSelectorInstance) {
+                                        pageSelectorInstance.__pageImages = pageImages;
+                                        pageSelectorInstance.__totalPagesInFile = pageImages.length;
+                                    }
+                                }}
+                                onToggleFullscreen={(pageImages, initialPage) => 
+                                    enterFullscreenModeInternal(topicTitle, pInfo.pdf_index, pageImages, initialPage, pageImages.length)
+                                }
+                            />
+                        </div>
+                    );
+                })}
+
+                {/* Sezione per selezione manuale da TUTTI i file disponibili, se non ci sono pages_info */}
+                {(!topicDetails?.pages_info || topicDetails.pages_info.length === 0) && originalFiles.map((file, manualFileIndex) => {
+                    const currentManualFileSelections = selectionsForThisTopic.find(s => s.fileIndex === manualFileIndex)?.pages || [];
+                    return (
+                        <div key={`selector-manual-${topicTitle}-${manualFileIndex}`} className="page-selector-instance manual">
+                            <div className="page-selector-header">
+                                <Edit3 size={14} />
+                                <strong>Seleziona da File: {file.name}</strong>
+                                <button
+                                    onClick={() => {
+                                        const psId = `page-selector-${topicTitle.replace(/\s+/g, '-')}-manual-${manualFileIndex}`;
+                                        const pageSelectorInstance = document.getElementById(psId);
+                                        if (pageSelectorInstance && pageSelectorInstance.__pageImages && typeof pageSelectorInstance.__totalPagesInFile === 'number') {
+                                            enterFullscreenModeInternal(topicTitle, manualFileIndex, pageSelectorInstance.__pageImages, 1, pageSelectorInstance.__totalPagesInFile);
+                                        }
+                                    }}
+                                    className="fullscreen-button" 
+                                    title="Visualizza a schermo intero"
+                                >
+                                    <Maximize2 size={16} /> Schermo Intero
+                                </button>
+                            </div>
+                            <PageSelector
+                                id={`page-selector-${topicTitle.replace(/\s+/g, '-')}-manual-${manualFileIndex}`}
+                                key={`key-manual-${topicTitle}-${file.name}`}
+                                pdfFile={file}
+                                suggestedStartPage={1}
+                                suggestedEndPage={10}
+                                selectedPages={currentManualFileSelections}
+                                onSelectionChange={(newSelection) => handlePageSelectionChangeForTopicAndFile(topicTitle, manualFileIndex, newSelection)}
+                                isFinalizing={isFinalizing}
+                                onImagesReady={(pageImages) => {
+                                    const psId = `page-selector-${topicTitle.replace(/\s+/g, '-')}-manual-${manualFileIndex}`;
+                                    const pageSelectorInstance = document.getElementById(psId);
+                                    if (pageSelectorInstance) {
+                                        pageSelectorInstance.__pageImages = pageImages;
+                                        pageSelectorInstance.__totalPagesInFile = pageImages.length;
+                                    }
+                                }}
+                                onToggleFullscreen={(pageImages, initialPage) => 
+                                    enterFullscreenModeInternal(topicTitle, manualFileIndex, pageImages, initialPage, pageImages.length)
+                                }
+                            />
+                        </div>
+                    );
+                })}
+                
+                {validationError && <p className="error-message">{validationError}</p>}
+            </div>
+        </div>
     );
 };
 
