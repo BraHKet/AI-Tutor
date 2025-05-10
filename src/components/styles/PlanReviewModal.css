@@ -10,6 +10,8 @@
   display: flex;
   flex-direction: column;
   margin: 0 auto;
+  padding-bottom: 40px; /* Esempio: 40px di spazio in fondo. Scegli il valore che preferisci. */
+  box-sizing: border-box; /* Buona pratica quando si aggiunge padding a elementi con dimensioni */
 }
 
 /* Header con stile migliorato: senza border-radius in alto */
