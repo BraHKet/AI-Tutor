@@ -1,12 +1,11 @@
-// src/components/StudyPlanViewer.jsx
+// src/components/StudyPlanViewer.jsx - Corrected Version
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { doc, getDoc, collection, getDocs, query, orderBy, updateDoc } from 'firebase/firestore';
+import { useParams, useNavigate } from 'react-router-dom';
+import { doc, getDoc, collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import NavBar from './NavBar';
 import { 
-  Loader, BookOpen, Calendar, CheckSquare, Square, Link as LinkIcon, 
-  FileText, AlertTriangle, ArrowLeft, Clock, Book
+  Loader, BookOpen, Calendar, AlertTriangle, ArrowLeft, Clock, Lock, CheckCircle
 } from 'lucide-react';
 import './styles/StudyPlanViewer.css';
 
@@ -17,7 +16,9 @@ const StudyPlanViewer = () => {
   const [topics, setTopics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [currentDay, setCurrentDay] = useState(1); // Per navigare tra i giorni
+  
+  // Stato per la visualizzazione a griglia
+  const [daysData, setDaysData] = useState([]);
 
   useEffect(() => {
     const fetchPlanData = async () => {
@@ -55,14 +56,8 @@ const StudyPlanViewer = () => {
         
         setTopics(topicsData);
         
-        // Imposta il giorno corrente alla giornata attuale (se c'è)
-        if (topicsData.length > 0) {
-          const uniqueDays = [...new Set(topicsData.map(topic => topic.assignedDay))];
-          if (uniqueDays.length > 0) {
-            setCurrentDay(uniqueDays[0]);
-          }
-        }
-
+        // Process data for day cards
+        processDaysData(topicsData);
       } catch (err) {
         console.error("StudyPlanViewer: Error fetching study plan:", err);
         setError("Impossibile caricare i dati del piano di studio: " + err.message);
@@ -76,48 +71,57 @@ const StudyPlanViewer = () => {
     fetchPlanData();
   }, [projectId]);
 
-  // Ottieni gli argomenti per il giorno selezionato
-  const topicsForCurrentDay = topics.filter(topic => topic.assignedDay === currentDay);
-  
-  // Giorni disponibili nel piano
-  const availableDays = [...new Set(topics.map(topic => topic.assignedDay))].sort((a, b) => a - b);
-  
-  // Naviga al giorno precedente se disponibile
-  const goToPreviousDay = () => {
-    const currentIndex = availableDays.indexOf(currentDay);
-    if (currentIndex > 0) {
-      setCurrentDay(availableDays[currentIndex - 1]);
-    }
-  };
-  
-  // Naviga al giorno successivo se disponibile
-  const goToNextDay = () => {
-    const currentIndex = availableDays.indexOf(currentDay);
-    if (currentIndex < availableDays.length - 1) {
-      setCurrentDay(availableDays[currentIndex + 1]);
-    }
-  };
-  
-  // Gestisce il cambio di stato "completato" di un argomento
-  const toggleTopicCompleted = async (topicId, currentStatus) => {
-    try {
-      const topicRef = doc(db, 'projects', projectId, 'topics', topicId);
-      await updateDoc(topicRef, {
-        isCompleted: !currentStatus
-      });
+  // Elabora i dati per la visualizzazione a griglia dei giorni
+  const processDaysData = (topicsData) => {
+    // Raggruppa i topic per giorno
+    const topicsByDay = topicsData.reduce((acc, topic) => {
+      const day = topic.assignedDay;
+      if (!acc[day]) {
+        acc[day] = [];
+      }
+      acc[day].push(topic);
+      return acc;
+    }, {});
+    
+    // Crea l'array dei giorni con statistiche
+    const days = Object.keys(topicsByDay).map(dayNum => {
+      const dayTopics = topicsByDay[dayNum];
+      const completedTopics = dayTopics.filter(t => t.isCompleted);
       
-      // Aggiorna lo stato locale
-      setTopics(topics.map(topic => 
-        topic.id === topicId 
-          ? { ...topic, isCompleted: !currentStatus } 
-          : topic
-      ));
-    } catch (err) {
-      console.error("Error updating topic status:", err);
-      // Mostra un messaggio all'utente se necessario
-    }
+      return {
+        day: parseInt(dayNum),
+        topics: dayTopics,
+        topicsCount: dayTopics.length,
+        completedCount: completedTopics.length,
+        completionPercentage: dayTopics.length > 0 
+          ? Math.round((completedTopics.length / dayTopics.length) * 100) 
+          : 0,
+        isFullyCompleted: dayTopics.length > 0 && completedTopics.length === dayTopics.length
+      };
+    }).sort((a, b) => a.day - b.day);
+    
+    // Calcola lo stato di blocco per ogni giorno
+    // Un giorno è bloccato se almeno uno dei giorni precedenti non è completamente completato
+    const daysWithLockStatus = days.map((day, index) => {
+      let isLocked = false;
+      
+      // Controlla se uno dei giorni precedenti non è completato al 100%
+      for (let i = 0; i < index; i++) {
+        if (!days[i].isFullyCompleted) {
+          isLocked = true;
+          break;
+        }
+      }
+      
+      return {
+        ...day,
+        isLocked
+      };
+    });
+    
+    setDaysData(daysWithLockStatus);
   };
-  
+
   // Formatta la data in modo più leggibile
   const formatDate = (timestamp) => {
     if (!timestamp) return 'Data sconosciuta';
@@ -212,172 +216,64 @@ const StudyPlanViewer = () => {
               </div>
             )}
           </div>
-          
-          <div className="navigation-controls">
-            <button 
-              onClick={goToPreviousDay} 
-              className="nav-button"
-              disabled={availableDays.indexOf(currentDay) === 0}
-            >
-              Giorno Precedente
-            </button>
-            
-            <div className="day-selector">
-              <span>Giorno</span>
-              <select 
-                value={currentDay} 
-                onChange={(e) => setCurrentDay(parseInt(e.target.value))}
-              >
-                {availableDays.map(day => (
-                  <option key={day} value={day}>
-                    {day}
-                  </option>
-                ))}
-              </select>
-              <span>di {availableDays.length}</span>
-            </div>
-            
-            <button 
-              onClick={goToNextDay} 
-              className="nav-button"
-              disabled={availableDays.indexOf(currentDay) === availableDays.length - 1}
-            >
-              Giorno Successivo
-            </button>
-          </div>
         </div>
         
-        <div className="day-content">
-          <h2 className="day-title">
-            <Calendar size={20} />
-            Giorno {currentDay}
-          </h2>
-          
-          {topicsForCurrentDay.length === 0 ? (
-            <div className="empty-day">
-              <Book size={36} strokeWidth={1} />
-              <p>Nessun argomento pianificato per questo giorno.</p>
+        {/* Vista a griglia dei giorni (corretta per mostrare solo gli argomenti) */}
+        <div className="days-grid">
+          {daysData.length === 0 ? (
+            <div className="error-container">
+              <AlertTriangle size={24} />
+              <h2>Nessuna pianificazione trovata</h2>
+              <p>Non è stato possibile trovare argomenti pianificati per questo progetto.</p>
             </div>
           ) : (
-            <div className="topics-list">
-              {topicsForCurrentDay.map(topic => (
-                <div 
-                  key={topic.id} 
-                  className={`topic-item ${topic.isCompleted ? 'completed' : ''}`}
-                >
-                  <div className="topic-header">
-                    <div 
-                      className="topic-checkbox" 
-                      onClick={() => toggleTopicCompleted(topic.id, topic.isCompleted)}
-                    >
-                      {topic.isCompleted ? (
-                        <CheckSquare size={20} className="checkbox-icon" />
-                      ) : (
-                        <Square size={20} className="checkbox-icon" />
-                      )}
+            daysData.map(day => (
+              <div 
+                key={`day-${day.day}`} 
+                className={`day-card ${day.isLocked ? 'locked' : ''}`}
+              >
+                {day.isLocked && (
+                  <div className="day-card-lock-overlay">
+                    <Lock size={32} />
+                    <div className="day-card-lock-message">
+                      Completa i giorni precedenti per sbloccare questo giorno
                     </div>
-                    
-                    <h3 className="topic-title">{topic.title}</h3>
-                    
-                    {topic.isCompleted ? (
-                      <span className="completed-badge">Completato</span>
-                    ) : null}
                   </div>
-                  
-                  {topic.description && (
-                    <p className="topic-description">{topic.description}</p>
-                  )}
-                  
-                  {topic.sources && topic.sources.length > 0 ? (
-                    <div className="topic-sources">
-                      <h4>Materiale di Studio:</h4>
-                      <ul className="sources-list">
-                        {topic.sources.map((source, idx) => (
-                          <li key={idx} className={`source-item source-type-${source.type}`}>
-                            {source.type === 'pdf_chunk' && source.webViewLink && (
-                              <>
-                                <FileText size={16} className="source-icon" />
-                                <a 
-                                  href={source.webViewLink} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer" 
-                                  className="source-link"
-                                >
-                                  {source.chunkName || `Sezione PDF (p${source.pageStart}-${source.pageEnd})`}
-                                </a>
-                                {source.originalFileName && (
-                                  <span className="source-origin">
-                                    da: {source.originalFileName}
-                                  </span>
-                                )}
-                              </>
-                            )}
-                            
-                            {source.type === 'pdf_original' && source.webViewLink && (
-                              <>
-                                <FileText size={16} className="source-icon" />
-                                <a 
-                                  href={source.webViewLink} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="source-link"
-                                >
-                                  {source.name} <span className="source-note">(File Intero)</span>
-                                </a>
-                              </>
-                            )}
-                            
-                            {source.type === 'web_link' && source.url && (
-                              <>
-                                <LinkIcon size={16} className="source-icon" />
-                                <a 
-                                  href={source.url} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="source-link"
-                                >
-                                  {source.title || source.url}
-                                </a>
-                              </>
-                            )}
-                            
-                            {source.type === 'error_chunk' && (
-                              <>
-                                <AlertTriangle size={16} className="source-icon" />
-                                <span className="source-error" title={source.error}>
-                                  Errore creazione sezione: {source.name || 'N/D'} 
-                                  {source.originalFileName && ` (da ${source.originalFileName})`}
-                                </span>
-                              </>
-                            )}
-                            
-                            {source.type === 'note' && source.noteType === 'exam_simulation' && (
-                              <>
-                                <FileText size={16} className="source-icon" />
-                                <span className="source-note exam-note">
-                                  {source.description || 'Simulazione d\'esame - Nessun materiale specifico collegato.'}
-                                </span>
-                              </>
-                            )}
-                            
-                            {source.type === 'note' && source.noteType === 'review' && (
-                              <>
-                                <BookOpen size={16} className="source-icon" />
-                                <span className="source-note review-note">
-                                  {source.description || 'Ripasso generale argomenti precedenti.'}
-                                </span>
-                              </>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ) : (
-                    <p className="no-sources">Nessun materiale di studio specificato.</p>
-                  )}
+                )}
+                
+                <div className="day-card-header">
+                  <Calendar size={20} />
+                  <h3 className="day-card-title">Giorno {day.day}</h3>
                 </div>
-              ))}
-            </div>
+                
+                <div className="day-card-content">
+                  {/* Elenco degli argomenti */}
+                  <div className="topics-preview">
+                    {day.topics.slice(0, 3).map(topic => (
+                      <div 
+                        key={`preview-${topic.id}`} 
+                        className="topic-preview"
+                      >
+                        {topic.isCompleted ? (
+                          <CheckCircle size={16} color="#4CAF50" />
+                        ) : (
+                          <Circle size={16} color="#6c4ad0" />
+                        )}
+                        <h4 className={`topic-preview-title ${topic.isCompleted ? 'topic-preview-completed' : ''}`}>
+                          {topic.title}
+                        </h4>
+                      </div>
+                    ))}
+                    
+                    {day.topics.length > 3 && (
+                      <div className="more-topics">
+                        + altri {day.topics.length - 3} argomenti
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))
           )}
         </div>
         
@@ -386,12 +282,27 @@ const StudyPlanViewer = () => {
             <ArrowLeft size={16} />
             Torna alla lista dei progetti
           </button>
-          
-          {/* Aggiungi qui altri pulsanti o azioni se necessario */}
         </div>
       </div>
     </div>
   );
 };
+
+// Helper component for the Circle icon, since it's not imported
+const Circle = ({ size, color }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={color}
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="10"></circle>
+  </svg>
+);
 
 export default StudyPlanViewer;

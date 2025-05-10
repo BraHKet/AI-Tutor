@@ -1,11 +1,11 @@
-/* src/components/styles/ProjectsSummary.css */
+/* src/components/styles/ProjectsSummary.css - Updated Dark Theme */
 
 .projects-summary-container {
   width: calc(100% - 200px); /* Sottrarre la larghezza della navbar */
   max-width: 1500px;
   margin: 0 0 0 200px; /* Sposta a destra per la navbar */
-  padding: 20px;
-  background-color: #ffffff;
+  padding: 30px;
+  background-color: #f8f9fa; /* Sfondo leggermente più chiaro */
   min-height: calc(100vh - 60px);
   display: flex;
   flex-direction: column;
@@ -35,7 +35,7 @@
   gap: 15px;
   position: sticky;
   top: 0;
-  background-color: #ffffff;
+  background-color: #f8f9fa;
   z-index: 10; /* Assicura che rimanga sopra gli altri elementi durante lo scroll */
   padding-top: 10px;
 }
@@ -43,8 +43,9 @@
 .projects-header h1 {
   margin: 0;
   font-size: 1.8em;
-  color: #333;
-  font-weight: 600;
+  color: #2d2d44;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 .projects-actions {
@@ -59,16 +60,22 @@
 .search-container {
   display: flex;
   align-items: center;
-  background-color: #f5f5f5;
-  border-radius: 6px;
+  background-color: white;
+  border-radius: 8px;
   padding: 6px 12px;
   width: 250px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid #d9d9d9;
+  transition: all 0.3s;
   position: relative;
 }
 
+.search-container:focus-within {
+  border-color: #8a65ff;
+  box-shadow: 0 0 0 2px rgba(138, 101, 255, 0.2);
+}
+
 .search-icon {
-  color: #757575;
+  color: #6c4ad0;
   margin-right: 8px;
 }
 
@@ -79,6 +86,7 @@
   font-size: 0.9em;
   width: 100%;
   outline: none;
+  padding: 5px 0;
 }
 
 .search-input::placeholder {
@@ -89,20 +97,22 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 16px;
-  border-radius: 6px;
+  padding: 10px 16px;
+  border-radius: 8px;
   border: none;
-  background-color: #4CAF50;
+  background: linear-gradient(135deg, #2d2d44 0%, #1a1a2e 100%);
   color: white;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.3s ease;
   position: relative;
   z-index: 12; /* Assicura che rimanga in cima */
+  box-shadow: 0 4px 6px rgba(26, 26, 46, 0.25);
 }
 
 .create-project-button:hover {
-  background-color: #43A047;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 10px rgba(26, 26, 46, 0.3);
 }
 
 /* Griglia progetti */
@@ -114,37 +124,41 @@
 }
 
 .project-card {
-  background-color: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(145deg, #2d2d44 0%, #1a1a2e 100%);
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
   overflow: hidden;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.3s, box-shadow 0.3s;
   display: flex;
   flex-direction: column;
-  color: #333;
-  border: 1px solid #e9ecef;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.05);
   position: relative; /* Per corretto posizionamento */
 }
 
 .project-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+  transform: translateY(-5px);
+  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.3);
 }
 
 .project-header {
   padding: 15px;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.project-header svg {
+  color: #8a65ff;
 }
 
 .project-title {
   margin: 0;
   font-size: 1.2em;
   font-weight: 600;
-  color: #333;
+  color: white;
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -166,21 +180,25 @@
   font-size: 0.9em;
 }
 
+.project-detail svg {
+  color: #8a65ff;
+}
+
 .detail-label {
-  color: #666;
+  color: rgba(255, 255, 255, 0.7);
   font-weight: 500;
   margin-right: 5px;
 }
 
 .detail-value {
-  color: #333;
+  color: white;
 }
 
 .project-description {
-  margin-top: 5px;
+  margin-top: 10px;
   font-size: 0.9em;
-  color: #666;
-  border-top: 1px dashed #eee;
+  color: rgba(255, 255, 255, 0.7);
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
   padding-top: 10px;
 }
 
@@ -190,17 +208,21 @@
 }
 
 .project-footer {
-  padding: 10px 15px;
-  background-color: #f8f9fa;
+  padding: 12px 15px;
+  background: rgba(255, 255, 255, 0.05);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: #007bff;
+  color: #8a65ff;
   font-weight: 500;
   font-size: 0.9em;
-  border-top: 1px solid #e9ecef;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   position: relative; /* Per posizionamento corretto */
   z-index: 1; /* Sopra la card ma sotto l'header */
+}
+
+.project-footer svg {
+  color: #8a65ff;
 }
 
 /* Stati di caricamento ed errori */
@@ -214,29 +236,38 @@
   gap: 15px;
   margin: 40px 0;
   position: relative; /* Posizionamento corretto */
+  border-radius: 16px;
+  background-color: white;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
 }
 
 .loading-container {
-  color: #757575;
+  color: #6c4ad0;
 }
 
 .error-container {
-  color: #f44336;
+  color: #ff4d4f;
 }
 
 .empty-projects {
-  color: #757575;
+  color: #2d2d44;
+}
+
+.empty-projects svg {
+  color: #8a65ff;
+  opacity: 0.7;
 }
 
 .empty-projects h3 {
   margin: 10px 0;
   font-size: 1.3em;
-  font-weight: 500;
+  font-weight: 600;
+  color: #2d2d44;
 }
 
 .empty-projects p {
   margin: 0;
-  color: #757575;
+  color: #6c757d;
   max-width: 400px;
 }
 
@@ -245,20 +276,22 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 20px;
-  border-radius: 6px;
+  padding: 12px 25px;
+  border-radius: 8px;
   border: none;
-  background-color: #4CAF50;
+  background: linear-gradient(135deg, #2d2d44 0%, #1a1a2e 100%);
   color: white;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.3s ease;
   position: relative;
   z-index: 10; /* Rimane sopra altri elementi */
+  box-shadow: 0 4px 6px rgba(26, 26, 46, 0.25);
 }
 
 .start-button:hover {
-  background-color: #43A047;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 10px rgba(26, 26, 46, 0.3);
 }
 
 .spin-icon {
@@ -270,12 +303,32 @@
   to { transform: rotate(360deg); }
 }
 
+/* Effetto gradiente shift simile a CreateProject */
+.create-project-button::after, .start-button::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    rgba(255, 255, 255, 0) 0%, 
+    rgba(255, 255, 255, 0.2) 50%, 
+    rgba(255, 255, 255, 0) 100%);
+  transition: all 0.5s ease;
+}
+
+.create-project-button:hover::after, .start-button:hover::after {
+  left: 100%;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .projects-summary-container {
     width: 100%;
     margin-left: 0;
-    padding-top: 60px; /* Spazio per la navbar superiore mobile */
+    padding: 20px;
+    padding-bottom: 80px; /* Spazio per la navbar mobile */
   }
 
   .projects-header {
