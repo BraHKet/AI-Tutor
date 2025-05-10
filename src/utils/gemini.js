@@ -81,7 +81,7 @@ Per CIASCUN argomento identificato, devi indicare:
 Elenco dei documenti PDF forniti (corrispondono alle parti file che riceverai dopo questo testo):
 ${originalFilesDriveInfo.map((fInfo, index) => `- PDF Indice ${index}: ${fInfo.name}`).join('\n      ')}
 
-${userDescription ? `Considera anche queste note aggiuntive dall'utente: "${userDescription}"` : ''}
+${userDescription ? `QUESTE SONO LE NOTE DELL'UTENTE.. DEVONO ESSERE MESSE AL PRIMO POSTO COME RICHIESTE: "${userDescription}"` : ''}
 
 Restituisci il risultato ESCLUSIVAMENTE in formato JSON. L'oggetto JSON radice deve contenere una chiave "tableOfContents".
 "tableOfContents" deve essere un array di oggetti, dove ogni oggetto rappresenta un argomento principale e ha la seguente struttura:
