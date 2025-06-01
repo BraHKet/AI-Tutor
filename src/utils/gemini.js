@@ -343,7 +343,6 @@ NOTA FINALE: L'analisi deve produrre argomenti ben separati senza sovrapposizion
   }
 };
 
-
 /**
  * Distribuisce gli argomenti (ottenuti da generateContentIndex) nei giorni disponibili.
  * Versione corretta per evitare duplicazione di argomenti tra giorni.
@@ -600,5 +599,78 @@ export const distributeTopicsToDays = async (examName, totalDays, topics, userDe
   } catch (error) {
       console.error('distributeTopicsToDays: Error during AI daily plan generation:', error);
       throw new Error(`Errore AI nella distribuzione giornaliera: ${error.message}`);
+  }
+};
+
+/**
+ * FUNZIONE ORCHESTRATORE - Gestisce tutto il processo AI
+ * @param {string} examName Nome dell'esame
+ * @param {number} totalDays Giorni totali per lo studio
+ * @param {File[]} files Array di file PDF
+ * @param {object[]} originalFilesDriveInfo Info sui file caricati su Drive
+ * @param {string} userDescription Note dell'utente (opzionale)
+ * @param {function} progressCallback Callback per aggiornamenti progress (opzionale)
+ * @returns {Promise<object>} Piano completo con indice e distribuzione
+ */
+export const generateCompleteStudyPlan = async (
+  examName, 
+  totalDays, 
+  files, 
+  originalFilesDriveInfo, 
+  userDescription = "", 
+  progressCallback = null
+) => {
+  console.log('generateCompleteStudyPlan: Starting complete AI analysis process');
+  
+  try {
+    // FASE 1: Analisi struttura argomenti dai PDF
+    progressCallback?.({ type: 'processing', message: 'AI - Analisi struttura argomenti dai PDF...' });
+    
+    const aiIndexResult = await generateContentIndex(
+      examName,
+      files,
+      originalFilesDriveInfo,
+      userDescription
+    );
+
+    const contentIndex = aiIndexResult.tableOfContents;
+    const pageMapping = aiIndexResult.pageMapping || {};
+
+    if (!contentIndex || contentIndex.length === 0) {
+      throw new Error("AI non ha generato indice argomenti dai PDF.");
+    }
+    
+    progressCallback?.({ type: 'processing', message: 'Struttura argomenti identificata.' });
+
+    // FASE 2: Distribuzione argomenti nei giorni
+    progressCallback?.({ type: 'processing', message: 'AI - Distribuzione argomenti nei giorni...' });
+    
+    const topicDistribution = await distributeTopicsToDays(
+      examName, 
+      totalDays, 
+      contentIndex, 
+      userDescription
+    );
+
+    if (!topicDistribution || !topicDistribution.dailyPlan || topicDistribution.dailyPlan.length === 0) {
+      throw new Error("AI non ha generato distribuzione giornaliera.");
+    }
+
+    progressCallback?.({ type: 'processing', message: 'Distribuzione giornaliera completata.' });
+
+    // Restituisce il piano completo
+    const completePlan = {
+      index: contentIndex,
+      distribution: topicDistribution.dailyPlan,
+      pageMapping: pageMapping,
+      originalFilesInfo: originalFilesDriveInfo
+    };
+
+    console.log('generateCompleteStudyPlan: Complete AI analysis finished successfully');
+    return completePlan;
+
+  } catch (error) {
+    console.error('generateCompleteStudyPlan: Error during complete AI analysis:', error);
+    throw new Error(`Errore durante l'analisi AI completa: ${error.message}`);
   }
 };

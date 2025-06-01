@@ -3,9 +3,8 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import useGoogleAuth from '../hooks/useGoogleAuth';
 import { googleDriveService } from '../utils/googleDriveService';
-// createPdfChunk è ancora necessario per la Fase 2
 import { createPdfChunk } from '../utils/pdfProcessor';
-import { generateContentIndex, distributeTopicsToDays } from '../utils/gemini';
+import { generateCompleteStudyPlan } from '../utils/gemini'; // NUOVA IMPORTAZIONE
 import { saveProjectWithPlan } from '../utils/firebase';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -14,7 +13,6 @@ import PlanReviewModal from './PlanReviewModal';
 import { FilePlus, Upload, X, Calendar, BookOpen, Info, AlertCircle, Loader, BrainCircuit, CopyCheck, FileText, CheckCircle } from 'lucide-react';
 import NavBar from './NavBar';
 import './styles/CreateProject.css';
-
 
 const CreateProject = () => {
   const navigate = useNavigate();
@@ -34,10 +32,8 @@ const CreateProject = () => {
   const [isFinalizing, setIsFinalizing] = useState(false);
   const [finalizationError, setFinalizationError] = useState('');
   
-  // Ref per tracciare se il componente è montato
   const isMounted = useRef(true);
 
-  // Funzione per resettare completamente lo stato del componente
   const resetAllState = useCallback(() => {
     if (!isMounted.current) return;
     
@@ -53,47 +49,29 @@ const CreateProject = () => {
     setProvisionalPlanData(null);
     setIsFinalizing(false);
     setFinalizationError('');
-    
-    // Non resettiamo serviceStatus qui perché l'inizializzazione è gestita separatamente
   }, []);
 
-  // Gestione pulizia quando il componente si monta/smonta
+  // Singolo useEffect che gestisce mount/unmount e inizializzazione del servizio
   useEffect(() => {
-    console.log('CreateProject: MOUNTED');
+    console.log('CreateProject: Component mounted, initializing...');
+    isMounted.current = true;
     
-    // Reset all state when component mounts (handles page refresh)
     resetAllState();
     
-    return () => {
-      console.log('CreateProject: UNMOUNTED');
-      isMounted.current = false;
-    };
-  }, [resetAllState]);
-  
-  // Effetto che traccia i cambiamenti della location (URL)
-  useEffect(() => {
-    // Reset dello stato quando la location cambia (cioè quando l'utente naviga altrove e poi torna)
-    console.log('CreateProject: Location changed, resetting state');
-    resetAllState();
-  }, [location.pathname, resetAllState]);
-
-  useEffect(() => {
-    let isMounted = true;
-
     const initService = async () => {
-      console.log('CreateProject: useEffect - initializing Google Drive service');
-      if (!isMounted) return;
+      console.log('CreateProject: Initializing Google Drive service');
       setServiceStatus({ ready: false, initializing: true, error: null });
       setLoadingMessage('Inizializzazione servizio Google Drive...');
+      
       try {
         await googleDriveService.initialize();
-        if (isMounted) {
+        if (isMounted.current) {
           console.log('CreateProject: Service initialized successfully');
           setServiceStatus({ ready: true, initializing: false, error: null });
           setLoadingMessage('');
         }
       } catch (err) {
-        if (isMounted) {
+        if (isMounted.current) {
           console.error('CreateProject: Error initializing Google Drive service', err);
           setServiceStatus({ ready: false, initializing: false, error: err.message });
           setError('Errore inizializzazione Google Drive: ' + err.message);
@@ -101,12 +79,14 @@ const CreateProject = () => {
         }
       }
     };
+
     initService();
+    
     return () => {
-      console.log('CreateProject: UNMOUNTED service initializer');
-      isMounted = false;
+      console.log('CreateProject: Component unmounted');
+      isMounted.current = false;
     };
-  }, []);
+  }, []); // Dipendenze vuote per eseguire solo al mount
 
   const initServiceRetry = async () => {
     setError('');
@@ -126,7 +106,6 @@ const CreateProject = () => {
       setLoadingMessage('');
     }
   };
-  const retryInitialization = () => { initServiceRetry(); };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -187,97 +166,104 @@ const CreateProject = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('CreateProject V5: Form submitted for PROVISIONAL plan generation (direct PDF to AI)');
+    console.log('CreateProject: Form submitted for PROVISIONAL plan generation');
 
-    setError(''); setSuccess(''); setLoading(true); setLoadingMessage('Verifica dati...');
-    setUploadProgress({}); setProvisionalPlanData(null); setShowReviewModal(false); setFinalizationError('');
+    setError(''); 
+    setSuccess(''); 
+    setLoading(true); 
+    setLoadingMessage('Verifica dati...');
+    setUploadProgress({}); 
+    setProvisionalPlanData(null); 
+    setShowReviewModal(false); 
+    setFinalizationError('');
 
-    if (!user) { setError('Utente non autenticato.'); setLoading(false); return; }
-    if (!formData.title || !formData.examName || !formData.totalDays || formData.totalDays < 1) { setError('Completa Titolo, Esame, Giorni (> 0).'); setLoading(false); return; }
-    if (files.length === 0) { setError('Carica almeno un PDF.'); setLoading(false); return; }
-    if (!serviceStatus.ready) { setError('Servizio Google Drive non pronto.'); setLoading(false); return; }
-
-    console.log('CreateProject: Starting provisional plan generation sequence (with direct PDF to AI)...');
-    let originalUploadedFilesData = [];
-    let pageMapping = {};
-    let contentIndex = null;
-    let topicDistribution = null;
+    if (!user) { 
+      setError('Utente non autenticato.'); 
+      setLoading(false); 
+      return; 
+    }
+    if (!formData.title || !formData.examName || !formData.totalDays || formData.totalDays < 1) { 
+      setError('Completa Titolo, Esame, Giorni (> 0).'); 
+      setLoading(false); 
+      return; 
+    }
+    if (files.length === 0) { 
+      setError('Carica almeno un PDF.'); 
+      setLoading(false); 
+      return; 
+    }
+    if (!serviceStatus.ready) { 
+      setError('Servizio Google Drive non pronto.'); 
+      setLoading(false); 
+      return; 
+    }
 
     try {
-      // --- FASE 1 - Upload Originali ---
+      // FASE 1 - Upload file originali
       setLoadingMessage('Caricamento file originali...');
-       const uploadPromises = files.map((file, index) =>
-           googleDriveService.uploadFile(file, (percent) => progressCallback({ type: 'upload', phase: 'original', fileName: file.name, percent: percent }))
-           .then(result => {
-               progressCallback({ type: 'processing', message: `File originale ${file.name} caricato.` });
-               return { // Queste informazioni sono utili per `generateContentIndex` e la fase di finalizzazione
-                  name: file.name, // Nome file originale fornito dall'utente
-                  driveFileId: result.driveFileId || result.id,
-                  size: file.size, // Dimensione originale
-                  type: file.type, // MimeType originale
-                  webViewLink: result.webViewLink,
-                  originalFileIndex: index // Per riferirsi a `files[index]` se necessario
-               };
-           }).catch(err => { throw new Error(`Errore upload ${file.name}: ${err.message}`); })
-       );
-       originalUploadedFilesData = await Promise.all(uploadPromises);
-       progressCallback({ type: 'processing', message: 'File originali caricati.' });
-
-      // --- FASE 1 - AI Passo 1: Indice (MODIFICATO PER PASSARE PDF DIRETTAMENTE) ---
-      setLoadingMessage('AI - Analisi struttura argomenti dai PDF...');
-      // `generateContentIndex` ora riceve i `files` (array di File object)
-      // e `originalUploadedFilesData` (che contiene info sui file su Drive).
-      const aiIndexResult = await generateContentIndex(
-          formData.examName,
-          files, // Array di File object
-          originalUploadedFilesData, // Contiene info Drive (driveFileId, name, type, originalFileIndex)
-          formData.description // Note utente opzionali
+      
+      const uploadPromises = files.map((file, index) =>
+        googleDriveService.uploadFile(file, (percent) => progressCallback({ 
+          type: 'upload', 
+          phase: 'original', 
+          fileName: file.name, 
+          percent: percent 
+        }))
+        .then(result => {
+          progressCallback({ type: 'processing', message: `File originale ${file.name} caricato.` });
+          return {
+            name: file.name,
+            driveFileId: result.driveFileId || result.id,
+            size: file.size,
+            type: file.type,
+            webViewLink: result.webViewLink,
+            originalFileIndex: index
+          };
+        }).catch(err => { 
+          throw new Error(`Errore upload ${file.name}: ${err.message}`); 
+        })
       );
 
-      contentIndex = aiIndexResult.tableOfContents;
-      pageMapping = aiIndexResult.pageMapping || {}; // Potrebbe essere vuoto o limitato
+      const originalUploadedFilesData = await Promise.all(uploadPromises);
+      progressCallback({ type: 'processing', message: 'File originali caricati.' });
 
-      if (!contentIndex || contentIndex.length === 0) throw new Error("AI non ha generato indice argomenti dai PDF.");
-      progressCallback({ type: 'processing', message: 'Struttura argomenti identificata.' });
+      // FASE 2 - Analisi AI completa (SEMPLIFICATA!)
+      const planData = await generateCompleteStudyPlan(
+        formData.examName,
+        formData.totalDays,
+        files,
+        originalUploadedFilesData,
+        formData.description,
+        progressCallback
+      );
 
-      // --- FASE 1 - AI Passo 2: Distribuzione ---
-      setLoadingMessage('AI - Distribuzione argomenti...');
-      topicDistribution = await distributeTopicsToDays(formData.examName, formData.totalDays, contentIndex, formData.description);
-      if (!topicDistribution || !topicDistribution.dailyPlan || topicDistribution.dailyPlan.length === 0) throw new Error("AI non ha generato distribuzione giornaliera.");
-      progressCallback({ type: 'processing', message: 'Distribuzione giornaliera completata.' });
+      // FASE 3 - Successo: naviga alla pagina di revisione
+      console.log('CreateProject: Provisional plan generated successfully. Opening review modal.');
+      
+      setLoading(false);
+      setLoadingMessage('');
 
-      // --- FASE 1 - Successo: Prepara dati e Apri Modale ---
-      console.log('CreateProject: Provisional plan generated successfully (from PDF direct). Opening review modal.');
-      const planData = {
-  index: contentIndex,
-  distribution: topicDistribution.dailyPlan,
-  pageMapping: pageMapping,
-  originalFilesInfo: originalUploadedFilesData
-};
-
-setLoading(false);
-setLoadingMessage('');
-
-// Naviga alla pagina di revisione con i dati
-navigate('/plan-review', { 
-  state: { 
-    provisionalPlanData: planData,
-    originalFiles: files,
-    totalDays: formData.totalDays,
-    projectData: {
-      title: formData.title,
-      examName: formData.examName,
-      totalDays: formData.totalDays,
-      description: formData.description
-    }
-  }
-});
+      navigate('/plan-review', { 
+        state: { 
+          provisionalPlanData: planData,
+          originalFiles: files,
+          totalDays: formData.totalDays,
+          projectData: {
+            title: formData.title,
+            examName: formData.examName,
+            totalDays: formData.totalDays,
+            description: formData.description
+          }
+        }
+      });
 
     } catch (error) {
-      console.error('CreateProject: Error during provisional plan generation phase (from PDF direct):', error);
-      setError(`Errore Fase 1: ${error.message}` || 'Errore imprevisto durante la generazione della bozza.');
+      console.error('CreateProject: Error during provisional plan generation:', error);
+      setError(`Errore durante la generazione: ${error.message}`);
       setSuccess('');
-      setLoading(false); setLoadingMessage(''); setShowReviewModal(false);
+      setLoading(false); 
+      setLoadingMessage(''); 
+      setShowReviewModal(false);
     }
   };
 
@@ -290,24 +276,24 @@ navigate('/plan-review', {
     setUploadProgress({});
 
     const { index: aiGeneratedIndex, distribution, pageMapping, originalFilesInfo } = provisionalPlanData || {};
-    const originalFileObjects = files; // Oggetti File originali
+    const originalFileObjects = files;
 
     if (!aiGeneratedIndex || !distribution || !originalFilesInfo || !originalFileObjects || originalFileObjects.length === 0) {
         console.error("CreateProject/handleConfirmReview: Missing provisional data or original files in state.");
         setFinalizationError("Errore interno: dati necessari non trovati per finalizzare.");
-        setIsFinalizing(false); setLoadingMessage(''); return;
+        setIsFinalizing(false); 
+        setLoadingMessage(''); 
+        return;
     }
 
     const finalDailyPlanMap = {};
     const topicsDataForFirestore = [];
-    // Creare una mappa per accedere facilmente ai dati degli argomenti generati dall'AI (incluso pages_info)
     const aiTopicDetailsMap = aiGeneratedIndex.reduce((map, topic) => {
         if (topic.title?.trim()) map[topic.title.trim()] = topic;
         return map;
     }, {});
 
     try {
-        // Calcola il numero totale di chunks da creare in base alle selezioni dell'utente
         let totalChunksToCreate = 0;
         Object.entries(finalUserSelections).forEach(([topicTitle, fileSelections]) => {
             if (Array.isArray(fileSelections)) {
@@ -318,6 +304,7 @@ navigate('/plan-review', {
                 });
             }
         });
+        
         console.log(`CreateProject/handleConfirmReview: Estimated chunks to create: ${totalChunksToCreate}`);
         let chunksProcessedCount = 0;
         
@@ -326,7 +313,6 @@ navigate('/plan-review', {
             if (!dayNumber) continue;
             finalDailyPlanMap[dayNumber] = [];
 
-            // Gestione dei giorni di ripasso
             if (!dayPlan.assignedTopics || dayPlan.assignedTopics.length === 0 || dayPlan.assignedTopics.some(t => t.title?.toLowerCase().includes("ripasso"))) {
                 if(dayPlan.assignedTopics && dayPlan.assignedTopics.length > 0){
                     const reviewTopic = dayPlan.assignedTopics.find(t => t.title?.toLowerCase().includes("ripasso"));
@@ -334,15 +320,19 @@ navigate('/plan-review', {
                          const topicId = uuidv4();
                          finalDailyPlanMap[dayNumber].push(topicId);
                          topicsDataForFirestore.push({
-                             id: topicId, title: reviewTopic.title, description: "Ripasso generale argomenti precedenti.",
-                             assignedDay: dayNumber, orderInDay: 0, isCompleted: false, sources: []
+                             id: topicId, 
+                             title: reviewTopic.title, 
+                             description: "Ripasso generale argomenti precedenti.",
+                             assignedDay: dayNumber, 
+                             orderInDay: 0, 
+                             isCompleted: false, 
+                             sources: []
                          });
                     }
                 }
                 continue;
             }
 
-            // Per ogni topic assegnato al giorno
             for (const [topicIndexInDay, assignedTopic] of dayPlan.assignedTopics.entries()) {
                 const topicTitle = assignedTopic.title?.trim();
                 if (!topicTitle) continue;
@@ -350,52 +340,38 @@ navigate('/plan-review', {
                 const topicId = uuidv4();
                 finalDailyPlanMap[dayNumber].push(topicId);
                 let topicSources = [];
-                const topicDetailsFromAI = aiTopicDetailsMap[topicTitle]; // Contiene pages_info
-
-                // Ottieni le selezioni utente per questo topic dal modal
+                const topicDetailsFromAI = aiTopicDetailsMap[topicTitle];
                 const userSelectionsForTopic = finalUserSelections[topicTitle] || [];
                 
                 console.log(`\n--- Finalizing Topic: "${topicTitle}" (Day ${dayNumber}) ---`);
-                console.log(`[DEBUG] Finalize: User selections for "${topicTitle}":`, JSON.stringify(userSelectionsForTopic));
-                
 
-                // Verifica se si tratta di un ripasso o di una simulazione d'esame
                 const isReview = topicTitle.toLowerCase().includes("ripasso");
                 const isExamSimulation = topicTitle.toLowerCase().includes("simulazione") || 
                                        topicTitle.toLowerCase().includes("esame") ||
                                        assignedTopic.description?.toLowerCase().includes("esercizi") ||
                                        assignedTopic.description?.toLowerCase().includes("simulazione");
 
-                // Se è una simulazione d'esame, non creare chunks PDF
                 if (isExamSimulation) {
                     console.log(`[DEBUG] Finalize: Detected exam simulation topic "${topicTitle}" - skipping PDF chunk creation`);
-                    
-                    // Non creiamo chunks ma aggiungiamo una nota esplicativa
                     topicSources = [{
                         type: 'note',
                         noteType: 'exam_simulation',
                         description: 'Simulazione d\'esame - Prova a risolvere esercizi senza consultare il materiale.'
                     }];
-                } 
-                // Se è un ripasso, non creare chunks (questo è per i giorni che non sono stati già gestiti in precedenza)
-                else if (isReview) {
+                } else if (isReview) {
                     console.log(`[DEBUG] Finalize: Detected review topic "${topicTitle}" - no PDF chunks needed`);
-                    // Lascia sources vuoto o aggiungi una nota di ripasso
                     topicSources = [{
                         type: 'note',
                         noteType: 'review',
                         description: 'Ripasso generale argomenti precedenti.'
                     }];
-                }
-                else {
+                } else {
                     if (userSelectionsForTopic.length > 0) {
-                        // Per ogni file selezionato per questo topic
                         for (const fileSelection of userSelectionsForTopic) {
                             const { fileIndex, fileName, pages } = fileSelection;
                             
                             if (!pages || pages.length === 0) continue;
                             
-                            // Ottieni il file originale e le sue info
                             const originalFile = originalFileObjects[fileIndex];
                             const originalFileInfoFromDrive = originalFilesInfo.find(f => f.originalFileIndex === fileIndex);
                             
@@ -404,12 +380,10 @@ navigate('/plan-review', {
                                 continue;
                             }
 
-                            // Ordina le pagine in ordine crescente
                             const sortedPages = [...pages].sort((a, b) => a - b);
                             const firstPage = sortedPages[0];
                             const lastPage = sortedPages[sortedPages.length - 1];
                             
-                            // Crea un nome significativo per il chunk
                             const safeTitlePart = topicTitle.substring(0, 15).replace(/[^a-zA-Z0-9]/g, '_');
                             const chunkFileName = `${originalFile.name.replace(/\.pdf$/i, '')}_${safeTitlePart}_p${firstPage}-${lastPage}.pdf`;
                             
@@ -455,7 +429,6 @@ navigate('/plan-review', {
                             }
                         }
                     } else if (topicDetailsFromAI?.pages_info && topicDetailsFromAI.pages_info.length > 0) {
-                        // Fallback - se l'utente non ha selezionato pagine, usa i suggerimenti AI originali
                         console.log(`Finalize: No user selections for topic "${topicTitle}", using AI suggestions.`);
                         
                         for (const pInfo of topicDetailsFromAI.pages_info) {
@@ -482,7 +455,7 @@ navigate('/plan-review', {
                                 progressCallback({ type: 'processing', message: progressMsgChunk });
 
                                 const chunkFile = await createPdfChunk(originalFile, pageNumbers, chunkFileName, (msg) => progressCallback({type:'processing', message:msg}));
-                                // Resto del codice per upload e gestione errori come sopra
+                                
                                 if (chunkFile) {
                                     progressCallback({ type: 'processing', message: `Caricamento chunk ${chunkFileName}...` });
                                     const uploadedChunk = await googleDriveService.uploadFile(chunkFile, (percent) => progressCallback({ type: 'upload', phase: 'chunk', fileName: chunkFileName, percent: percent }));
@@ -519,7 +492,6 @@ navigate('/plan-review', {
                             }
                         }
                     } else {
-                        // Caso estremo: nessuna selezione e nessun suggerimento AI
                         console.warn(`Finalize: No user selections or AI suggestions for topic "${topicTitle}" (Day ${dayNumber}). Applying fallback to original files.`);
                         topicSources.push(...originalFilesInfo.map(f => ({ 
                             type: 'pdf_original', 
@@ -529,7 +501,7 @@ navigate('/plan-review', {
                         })));
                     }
                 }
-                console.log(`[DEBUG] Finalize: Final sources collected for topic "${topicTitle}" (Day ${dayNumber}):`, JSON.stringify(topicSources));
+                
                 topicsDataForFirestore.push({
                     id: topicId,
                     title: topicTitle,
@@ -544,10 +516,13 @@ navigate('/plan-review', {
         }
 
         const projectCoreData = {
-           title: formData.title, examName: formData.examName, totalDays: formData.totalDays,
-           description: formData.description, userId: user.uid,
+           title: formData.title, 
+           examName: formData.examName, 
+           totalDays: formData.totalDays,
+           description: formData.description, 
+           userId: user.uid,
            originalFiles: originalFilesInfo.map(({originalFileIndex, ...rest}) => rest),
-           aiModelUsed: 'gemini-1.5-flash-latest (direct PDF, 2-step, reviewed)', // Aggiorna modello usato
+           aiModelUsed: 'gemini-1.5-flash-latest (orchestrated)', 
            dailyPlan: finalDailyPlanMap,
         };
 
@@ -569,7 +544,8 @@ navigate('/plan-review', {
     } catch(error) {
         console.error("CreateProject/handleConfirmReview: Error during finalization phase:", error);
         setFinalizationError(`Errore Fase 2: ${error.message}` || 'Errore imprevisto durante la finalizzazione.');
-        setIsFinalizing(false); setLoadingMessage('');
+        setIsFinalizing(false); 
+        setLoadingMessage('');
     }
   };
 
@@ -579,7 +555,6 @@ navigate('/plan-review', {
       setProvisionalPlanData(null);
   };
   
-  // Funzione per annullare la creazione e tornare alla lista
   const handleCancel = () => {
     console.log("CreateProject: User cancelled project creation, resetting all state.");
     resetAllState();
@@ -614,7 +589,7 @@ navigate('/plan-review', {
                 <div className="message error-message">
                     <AlertCircle size={20} /> <span>{error}</span>
                     {error.includes('Google Drive') && !serviceStatus.initializing && (
-                       <button onClick={retryInitialization} className="retry-button" disabled={serviceStatus.initializing}> Riprova Init Drive </button>
+                       <button onClick={initServiceRetry} className="retry-button" disabled={serviceStatus.initializing}> Riprova Init Drive </button>
                     )}
                 </div>
             )}
@@ -736,8 +711,6 @@ navigate('/plan-review', {
           </form>
         </div>
       </div>
-
-       
     </>
   )}
   </>
