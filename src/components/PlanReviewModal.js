@@ -1,9 +1,9 @@
-// src/components/PlanReviewModal.jsx
+// src/components/PlanReviewModal.jsx - Updated Version
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import PageSelector from './PageSelector';
+import TopicDetailViewer from './TopicDetailViewer';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { Loader, AlertCircle, Edit3, XCircle, Calendar, BookOpen, ChevronDown, ChevronRight, Maximize2, X, ArrowLeft, ArrowRight, Info, Save, FileText } from 'lucide-react';
+import { Loader, AlertCircle, Edit3, XCircle, Calendar, BookOpen, ChevronDown, ChevronRight, Info, Save, FileText } from 'lucide-react';
 import NavBar from './NavBar';
 import './styles/PlanReviewModal.css';
 import { createPdfChunk } from '../utils/pdfProcessor';
@@ -49,12 +49,10 @@ const PlanReviewModal = ({
     // State per la selezione delle pagine e la validazione
     const [currentUserSelections, setCurrentUserSelections] = useState({});
     const [validationErrors, setValidationErrors] = useState({});
-    const [expandedTopicId, setExpandedTopicId] = useState(null);
-    // State per la visualizzazione a schermo intero delle pagine
-    const [fullscreenMode, setFullscreenMode] = useState(false);
-    const [currentFullscreenData, setCurrentFullscreenData] = useState({
-        topicTitle: '', fileIndex: -1, currentPage: 1, totalPagesInFile: 1, pageImages: [], selectedPagesInCurrentFile: []
-    });
+    
+    // State per il nuovo visualizzatore dettagli
+    const [selectedTopicForDetail, setSelectedTopicForDetail] = useState(null);
+    
     // State per la distribuzione degli argomenti nei giorni
     const [dayAssignments, setDayAssignments] = useState({});
     const [unassignedTopics, setUnassignedTopics] = useState([]);
@@ -68,19 +66,16 @@ const PlanReviewModal = ({
         return provPlanData?.distribution || [];
     }, [provPlanData]);
 
-
-
     const progressCallback = useCallback((update) => {
-    console.log("Progress Update:", update);
-    if (update.type === 'upload') {
-        setUploadProgress(prev => ({ ...prev, [update.fileName]: { phase: update.phase, percent: update.percent } }));
-    } else if (update.type === 'processing') {
-        if(localIsFinalizing){
-             setLocalFinalizationMessage(update.message);
+        console.log("Progress Update:", update);
+        if (update.type === 'upload') {
+            setUploadProgress(prev => ({ ...prev, [update.fileName]: { phase: update.phase, percent: update.percent } }));
+        } else if (update.type === 'processing') {
+            if(localIsFinalizing){
+                 setLocalFinalizationMessage(update.message);
+            }
         }
-    }
-}, [localIsFinalizing]);
-
+    }, [localIsFinalizing]);
 
     // Initialize/Reset selections when data changes
     useEffect(() => {
@@ -122,11 +117,6 @@ const PlanReviewModal = ({
             });
             setCurrentUserSelections(initialSelections);
             setValidationErrors({});
-            
-            // Espandi il primo topic che ha suggerimenti o il primo topic in assoluto
-            const firstTopicWithSuggestions = topics.find(t => initialSelections[t.title]?.length > 0);
-            const firstTopicTitle = firstTopicWithSuggestions?.title || topics[0]?.title;
-            setExpandedTopicId(firstTopicTitle || null);
             
             // Inizializza la distribuzione degli argomenti nei giorni
             initializeDayAssignments();
@@ -226,19 +216,7 @@ const PlanReviewModal = ({
             delete newErrors[topicTitle]; 
             return newErrors; 
         });
-    
-        if (fullscreenMode && currentFullscreenData.topicTitle === topicTitle && currentFullscreenData.fileIndex === fileIndexToUpdate) {
-            setCurrentFullscreenData(prev => ({ 
-                ...prev, 
-                selectedPagesInCurrentFile: newSelectedPagesArray || [] 
-            }));
-        }
-    }, [fullscreenMode, currentFullscreenData.topicTitle, currentFullscreenData.fileIndex, origFiles]);
-
-    // Gestisce l'apertura/chiusura dei dettagli di un argomento
-    const toggleTopicExpansion = (topicId) => {
-        setExpandedTopicId(prev => (prev === topicId ? null : topicId));
-    };
+    }, [origFiles]);
 
     // Implementazione ottimale della gestione drag and drop
     const handleDragEnd = (result) => {
@@ -291,68 +269,15 @@ const PlanReviewModal = ({
         setDayAssignments(newDayAssignments);
     };
 
-    // Fullscreen mode functions
-    const enterFullscreenModeInternal = (topicTitle, fileIndex, pageImagesData, initialPage = 1, totalPagesInFile) => {
-        const selectionsForTopic = currentUserSelections[topicTitle] || [];
-        const fileSelectionEntry = selectionsForTopic.find(s => s.fileIndex === fileIndex);
-        const selectedPgs = fileSelectionEntry ? fileSelectionEntry.pages : [];
-
-        setCurrentFullscreenData({
-            topicTitle,
-            fileIndex,
-            currentPage: initialPage,
-            totalPagesInFile: totalPagesInFile || 1,
-            pageImages: pageImagesData || [],
-            selectedPagesInCurrentFile: selectedPgs
-        });
-        setFullscreenMode(true);
+    // Gestisce l'apertura del visualizzatore dettagli
+    const handleOpenTopicDetail = (topicTitle) => {
+        setSelectedTopicForDetail(topicTitle);
     };
 
-    const exitFullscreenMode = useCallback(() => {
-        setFullscreenMode(false);
-    }, []);
-
-    const goToNextPageFullscreen = useCallback(() => {
-        setCurrentFullscreenData(prev => {
-            const nextPage = Math.min(prev.currentPage + 1, prev.totalPagesInFile);
-            return {...prev, currentPage: nextPage };
-        });
-    }, []);
-
-    const goToPrevPageFullscreen = useCallback(() => {
-        setCurrentFullscreenData(prev => {
-            const prevPage = Math.max(prev.currentPage - 1, 1);
-            return {...prev, currentPage: prevPage };
-        });
-    }, []);
-
-    const togglePageSelectionFullscreen = useCallback(() => {
-        const { topicTitle, fileIndex, currentPage, selectedPagesInCurrentFile } = currentFullscreenData;
-        const isSelected = selectedPagesInCurrentFile.includes(currentPage);
-        let newSelectedPages;
-        if (isSelected) {
-            newSelectedPages = selectedPagesInCurrentFile.filter(p => p !== currentPage);
-        } else {
-            newSelectedPages = [...selectedPagesInCurrentFile, currentPage].sort((a, b) => a - b);
-        }
-        handlePageSelectionChangeForTopicAndFile(topicTitle, fileIndex, newSelectedPages);
-    }, [currentFullscreenData, handlePageSelectionChangeForTopicAndFile]);
-
-    // Keyboard event handlers for fullscreen mode
-    useEffect(() => {
-        const handleKeyDown = (e) => {
-            if (!fullscreenMode) return;
-            switch (e.key) {
-                case 'Escape': exitFullscreenMode(); break;
-                case 'ArrowRight': goToNextPageFullscreen(); break;
-                case 'ArrowLeft': goToPrevPageFullscreen(); break;
-                case ' ': e.preventDefault(); togglePageSelectionFullscreen(); break;
-                default: break;
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [fullscreenMode, exitFullscreenMode, goToNextPageFullscreen, goToPrevPageFullscreen, togglePageSelectionFullscreen]);
+    // Gestisce la chiusura del visualizzatore dettagli
+    const handleCloseTopicDetail = () => {
+        setSelectedTopicForDetail(null);
+    };
 
     // Validazione delle selezioni e preparazione dati per il salvataggio
     const validateAndPrepare = () => {
@@ -441,407 +366,326 @@ const PlanReviewModal = ({
         const firstErrorKey = Object.keys(errors)[0];
         if (firstErrorKey) {
             console.warn("PlanReviewModal [validateAndPrepare]: Validation FAILED. First error on topic:", firstErrorKey);
-            setExpandedTopicId(firstErrorKey);
-            const errorElement = document.getElementById(`topic-item-${firstErrorKey.replace(/\s+/g, '-')}`);
-            errorElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Apri automaticamente il dettaglio dell'argomento con errore
+            setSelectedTopicForDetail(firstErrorKey);
         }
         
         return { valid: false };
     };
 
-
     // Implementazione autonoma del salvataggio quando usato come pagina standalone
-const handleStandaloneSave = async (finalUserSelections, finalDistribution) => {
-    console.log("PlanReviewModal: Starting standalone save process");
-    setLocalIsFinalizing(true);
-    setLocalFinalizationMessage('Avvio finalizzazione e creazione materiale...');
-    setLocalFinalizationError('');
-    setUploadProgress({});
-    
-    if (!user) {
-        setLocalFinalizationError("Utente non autenticato. Impossibile salvare il progetto.");
-        setLocalIsFinalizing(false);
-        return;
-    }
-    
-    if (!provPlanData || !origFiles || origFiles.length === 0 || !projData) {
-        console.error("PlanReviewModal/handleStandaloneSave: Missing necessary data for save");
-        setLocalFinalizationError("Dati necessari mancanti per il salvataggio. Torna al form di creazione progetto.");
-        setLocalIsFinalizing(false);
-        return;
-    }
-    
-    const { index: aiGeneratedIndex } = provPlanData || {};
-    const originalFileObjects = origFiles; // Oggetti File originali
-    
-    // Inizializza Drive service se necessario
-    try {
-        setLocalFinalizationMessage('Inizializzazione servizio Google Drive...');
-        await googleDriveService.initialize();
-    } catch (error) {
-        console.error("PlanReviewModal/handleStandaloneSave: Failed to initialize Google Drive service", error);
-        setLocalFinalizationError(`Errore inizializzazione Google Drive: ${error.message}`);
-        setLocalIsFinalizing(false);
-        return;
-    }
-    
-    // Inizia il processo reale di salvataggio
-    const finalDailyPlanMap = {};
-    const topicsDataForFirestore = [];
-    
-    // Creare una mappa per accedere facilmente ai dati degli argomenti generati dall'AI
-    const aiTopicDetailsMap = aiGeneratedIndex.reduce((map, topic) => {
-        if (topic.title?.trim()) map[topic.title.trim()] = topic;
-        return map;
-    }, {});
-    
-    try {
-        // Carica i file originali su Drive
-        setLocalFinalizationMessage('Caricamento file originali su Google Drive...');
-        const originalUploadedFilesData = [];
+    const handleStandaloneSave = async (finalUserSelections, finalDistribution) => {
+        console.log("PlanReviewModal: Starting standalone save process");
+        setLocalIsFinalizing(true);
+        setLocalFinalizationMessage('Avvio finalizzazione e creazione materiale...');
+        setLocalFinalizationError('');
+        setUploadProgress({});
         
-        // Carica i file originali uno per uno
-        for (let i = 0; i < originalFileObjects.length; i++) {
-            const file = originalFileObjects[i];
-            setLocalFinalizationMessage(`Caricamento file originale ${i+1}/${originalFileObjects.length}: ${file.name}...`);
-            
-            const uploadedFile = await googleDriveService.uploadFile(file, (percent) => {
-                progressCallback({
-                    type: 'upload',
-                    phase: 'original',
-                    fileName: file.name,
-                    percent: percent
-                });
-            });
-            
-            originalUploadedFilesData.push({
-                name: file.name,
-                driveFileId: uploadedFile.driveFileId || uploadedFile.id,
-                size: file.size,
-                type: file.type,
-                webViewLink: uploadedFile.webViewLink,
-                originalFileIndex: i
-            });
-            
-            progressCallback({ type: 'processing', message: `File originale ${file.name} caricato.` });
+        if (!user) {
+            setLocalFinalizationError("Utente non autenticato. Impossibile salvare il progetto.");
+            setLocalIsFinalizing(false);
+            return;
         }
         
-        // Calcola il numero totale di chunks da creare in base alle selezioni dell'utente
-        let totalChunksToCreate = 0;
-        Object.entries(finalUserSelections).forEach(([topicTitle, fileSelections]) => {
-            if (Array.isArray(fileSelections)) {
-                fileSelections.forEach(fileEntry => {
-                    if (fileEntry && fileEntry.pages && fileEntry.pages.length > 0) {
-                        totalChunksToCreate++;
-                    }
+        if (!provPlanData || !origFiles || origFiles.length === 0 || !projData) {
+            console.error("PlanReviewModal/handleStandaloneSave: Missing necessary data for save");
+            setLocalFinalizationError("Dati necessari mancanti per il salvataggio. Torna al form di creazione progetto.");
+            setLocalIsFinalizing(false);
+            return;
+        }
+        
+        const { index: aiGeneratedIndex } = provPlanData || {};
+        const originalFileObjects = origFiles; // Oggetti File originali
+        
+        // Inizializza Drive service se necessario
+        try {
+            setLocalFinalizationMessage('Inizializzazione servizio Google Drive...');
+            await googleDriveService.initialize();
+        } catch (error) {
+            console.error("PlanReviewModal/handleStandaloneSave: Failed to initialize Google Drive service", error);
+            setLocalFinalizationError(`Errore inizializzazione Google Drive: ${error.message}`);
+            setLocalIsFinalizing(false);
+            return;
+        }
+        
+        // Inizia il processo reale di salvataggio
+        const finalDailyPlanMap = {};
+        const topicsDataForFirestore = [];
+        
+        // Creare una mappa per accedere facilmente ai dati degli argomenti generati dall'AI
+        const aiTopicDetailsMap = aiGeneratedIndex.reduce((map, topic) => {
+            if (topic.title?.trim()) map[topic.title.trim()] = topic;
+            return map;
+        }, {});
+        
+        try {
+            // Carica i file originali su Drive
+            setLocalFinalizationMessage('Caricamento file originali su Google Drive...');
+            const originalUploadedFilesData = [];
+            
+            // Carica i file originali uno per uno
+            for (let i = 0; i < originalFileObjects.length; i++) {
+                const file = originalFileObjects[i];
+                setLocalFinalizationMessage(`Caricamento file originale ${i+1}/${originalFileObjects.length}: ${file.name}...`);
+                
+                const uploadedFile = await googleDriveService.uploadFile(file, (percent) => {
+                    progressCallback({
+                        type: 'upload',
+                        phase: 'original',
+                        fileName: file.name,
+                        percent: percent
+                    });
                 });
+                
+                originalUploadedFilesData.push({
+                    name: file.name,
+                    driveFileId: uploadedFile.driveFileId || uploadedFile.id,
+                    size: file.size,
+                    type: file.type,
+                    webViewLink: uploadedFile.webViewLink,
+                    originalFileIndex: i
+                });
+                
+                progressCallback({ type: 'processing', message: `File originale ${file.name} caricato.` });
             }
-        });
-        
-        console.log(`PlanReviewModal/handleStandaloneSave: Estimated chunks to create: ${totalChunksToCreate}`);
-        let chunksProcessedCount = 0;
-        
-        setLocalFinalizationMessage('Creazione dei chunk e caricamento su Google Drive...');
-        
-        // Crea la struttura del piano giorno per giorno
-        for (const dayPlan of finalDistribution) {
-            const dayNumber = dayPlan.day;
-            if (!dayNumber) continue;
-            finalDailyPlanMap[dayNumber] = [];
             
-            // Gestione dei giorni di ripasso
-            if (!dayPlan.assignedTopics || dayPlan.assignedTopics.length === 0 || dayPlan.assignedTopics.some(t => t.title?.toLowerCase().includes("ripasso"))) {
-                if(dayPlan.assignedTopics && dayPlan.assignedTopics.length > 0){
-                    const reviewTopic = dayPlan.assignedTopics.find(t => t.title?.toLowerCase().includes("ripasso"));
-                    if (reviewTopic) {
-                         const topicId = uuidv4();
-                         finalDailyPlanMap[dayNumber].push(topicId);
-                         topicsDataForFirestore.push({
-                             id: topicId, title: reviewTopic.title, description: "Ripasso generale argomenti precedenti.",
-                             assignedDay: dayNumber, orderInDay: 0, isCompleted: false, sources: []
-                         });
-                    }
+            // Calcola il numero totale di chunks da creare in base alle selezioni dell'utente
+            let totalChunksToCreate = 0;
+            Object.entries(finalUserSelections).forEach(([topicTitle, fileSelections]) => {
+                if (Array.isArray(fileSelections)) {
+                    fileSelections.forEach(fileEntry => {
+                        if (fileEntry && fileEntry.pages && fileEntry.pages.length > 0) {
+                            totalChunksToCreate++;
+                        }
+                    });
                 }
-                continue;
-            }
+            });
             
-            // Per ogni topic assegnato al giorno
-            for (const [topicIndexInDay, assignedTopic] of dayPlan.assignedTopics.entries()) {
-                const topicTitle = assignedTopic.title?.trim();
-                if (!topicTitle) continue;
+            console.log(`PlanReviewModal/handleStandaloneSave: Estimated chunks to create: ${totalChunksToCreate}`);
+            let chunksProcessedCount = 0;
+            
+            setLocalFinalizationMessage('Creazione dei chunk e caricamento su Google Drive...');
+            
+            // Crea la struttura del piano giorno per giorno
+            for (const dayPlan of finalDistribution) {
+                const dayNumber = dayPlan.day;
+                if (!dayNumber) continue;
+                finalDailyPlanMap[dayNumber] = [];
                 
-                const topicId = uuidv4();
-                finalDailyPlanMap[dayNumber].push(topicId);
-                let topicSources = [];
-                const topicDetailsFromAI = aiTopicDetailsMap[topicTitle]; // Contiene pages_info
+                // Gestione dei giorni di ripasso
+                if (!dayPlan.assignedTopics || dayPlan.assignedTopics.length === 0 || dayPlan.assignedTopics.some(t => t.title?.toLowerCase().includes("ripasso"))) {
+                    if(dayPlan.assignedTopics && dayPlan.assignedTopics.length > 0){
+                        const reviewTopic = dayPlan.assignedTopics.find(t => t.title?.toLowerCase().includes("ripasso"));
+                        if (reviewTopic) {
+                             const topicId = uuidv4();
+                             finalDailyPlanMap[dayNumber].push(topicId);
+                             topicsDataForFirestore.push({
+                                 id: topicId, title: reviewTopic.title, description: "Ripasso generale argomenti precedenti.",
+                                 assignedDay: dayNumber, orderInDay: 0, isCompleted: false, sources: []
+                             });
+                        }
+                    }
+                    continue;
+                }
                 
-                // Ottieni le selezioni utente per questo topic dal modal
-                const userSelectionsForTopic = finalUserSelections[topicTitle] || [];
-                
-                console.log(`\n--- Finalizing Topic: "${topicTitle}" (Day ${dayNumber}) ---`);
-                console.log(`[DEBUG] Finalize: User selections for "${topicTitle}":`, JSON.stringify(userSelectionsForTopic));
-                
-                
-                // Verifica se si tratta di un ripasso o di una simulazione d'esame
-                const isReview = topicTitle.toLowerCase().includes("ripasso");
-                const isExamSimulation = topicTitle.toLowerCase().includes("simulazione") || 
-                                       topicTitle.toLowerCase().includes("esame") ||
-                                       assignedTopic.description?.toLowerCase().includes("esercizi") ||
-                                       assignedTopic.description?.toLowerCase().includes("simulazione");
-                
-                // Se è una simulazione d'esame, non creare chunks PDF
-                if (isExamSimulation) {
-                    console.log(`[DEBUG] Finalize: Detected exam simulation topic "${topicTitle}" - skipping PDF chunk creation`);
+                // Per ogni topic assegnato al giorno
+                for (const [topicIndexInDay, assignedTopic] of dayPlan.assignedTopics.entries()) {
+                    const topicTitle = assignedTopic.title?.trim();
+                    if (!topicTitle) continue;
                     
-                    // Non creiamo chunks ma aggiungiamo una nota esplicativa
-                    topicSources = [{
-                        type: 'note',
-                        noteType: 'exam_simulation',
-                        description: 'Simulazione d\'esame - Prova a risolvere esercizi senza consultare il materiale.'
-                    }];
-                } 
-                // Se è un ripasso, non creare chunks (questo è per i giorni che non sono stati già gestiti in precedenza)
-                else if (isReview) {
-                    console.log(`[DEBUG] Finalize: Detected review topic "${topicTitle}" - no PDF chunks needed`);
-                    // Lascia sources vuoto o aggiungi una nota di ripasso
-                    topicSources = [{
-                        type: 'note',
-                        noteType: 'review',
-                        description: 'Ripasso generale argomenti precedenti.'
-                    }];
-                }
-                else {
-                    if (userSelectionsForTopic.length > 0) {
-                        // Per ogni file selezionato per questo topic
-                        for (const fileSelection of userSelectionsForTopic) {
-                            const { fileIndex, fileName, pages } = fileSelection;
-                            
-                            if (!pages || pages.length === 0) continue;
-                            
-                            // Ottieni il file originale e le sue info
-                            const originalFile = originalFileObjects[fileIndex];
-                            const originalFileInfoFromDrive = originalUploadedFilesData.find(f => f.originalFileIndex === fileIndex);
-                            
-                            if (!originalFile || !originalFileInfoFromDrive) {
-                                console.warn(`Finalize: Missing file data for fileIndex ${fileIndex}`);
-                                continue;
-                            }
-
-                            // Ordina le pagine in ordine crescente
-                            const sortedPages = [...pages].sort((a, b) => a - b);
-                            const firstPage = sortedPages[0];
-                            const lastPage = sortedPages[sortedPages.length - 1];
-                            
-                            // Crea un nome significativo per il chunk
-                            const safeTitlePart = topicTitle.substring(0, 15).replace(/[^a-zA-Z0-9]/g, '_');
-                            const chunkFileName = `${originalFile.name.replace(/\.pdf$/i, '')}_${safeTitlePart}_p${firstPage}-${lastPage}.pdf`;
-                            
-                            chunksProcessedCount++;
-                            try {
-                                const progressMsgChunk = `Creazione/Upload chunk ${chunksProcessedCount}/${totalChunksToCreate || '?'}: ${chunkFileName.substring(0,30)}...`;
-                                progressCallback({ type: 'processing', message: progressMsgChunk });
-
-                                // Crea il chunk PDF
-                                setLocalFinalizationMessage(`Creazione chunk ${chunkFileName}...`);
-                                const chunkFile = await createPdfChunk(originalFile, sortedPages, chunkFileName, (msg) => progressCallback({type:'processing', message:msg}));
-                                
-                                if (chunkFile) {
-                                    // Carica il chunk su Drive
-                                    setLocalFinalizationMessage(`Caricamento chunk ${chunkFileName}...`);
-                                    const uploadedChunk = await googleDriveService.uploadFile(chunkFile, (percent) => progressCallback({ 
-                                        type: 'upload', 
-                                        phase: 'chunk', 
-                                        fileName: chunkFileName, 
-                                        percent: percent 
-                                    }));
-                                    
-                                    // Aggiungi informazioni sul chunk alle fonti dell'argomento
-                                    topicSources.push({
-                                        type: 'pdf_chunk',
-                                        chunkDriveId: uploadedChunk.driveFileId || uploadedChunk.id,
-                                        chunkName: chunkFileName,
-                                        webViewLink: uploadedChunk.webViewLink,
-                                        originalFileId: originalFileInfoFromDrive.driveFileId,
-                                        originalFileName: originalFileInfoFromDrive.name,
-                                        pageStart: firstPage,
-                                        pageEnd: lastPage
-                                    });
-                                    
-                                    progressCallback({ type: 'processing', message: `Chunk ${chunkFileName} caricato.` });
-                                } else {
-                                    // Gestisci fallimento creazione chunk
-                                    topicSources.push({ 
-                                        type: 'error_chunk', 
-                                        name: chunkFileName, 
-                                        error: 'Creazione fallita (pdfProcessor)', 
-                                        originalFileId: originalFileInfoFromDrive.driveFileId, 
-                                        originalFileName: originalFileInfoFromDrive.name 
-                                    });
-                                }
-                            } catch (chunkError) {
-                                console.error(`Finalize: ERROR during chunk handling for ${chunkFileName}`, chunkError);
-                                progressCallback({ type: 'error', message: `Errore chunk ${chunkFileName}: ${chunkError.message}` });
-                                
-                                // Registra l'errore nelle fonti
-                                topicSources.push({ 
-                                    type: 'error_chunk', 
-                                    name: chunkFileName, 
-                                    error: chunkError.message, 
-                                    originalFileId: originalFileInfoFromDrive.driveFileId, 
-                                    originalFileName: originalFileInfoFromDrive.name 
-                                });
-                            }
-                        }
-                    } else if (topicDetailsFromAI?.pages_info && topicDetailsFromAI.pages_info.length > 0) {
-                        // Fallback - se l'utente non ha selezionato pagine, usa i suggerimenti AI originali
-                        console.log(`Finalize: No user selections for topic "${topicTitle}", using AI suggestions.`);
+                    const topicId = uuidv4();
+                    finalDailyPlanMap[dayNumber].push(topicId);
+                    let topicSources = [];
+                    const topicDetailsFromAI = aiTopicDetailsMap[topicTitle]; // Contiene pages_info
+                    
+                    // Ottieni le selezioni utente per questo topic dal modal
+                    const userSelectionsForTopic = finalUserSelections[topicTitle] || [];
+                    
+                    console.log(`\n--- Finalizing Topic: "${topicTitle}" (Day ${dayNumber}) ---`);
+                    console.log(`[DEBUG] Finalize: User selections for "${topicTitle}":`, JSON.stringify(userSelectionsForTopic));
+                    
+                    
+                    // Verifica se si tratta di un ripasso o di una simulazione d'esame
+                    const isReview = topicTitle.toLowerCase().includes("ripasso");
+                    const isExamSimulation = topicTitle.toLowerCase().includes("simulazione") || 
+                                           topicTitle.toLowerCase().includes("esame") ||
+                                           assignedTopic.description?.toLowerCase().includes("esercizi") ||
+                                           assignedTopic.description?.toLowerCase().includes("simulazione");
+                    
+                    // Se è una simulazione d'esame, non creare chunks PDF
+                    if (isExamSimulation) {
+                        console.log(`[DEBUG] Finalize: Detected exam simulation topic "${topicTitle}" - skipping PDF chunk creation`);
                         
-                        for (const pInfo of topicDetailsFromAI.pages_info) {
-                            const originalFile = originalFileObjects[pInfo.pdf_index];
-                            const originalFileInfoFromDrive = originalUploadedFilesData.find(f => f.originalFileIndex === pInfo.pdf_index);
-                            
-                            if (!originalFile || !originalFileInfoFromDrive) continue;
-                            
-                            const pageNumbers = [];
-                            for (let i = pInfo.start_page; i <= pInfo.end_page; i++) {
-                                pageNumbers.push(i);
-                            }
-                            
-                            if (pageNumbers.length === 0) continue;
-                            
-                            const firstPage = Math.min(...pageNumbers);
-                            const lastPage = Math.max(...pageNumbers);
-                            const safeTitlePart = topicTitle.substring(0, 15).replace(/[^a-zA-Z0-9]/g, '_');
-                            const chunkFileName = `${originalFile.name.replace(/\.pdf$/i, '')}_${safeTitlePart}_p${firstPage}-${lastPage}.pdf`;
-                            
-                            chunksProcessedCount++;
-                            try {
-                                const progressMsgChunk = `Creazione/Upload chunk ${chunksProcessedCount}/${totalChunksToCreate || '?'}: ${chunkFileName.substring(0,30)}...`;
-                                progressCallback({ type: 'processing', message: progressMsgChunk });
-
-                                // Crea il chunk PDF
-                                setLocalFinalizationMessage(`Creazione chunk ${chunkFileName}...`);
-                                const chunkFile = await createPdfChunk(originalFile, pageNumbers, chunkFileName, (msg) => progressCallback({type:'processing', message:msg}));
+                        // Non creiamo chunks ma aggiungiamo una nota esplicativa
+                        topicSources = [{
+                            type: 'note',
+                            noteType: 'exam_simulation',
+                            description: 'Simulazione d\'esame - Prova a risolvere esercizi senza consultare il materiale.'
+                        }];
+                    } 
+                    // Se è un ripasso, non creare chunks (questo è per i giorni che non sono stati già gestiti in precedenza)
+                    else if (isReview) {
+                        console.log(`[DEBUG] Finalize: Detected review topic "${topicTitle}" - no PDF chunks needed`);
+                        // Lascia sources vuoto o aggiungi una nota di ripasso
+                        topicSources = [{
+                            type: 'note',
+                            noteType: 'review',
+                            description: 'Ripasso generale argomenti precedenti.'
+                        }];
+                    }
+                    else {
+                        if (userSelectionsForTopic.length > 0) {
+                            // Per ogni file selezionato per questo topic
+                            for (const fileSelection of userSelectionsForTopic) {
+                                const { fileIndex, fileName, pages } = fileSelection;
                                 
-                                if (chunkFile) {
-                                    // Carica il chunk su Drive
-                                    setLocalFinalizationMessage(`Caricamento chunk ${chunkFileName}...`);
-                                    const uploadedChunk = await googleDriveService.uploadFile(chunkFile, (percent) => progressCallback({ 
-                                        type: 'upload', 
-                                        phase: 'chunk', 
-                                        fileName: chunkFileName, 
-                                        percent: percent 
-                                    }));
+                                if (!pages || pages.length === 0) continue;
+                                
+                                // Ottieni il file originale e le sue info
+                                const originalFile = originalFileObjects[fileIndex];
+                                const originalFileInfoFromDrive = originalUploadedFilesData.find(f => f.originalFileIndex === fileIndex);
+                                
+                                if (!originalFile || !originalFileInfoFromDrive) {
+                                    console.warn(`Finalize: Missing file data for fileIndex ${fileIndex}`);
+                                    continue;
+                                }
+
+                                // Ordina le pagine in ordine crescente
+                                const sortedPages = [...pages].sort((a, b) => a - b);
+                                const firstPage = sortedPages[0];
+                                const lastPage = sortedPages[sortedPages.length - 1];
+                                
+                                // Crea un nome significativo per il chunk
+                                const safeTitlePart = topicTitle.substring(0, 15).replace(/[^a-zA-Z0-9]/g, '_');
+                                const chunkFileName = `${originalFile.name.replace(/\.pdf$/i, '')}_${safeTitlePart}_p${firstPage}-${lastPage}.pdf`;
+                                
+                                chunksProcessedCount++;
+                                try {
+                                    const progressMsgChunk = `Creazione/Upload chunk ${chunksProcessedCount}/${totalChunksToCreate || '?'}: ${chunkFileName.substring(0,30)}...`;
+                                    progressCallback({ type: 'processing', message: progressMsgChunk });
+
+                                    // Crea il chunk PDF
+                                    setLocalFinalizationMessage(`Creazione chunk ${chunkFileName}...`);
+                                    const chunkFile = await createPdfChunk(originalFile, sortedPages, chunkFileName, (msg) => progressCallback({type:'processing', message:msg}));
                                     
-                                    topicSources.push({
-                                        type: 'pdf_chunk',
-                                        chunkDriveId: uploadedChunk.driveFileId || uploadedChunk.id,
-                                        chunkName: chunkFileName,
-                                        webViewLink: uploadedChunk.webViewLink,
-                                        originalFileId: originalFileInfoFromDrive.driveFileId,
-                                        originalFileName: originalFileInfoFromDrive.name,
-                                        pageStart: firstPage,
-                                        pageEnd: lastPage
-                                    });
+                                    if (chunkFile) {
+                                        // Carica il chunk su Drive
+                                        setLocalFinalizationMessage(`Caricamento chunk ${chunkFileName}...`);
+                                        const uploadedChunk = await googleDriveService.uploadFile(chunkFile, (percent) => progressCallback({ 
+                                            type: 'upload', 
+                                            phase: 'chunk', 
+                                            fileName: chunkFileName, 
+                                            percent: percent 
+                                        }));
+                                        
+                                        topicSources.push({
+                                            type: 'pdf_chunk',
+                                            chunkDriveId: uploadedChunk.driveFileId || uploadedChunk.id,
+                                            chunkName: chunkFileName,
+                                            webViewLink: uploadedChunk.webViewLink,
+                                            originalFileId: originalFileInfoFromDrive.driveFileId,
+                                            originalFileName: originalFileInfoFromDrive.name,
+                                            pageStart: firstPage,
+                                            pageEnd: lastPage
+                                        });
+                                        
+                                        progressCallback({ type: 'processing', message: `Chunk ${chunkFileName} caricato.` });
+                                    } else {
+                                        topicSources.push({ 
+                                            type: 'error_chunk', 
+                                            name: chunkFileName, 
+                                            error: 'Creazione fallita (pdfProcessor)', 
+                                            originalFileId: originalFileInfoFromDrive.driveFileId, 
+                                            originalFileName: originalFileInfoFromDrive.name 
+                                        });
+                                    }
+                                } catch (chunkError) {
+                                    console.error(`Finalize: ERROR during chunk handling for ${chunkFileName}`, chunkError);
+                                    progressCallback({ type: 'error', message: `Errore chunk ${chunkFileName}: ${chunkError.message}` });
                                     
-                                    progressCallback({ type: 'processing', message: `Chunk ${chunkFileName} caricato.` });
-                                } else {
                                     topicSources.push({ 
                                         type: 'error_chunk', 
                                         name: chunkFileName, 
-                                        error: 'Creazione fallita (pdfProcessor)', 
+                                        error: chunkError.message, 
                                         originalFileId: originalFileInfoFromDrive.driveFileId, 
                                         originalFileName: originalFileInfoFromDrive.name 
                                     });
                                 }
-                            } catch (chunkError) {
-                                console.error(`Finalize: ERROR during chunk handling for ${chunkFileName}`, chunkError);
-                                progressCallback({ type: 'error', message: `Errore chunk ${chunkFileName}: ${chunkError.message}` });
-                                
-                                topicSources.push({ 
-                                    type: 'error_chunk', 
-                                    name: chunkFileName, 
-                                    error: chunkError.message, 
-                                    originalFileId: originalFileInfoFromDrive.driveFileId, 
-                                    originalFileName: originalFileInfoFromDrive.name 
-                                });
                             }
+                        } else {
+                            // Caso estremo: nessuna selezione e nessun suggerimento AI
+                            console.warn(`Finalize: No user selections or AI suggestions for topic "${topicTitle}" (Day ${dayNumber}). Applying fallback to original files.`);
+                            topicSources.push(...originalUploadedFilesData.map(f => ({ 
+                                type: 'pdf_original', 
+                                driveFileId: f.driveFileId, 
+                                name: f.name, 
+                                webViewLink: f.webViewLink 
+                            })));
                         }
-                    } else {
-                        // Caso estremo: nessuna selezione e nessun suggerimento AI
-                        console.warn(`Finalize: No user selections or AI suggestions for topic "${topicTitle}" (Day ${dayNumber}). Applying fallback to original files.`);
-                        topicSources.push(...originalUploadedFilesData.map(f => ({ 
-                            type: 'pdf_original', 
-                            driveFileId: f.driveFileId, 
-                            name: f.name, 
-                            webViewLink: f.webViewLink 
-                        })));
                     }
+                    
+                    console.log(`[DEBUG] Finalize: Final sources collected for topic "${topicTitle}" (Day ${dayNumber}):`, JSON.stringify(topicSources));
+                    topicsDataForFirestore.push({
+                        id: topicId,
+                        title: topicTitle,
+                        description: topicDetailsFromAI?.description || assignedTopic.description || '',
+                        assignedDay: dayNumber,
+                        orderInDay: topicIndexInDay,
+                        isCompleted: false,
+                        sources: topicSources
+                    });
+                    console.log(`--- Finished Finalizing Topic: "${topicTitle}" ---`);
                 }
-                
-                console.log(`[DEBUG] Finalize: Final sources collected for topic "${topicTitle}" (Day ${dayNumber}):`, JSON.stringify(topicSources));
-                topicsDataForFirestore.push({
-                    id: topicId,
-                    title: topicTitle,
-                    description: topicDetailsFromAI?.description || assignedTopic.description || '',
-                    assignedDay: dayNumber,
-                    orderInDay: topicIndexInDay,
-                    isCompleted: false,
-                    sources: topicSources
-                });
-                console.log(`--- Finished Finalizing Topic: "${topicTitle}" ---`);
             }
+
+            // Prepara i dati del progetto per il salvataggio
+            const projectCoreData = {
+               title: projData.title, 
+               examName: projData.examName, 
+               totalDays: days,
+               description: projData.description, 
+               userId: user.uid,
+               originalFiles: originalUploadedFilesData.map(({originalFileIndex, ...rest}) => rest),
+               aiModelUsed: 'gemini-1.5-flash-latest (direct PDF, 2-step, reviewed)', 
+               dailyPlan: finalDailyPlanMap,
+            };
+
+            // Salvataggio su Firestore
+            setLocalFinalizationMessage('Salvataggio finale del piano su Firebase...');
+            console.log("PlanReviewModal/handleStandaloneSave: Saving final plan to Firestore...");
+            const finalProjectId = await saveProjectWithPlan(projectCoreData, topicsDataForFirestore);
+            console.log("PlanReviewModal/handleStandaloneSave: Final plan saved! Project ID:", finalProjectId);
+
+            setLocalFinalizationMessage('Piano salvato con successo!');
+            setLocalIsFinalizing(false);
+            
+            // Reindirizzamento alla visualizzazione del piano
+            setTimeout(() => {
+                navigate(`/projects/${finalProjectId}/plan`);
+            }, 1500);
+
+        } catch(error) {
+            console.error("PlanReviewModal/handleStandaloneSave: Error during finalization phase:", error);
+            setLocalFinalizationError(`Errore durante il salvataggio: ${error.message}` || 'Errore imprevisto durante la finalizzazione.');
+            setLocalIsFinalizing(false);
         }
-
-        // Prepara i dati del progetto per il salvataggio
-        const projectCoreData = {
-           title: projData.title, 
-           examName: projData.examName, 
-           totalDays: days,
-           description: projData.description, 
-           userId: user.uid,
-           originalFiles: originalUploadedFilesData.map(({originalFileIndex, ...rest}) => rest),
-           aiModelUsed: 'gemini-1.5-flash-latest (direct PDF, 2-step, reviewed)', 
-           dailyPlan: finalDailyPlanMap,
-        };
-
-        // Salvataggio su Firestore
-        setLocalFinalizationMessage('Salvataggio finale del piano su Firebase...');
-        console.log("PlanReviewModal/handleStandaloneSave: Saving final plan to Firestore...");
-        const finalProjectId = await saveProjectWithPlan(projectCoreData, topicsDataForFirestore);
-        console.log("PlanReviewModal/handleStandaloneSave: Final plan saved! Project ID:", finalProjectId);
-
-        setLocalFinalizationMessage('Piano salvato con successo!');
-        setLocalIsFinalizing(false);
-        
-        // Reindirizzamento alla visualizzazione del piano
-        setTimeout(() => {
-            navigate(`/projects/${finalProjectId}/plan`);
-        }, 1500);
-
-    } catch(error) {
-        console.error("PlanReviewModal/handleStandaloneSave: Error during finalization phase:", error);
-        setLocalFinalizationError(`Errore durante il salvataggio: ${error.message}` || 'Errore imprevisto durante la finalizzazione.');
-        setLocalIsFinalizing(false);
-    }
-};
-
+    };
 
     // Gestisce la conferma finale
     const handleConfirm = () => {
-    const result = validateAndPrepare();
-    if (result.valid) {
-        if (onConfirm) {
-            // Se usato come modale, usa la funzione prop
-            onConfirm(result.selections, result.distribution);
-        } else {
-            // Se usato come pagina autonoma
-            console.log("PlanReviewModal: Executing standalone save process");
-            // Avvia il processo di salvataggio autonomo
-            handleStandaloneSave(result.selections, result.distribution);
+        const result = validateAndPrepare();
+        if (result.valid) {
+            if (onConfirm) {
+                // Se usato come modale, usa la funzione prop
+                onConfirm(result.selections, result.distribution);
+            } else {
+                // Se usato come pagina autonoma
+                console.log("PlanReviewModal: Executing standalone save process");
+                // Avvia il processo di salvataggio autonomo
+                handleStandaloneSave(result.selections, result.distribution);
+            }
         }
-    }
-};
+    };
 
     // Gestisce l'annullamento
     const handleCancel = () => {
@@ -865,11 +709,10 @@ const handleStandaloneSave = async (finalUserSelections, finalDistribution) => {
 
     return (
         <>
-            
             <div className="plan-review-screen">
                 <div className="plan-review-header">
                     <h1>Revisione Piano di Studio</h1>
-                    <p className="subtitle">Trascina gli argomenti per organizzare il tuo piano. Espandi ogni argomento per selezionare le pagine da studiare.</p>
+                    <p className="subtitle">Trascina gli argomenti per organizzare il tuo piano. Clicca su un argomento per selezionare le pagine da studiare.</p>
                 </div>
 
                 {effectiveIsFinalizing && (
@@ -928,9 +771,9 @@ const handleStandaloneSave = async (finalUserSelections, finalDistribution) => {
                                                                     >
                                                                         <div 
                                                                             className="topic-header"
-                                                                            onClick={() => toggleTopicExpansion(topicTitle)}
+                                                                            onClick={() => handleOpenTopicDetail(topicTitle)}
                                                                         >
-                                                                            {expandedTopicId === topicTitle ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                                                                            <Edit3 size={16} />
                                                                             <BookOpen size={14} />
                                                                             <h4>{topicTitle}</h4>
                                                                             
@@ -942,19 +785,6 @@ const handleStandaloneSave = async (finalUserSelections, finalDistribution) => {
                                                                             
                                                                             {validationErrors[topicTitle] && <AlertCircle size={16} className="error-icon" />}
                                                                         </div>
-
-                                                                        {expandedTopicId === topicTitle && (
-                                                                            <TopicDetailSection 
-                                                                                topicTitle={topicTitle}
-                                                                                topicDetails={topics.find(t => t.title === topicTitle)}
-                                                                                originalFiles={origFiles}
-                                                                                currentUserSelections={currentUserSelections}
-                                                                                handlePageSelectionChangeForTopicAndFile={handlePageSelectionChangeForTopicAndFile}
-                                                                                enterFullscreenModeInternal={enterFullscreenModeInternal}
-                                                                                isFinalizing={effectiveIsFinalizing}
-                                                                                validationError={validationErrors[topicTitle]}
-                                                                            />
-                                                                        )}
                                                                     </div>
                                                                 )}
                                                             </Draggable>
@@ -1000,9 +830,9 @@ const handleStandaloneSave = async (finalUserSelections, finalDistribution) => {
                                                         >
                                                             <div 
                                                                 className="topic-header"
-                                                                onClick={() => toggleTopicExpansion(topicTitle)}
+                                                                onClick={() => handleOpenTopicDetail(topicTitle)}
                                                             >
-                                                                {expandedTopicId === topicTitle ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                                                                <Edit3 size={16} />
                                                                 <BookOpen size={14} />
                                                                 <h4>{topicTitle}</h4>
                                                                 
@@ -1014,19 +844,6 @@ const handleStandaloneSave = async (finalUserSelections, finalDistribution) => {
                                                                 
                                                                 {validationErrors[topicTitle] && <AlertCircle size={16} className="error-icon" />}
                                                             </div>
-
-                                                            {expandedTopicId === topicTitle && (
-                                                                <TopicDetailSection 
-                                                                    topicTitle={topicTitle}
-                                                                    topicDetails={topics.find(t => t.title === topicTitle)}
-                                                                    originalFiles={origFiles}
-                                                                    currentUserSelections={currentUserSelections}
-                                                                    handlePageSelectionChangeForTopicAndFile={handlePageSelectionChangeForTopicAndFile}
-                                                                    enterFullscreenModeInternal={enterFullscreenModeInternal}
-                                                                    isFinalizing={effectiveIsFinalizing}
-                                                                    validationError={validationErrors[topicTitle]}
-                                                                />
-                                                            )}
                                                         </div>
                                                     )}
                                                 </Draggable>
@@ -1040,7 +857,7 @@ const handleStandaloneSave = async (finalUserSelections, finalDistribution) => {
                     </DragDropContext>
                 </div>
 
-<div className="plan-review-actions">
+                <div className="plan-review-actions">
                     <button 
                         className="cancel-button" 
                         onClick={handleCancel} 
@@ -1069,212 +886,19 @@ const handleStandaloneSave = async (finalUserSelections, finalDistribution) => {
                 </div>
             </div>
 
-            {fullscreenMode && currentFullscreenData.pageImages && currentFullscreenData.pageImages.length > 0 && (
-                <div 
-                    className="fullscreen-overlay" 
-                    onClick={(e) => { if(e.target === e.currentTarget) exitFullscreenMode(); }}
-                >
-                    <div className="fullscreen-header">
-                        <h3>
-                            {currentFullscreenData.topicTitle} (File: {origFiles[currentFullscreenData.fileIndex]?.name || 'Sconosciuto'})
-                        </h3>
-                        <button 
-                            onClick={exitFullscreenMode} 
-                            className="fullscreen-close-button" 
-                            title="Chiudi (Esc)"
-                        >
-                            <X size={24} />
-                        </button>
-                    </div>
-                    <div className="fullscreen-content">
-                        <img
-                            src={currentFullscreenData.pageImages[currentFullscreenData.currentPage - 1]}
-                            alt={`Pagina ${currentFullscreenData.currentPage} di ${origFiles[currentFullscreenData.fileIndex]?.name}`}
-                            className="fullscreen-image"
-                        />
-                        <div className="fullscreen-navigation">
-                            <button 
-                                onClick={goToPrevPageFullscreen} 
-                                className={`fullscreen-nav-button ${currentFullscreenData.currentPage <= 1 ? 'disabled' : ''}`}
-                                disabled={currentFullscreenData.currentPage <= 1}
-                                title="Pagina Precedente (←)"
-                            >
-                                <ArrowLeft size={24} />
-                            </button>
-                            <div className="page-selection-controls">
-                                {(currentFullscreenData.selectedPagesInCurrentFile || []).includes(currentFullscreenData.currentPage) ? (
-                                    <button 
-                                        onClick={togglePageSelectionFullscreen} 
-                                        className="fullscreen-unselect-button" 
-                                        title="Rimuovi Selezione (Spazio)"
-                                    >
-                                        Deseleziona Pagina {currentFullscreenData.currentPage}
-                                    </button>
-                                ) : (
-                                    <button 
-                                        onClick={togglePageSelectionFullscreen} 
-                                        className="fullscreen-select-button" 
-                                        title="Seleziona Pagina (Spazio)"
-                                    >
-                                        Seleziona Pagina {currentFullscreenData.currentPage}
-                                    </button>
-                                )}
-                            </div>
-                            <div className="fullscreen-page-info">
-                                {currentFullscreenData.currentPage} / {currentFullscreenData.totalPagesInFile || '?'}
-                            </div>
-                            <button 
-                                onClick={goToNextPageFullscreen} 
-                                className={`fullscreen-nav-button ${currentFullscreenData.currentPage >= (currentFullscreenData.totalPagesInFile || 1) ? 'disabled' : ''}`}
-                                disabled={currentFullscreenData.currentPage >= (currentFullscreenData.totalPagesInFile || 1)}
-                                title="Pagina Successiva (→)"
-                            >
-                                <ArrowRight size={24} />
-                            </button>
-                        </div>
-                    </div>
-                </div>
+            {/* Nuovo visualizzatore dettagli separato */}
+            {selectedTopicForDetail && (
+                <TopicDetailViewer
+                    topicTitle={selectedTopicForDetail}
+                    topicDetails={topics.find(t => t.title === selectedTopicForDetail)}
+                    originalFiles={origFiles}
+                    currentUserSelections={currentUserSelections}
+                    onPageSelectionChange={handlePageSelectionChangeForTopicAndFile}
+                    onClose={handleCloseTopicDetail}
+                    isFinalizing={effectiveIsFinalizing}
+                />
             )}
         </>
-    );
-};
-
-// Componente per i dettagli di un argomento e la selezione delle pagine
-const TopicDetailSection = ({
-    topicTitle,
-    topicDetails,
-    originalFiles,
-    currentUserSelections,
-    handlePageSelectionChangeForTopicAndFile,
-    enterFullscreenModeInternal,
-    isFinalizing,
-    validationError
-}) => {
-    if (!topicDetails) return <div className="topic-detail-error">Dettagli argomento non disponibili</div>;
-    
-    const selectionsForThisTopic = currentUserSelections[topicTitle] || [];
-    
-    return (
-        <div className="topic-detail-section">
-            {topicDetails?.description && (
-                <p className="topic-description">{topicDetails.description}</p>
-            )}
-            
-            <div className="page-selector-container">
-                {(!topicDetails?.pages_info || topicDetails.pages_info.length === 0) && (
-                    <p className="suggested-pages-note">L'AI non ha suggerito pagine specifiche per questo argomento. Puoi selezionarle manualmente dai file PDF disponibili qui sotto.</p>
-                )}
-
-                {/* Sezione per pages_info suggerite dall'AI */}
-                {(topicDetails?.pages_info || []).map((pInfo, pInfoIdx) => {
-                    if (typeof pInfo.pdf_index !== 'number' || pInfo.pdf_index < 0 || pInfo.pdf_index >= originalFiles.length) {
-                        return <p key={`pinfo-err-${topicTitle}-${pInfoIdx}`} className="error-message">Dati file sorgente non validi per questo suggerimento AI.</p>;
-                    }
-                    
-                    const relevantFile = originalFiles[pInfo.pdf_index];
-                    if (!relevantFile) {
-                        return <p key={`file-obj-err-${topicTitle}-${pInfoIdx}`} className="error-message">Oggetto file originale non trovato per l'indice {pInfo.pdf_index}.</p>;
-                    }
-                    
-                    const currentFileSelections = selectionsForThisTopic.find(s => s.fileIndex === pInfo.pdf_index)?.pages || [];
-
-                    return (
-                        <div key={`selector-ai-${topicTitle}-${pInfo.pdf_index}`} className="page-selector-instance">
-                            <div className="page-selector-header">
-                                <Edit3 size={14} />
-                                <strong>File (Suggerimento AI): {relevantFile.name}</strong>
-                                <button
-                                    onClick={() => {
-                                        const psId = `page-selector-${topicTitle.replace(/\s+/g, '-')}-ai-${pInfo.pdf_index}`;
-                                        const pageSelectorInstance = document.getElementById(psId);
-                                        if (pageSelectorInstance && pageSelectorInstance.__pageImages && typeof pageSelectorInstance.__totalPagesInFile === 'number') {
-                                            enterFullscreenModeInternal(topicTitle, pInfo.pdf_index, pageSelectorInstance.__pageImages, pInfo.start_page || 1, pageSelectorInstance.__totalPagesInFile);
-                                        }
-                                    }}
-                                    className="fullscreen-button" 
-                                    title="Visualizza a schermo intero"
-                                >
-                                    <Maximize2 size={16} /> Schermo Intero
-                                </button>
-                            </div>
-                            <div className="suggested-pages">
-                                (AI suggerisce Pagine Originali: {pInfo.start_page} - {pInfo.end_page})
-                            </div>
-                            <PageSelector
-                                id={`page-selector-${topicTitle.replace(/\s+/g, '-')}-ai-${pInfo.pdf_index}`}
-                                key={`key-ai-${topicTitle}-${relevantFile.name}-${pInfo.start_page}-${pInfo.end_page}`}
-                                pdfFile={relevantFile}
-                                suggestedStartPage={pInfo.start_page || 1}
-                                suggestedEndPage={pInfo.end_page || (pInfo.start_page || 0) + 9}
-                                selectedPages={currentFileSelections}
-                                onSelectionChange={(newSelection) => handlePageSelectionChangeForTopicAndFile(topicTitle, pInfo.pdf_index, newSelection)}
-                                isFinalizing={isFinalizing}
-                                onImagesReady={(pageImages) => {
-                                    const psId = `page-selector-${topicTitle.replace(/\s+/g, '-')}-ai-${pInfo.pdf_index}`;
-                                    const pageSelectorInstance = document.getElementById(psId);
-                                    if (pageSelectorInstance) {
-                                        pageSelectorInstance.__pageImages = pageImages;
-                                        pageSelectorInstance.__totalPagesInFile = pageImages.length;
-                                    }
-                                }}
-                                onToggleFullscreen={(pageImages, initialPage) => 
-                                    enterFullscreenModeInternal(topicTitle, pInfo.pdf_index, pageImages, initialPage, pageImages.length)
-                                }
-                            />
-                        </div>
-                    );
-                })}
-
-                {/* Sezione per selezione manuale da TUTTI i file disponibili, se non ci sono pages_info */}
-                {(!topicDetails?.pages_info || topicDetails.pages_info.length === 0) && originalFiles.map((file, manualFileIndex) => {
-                    const currentManualFileSelections = selectionsForThisTopic.find(s => s.fileIndex === manualFileIndex)?.pages || [];
-                    return (
-                        <div key={`selector-manual-${topicTitle}-${manualFileIndex}`} className="page-selector-instance manual">
-                            <div className="page-selector-header">
-                                <Edit3 size={14} />
-                                <strong>Seleziona da File: {file.name}</strong>
-                                <button
-                                    onClick={() => {
-                                        const psId = `page-selector-${topicTitle.replace(/\s+/g, '-')}-manual-${manualFileIndex}`;
-                                        const pageSelectorInstance = document.getElementById(psId);
-                                        if (pageSelectorInstance && pageSelectorInstance.__pageImages && typeof pageSelectorInstance.__totalPagesInFile === 'number') {
-                                            enterFullscreenModeInternal(topicTitle, manualFileIndex, pageSelectorInstance.__pageImages, 1, pageSelectorInstance.__totalPagesInFile);
-                                        }
-                                    }}
-                                    className="fullscreen-button" 
-                                    title="Visualizza a schermo intero"
-                                >
-                                    <Maximize2 size={16} /> Schermo Intero
-                                </button>
-                            </div>
-                            <PageSelector
-                                id={`page-selector-${topicTitle.replace(/\s+/g, '-')}-manual-${manualFileIndex}`}
-                                key={`key-manual-${topicTitle}-${file.name}`}
-                                pdfFile={file}
-                                suggestedStartPage={1}
-                                suggestedEndPage={10}
-                                selectedPages={currentManualFileSelections}
-                                onSelectionChange={(newSelection) => handlePageSelectionChangeForTopicAndFile(topicTitle, manualFileIndex, newSelection)}
-                                isFinalizing={isFinalizing}
-                                onImagesReady={(pageImages) => {
-                                    const psId = `page-selector-${topicTitle.replace(/\s+/g, '-')}-manual-${manualFileIndex}`;
-                                    const pageSelectorInstance = document.getElementById(psId);
-                                    if (pageSelectorInstance) {
-                                        pageSelectorInstance.__pageImages = pageImages;
-                                        pageSelectorInstance.__totalPagesInFile = pageImages.length;
-                                    }
-                                }}
-                                onToggleFullscreen={(pageImages, initialPage) => 
-                                    enterFullscreenModeInternal(topicTitle, manualFileIndex, pageImages, initialPage, pageImages.length)
-                                }
-                            />
-                        </div>
-                    );
-                })}
-                
-                {validationError && <p className="error-message">{validationError}</p>}
-            </div>
-        </div>
     );
 };
 
