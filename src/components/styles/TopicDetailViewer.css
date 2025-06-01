@@ -1,4 +1,4 @@
-/* src/components/styles/TopicDetailViewer.css - Optimized for Large Page View with Zoom */
+/* src/components/styles/TopicDetailViewer.css - Optimized for Lazy Loading */
 
 .topic-detail-overlay {
   position: fixed;
@@ -133,7 +133,7 @@
   position: relative;
 }
 
-/* NUOVI CONTROLLI ZOOM */
+/* CONTROLLI ZOOM */
 .zoom-controls {
   position: absolute;
   top: 15px;
@@ -209,7 +209,7 @@
   height: auto;
   object-fit: contain;
   cursor: pointer;
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, opacity 0.3s ease;
   display: block;
   transform-origin: center top;
   border: 1px solid #e0e0e0;
@@ -220,8 +220,17 @@
   border-radius: 4px;
 }
 
+.large-page-image.high-res {
+  opacity: 1;
+}
+
+.large-page-image.thumbnail-res {
+  opacity: 0.8;
+  filter: blur(0.5px);
+}
+
 .page-overlay {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
@@ -243,8 +252,10 @@
   pointer-events: none;
   border: none;
   outline: none;
+  z-index: 25;
 }
 
+/* Rimuoviamo completamente l'effetto hover che causava il problema */
 /* .large-page-wrapper:hover .page-overlay {
   opacity: 1;
 } */
@@ -253,6 +264,12 @@
   font-weight: 600;
   font-size: 0.9em;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.loading-indicator {
+  font-size: 0.8em;
+  opacity: 0.8;
+  font-style: italic;
 }
 
 .selection-indicator {
@@ -319,12 +336,14 @@
 
 .no-page {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 100%;
   color: #666;
   font-size: 1.1em;
   font-style: italic;
+  gap: 15px;
 }
 
 .thumbnail-strip {
@@ -370,6 +389,9 @@
   background: #f8f9fa;
   min-height: 120px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .thumbnail:hover {
@@ -402,6 +424,16 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.thumbnail-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: #f8f9fa;
+  color: #ccc;
 }
 
 .thumbnail-error {
@@ -490,6 +522,15 @@
   animation: spin 1s linear infinite;
 }
 
+.mini-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #f0f0f0;
+  border-top: 2px solid #6c4ad0;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
@@ -507,6 +548,24 @@
 
 .error-close-btn:hover {
   background: #c82333;
+}
+
+/* Progress Bar per loading */
+.progress-bar {
+  width: 100%;
+  max-width: 300px;
+  height: 6px;
+  background: #f0f0f0;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6c4ad0, #8a65ff);
+  transition: width 0.3s ease;
+  border-radius: 3px;
 }
 
 /* Scrollbar personalizzata per large page */

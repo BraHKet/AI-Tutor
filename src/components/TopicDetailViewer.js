@@ -1,5 +1,5 @@
-// src/components/TopicDetailViewer.js - Updated Version with Zoom and Better Quality
-import React, { useState, useEffect, useRef } from 'react';
+// src/components/TopicDetailViewer.js - Updated Version with Optimized Lazy Loading
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { X, FileText, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import './styles/TopicDetailViewer.css';
@@ -13,6 +13,12 @@ const pdfLoadingOptions = {
   standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/standard_fonts/`
 };
 
+// Costanti per il lazy loading
+const PRELOAD_RANGE = 3; // Numero di pagine da precaricare intorno alla pagina corrente
+const THUMBNAIL_SCALE = 0.8; // Scala per le thumbnail (più piccole)
+const MAIN_PAGE_SCALE = 2.5; // Scala per la pagina principale (alta qualità)
+const BATCH_SIZE = 5; // Numero di pagine da processare per batch
+
 const TopicDetailViewer = ({
   topicTitle,
   topicDetails,
@@ -24,21 +30,25 @@ const TopicDetailViewer = ({
 }) => {
   const [currentFileIndex, setCurrentFileIndex] = useState(0);
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
-  const [pageImages, setPageImages] = useState({});
+  const [thumbnailImages, setThumbnailImages] = useState({}); // Immagini piccole per thumbnail
+  const [highResImages, setHighResImages] = useState({}); // Immagini ad alta risoluzione per vista principale
   const [loading, setLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState({ current: 0, total: 0 });
   const [error, setError] = useState(null);
   const [pdfDocuments, setPdfDocuments] = useState({});
   const [zoomLevel, setZoomLevel] = useState(1.0);
+  const [renderingQueue, setRenderingQueue] = useState(new Set());
   
   const canvasRef = useRef(null);
   const imageWrapperRef = useRef(null);
+  const thumbnailObserverRef = useRef(null);
+  const abortControllerRef = useRef(null);
 
   // Determina quali file sono rilevanti per questo argomento
   const getRelevantFiles = () => {
     const relevantFiles = [];
     
     if (topicDetails?.pages_info && topicDetails.pages_info.length > 0) {
-      // Se ci sono suggerimenti AI, usa quelli
       topicDetails.pages_info.forEach(pInfo => {
         if (pInfo.pdf_index >= 0 && pInfo.pdf_index < originalFiles.length) {
           const existingFile = relevantFiles.find(f => f.fileIndex === pInfo.pdf_index);
@@ -53,7 +63,6 @@ const TopicDetailViewer = ({
         }
       });
     } else {
-      // Se non ci sono suggerimenti, usa tutti i file
       originalFiles.forEach((file, index) => {
         relevantFiles.push({
           fileIndex: index,
@@ -69,22 +78,86 @@ const TopicDetailViewer = ({
 
   const relevantFiles = getRelevantFiles();
 
-  // Carica i PDF con risoluzione migliorata
+  // Funzione per renderizzare una singola pagina
+  const renderPage = useCallback(async (fileIndex, pageNum, scale = THUMBNAIL_SCALE, priority = 'normal') => {
+    if (!pdfDocuments[fileIndex]) return null;
+
+    const cacheKey = `${fileIndex}-${pageNum}-${scale}`;
+    
+    // Controlla se è già in rendering
+    if (renderingQueue.has(cacheKey)) {
+      return null;
+    }
+
+    try {
+      setRenderingQueue(prev => new Set([...prev, cacheKey]));
+      
+      const pdf = pdfDocuments[fileIndex];
+      const page = await pdf.getPage(pageNum);
+      const viewport = page.getViewport({ scale });
+      
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+      
+      await page.render({
+        canvasContext: context,
+        viewport: viewport
+      }).promise;
+      
+      const imgData = canvas.toDataURL('image/png', 0.85); // Compressione JPEG per ridurre dimensioni
+      
+      // Salva nell'cache appropriato
+      if (scale === THUMBNAIL_SCALE) {
+        setThumbnailImages(prev => ({
+          ...prev,
+          [fileIndex]: {
+            ...prev[fileIndex],
+            [pageNum - 1]: imgData
+          }
+        }));
+      } else {
+        setHighResImages(prev => ({
+          ...prev,
+          [fileIndex]: {
+            ...prev[fileIndex],
+            [pageNum - 1]: imgData
+          }
+        }));
+      }
+
+      return imgData;
+    } catch (error) {
+      console.error(`Error rendering page ${pageNum} of file ${fileIndex}:`, error);
+      return null;
+    } finally {
+      setRenderingQueue(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(cacheKey);
+        return newSet;
+      });
+    }
+  }, [pdfDocuments, renderingQueue]);
+
+  // Carica i PDF documents (senza renderizzare le pagine immediatamente)
   useEffect(() => {
     let isActive = true;
+    abortControllerRef.current = new AbortController();
 
     const loadPdfs = async () => {
       setLoading(true);
       setError(null);
+      setLoadingProgress({ current: 0, total: relevantFiles.length });
 
       try {
         const newPdfDocuments = {};
-        const newPageImages = {};
 
-        for (const relevantFile of relevantFiles) {
-          const { fileIndex, file } = relevantFile;
-          
+        for (let i = 0; i < relevantFiles.length; i++) {
           if (!isActive) break;
+
+          const { fileIndex, file } = relevantFiles[i];
+          setLoadingProgress({ current: i + 1, total: relevantFiles.length });
 
           const fileArrayBuffer = await file.arrayBuffer();
           const loadingTask = pdfjsLib.getDocument({
@@ -94,45 +167,27 @@ const TopicDetailViewer = ({
           
           const pdf = await loadingTask.promise;
           newPdfDocuments[fileIndex] = pdf;
-          newPageImages[fileIndex] = [];
 
-          // Renderizza tutte le pagine con scala maggiore per migliorare la qualità
-          for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-            if (!isActive) break;
-
-            try {
-              const page = await pdf.getPage(pageNum);
-              // Aumentiamo la scala da 1.5 a 2.5 per migliorare la qualità
-              const viewport = page.getViewport({ scale: 2.5 });
-              
-              const canvas = document.createElement('canvas');
-              const context = canvas.getContext('2d');
-              canvas.height = viewport.height;
-              canvas.width = viewport.width;
-              
-              await page.render({
-                canvasContext: context,
-                viewport: viewport
-              }).promise;
-              
-              newPageImages[fileIndex][pageNum - 1] = canvas.toDataURL('image/png');
-            } catch (pageError) {
-              console.error(`Error rendering page ${pageNum} of file ${file.name}:`, pageError);
-              newPageImages[fileIndex][pageNum - 1] = null;
-            }
-          }
+          // Inizializza le cache per questo file
+          setThumbnailImages(prev => ({
+            ...prev,
+            [fileIndex]: {}
+          }));
+          setHighResImages(prev => ({
+            ...prev,
+            [fileIndex]: {}
+          }));
         }
 
         if (isActive) {
           setPdfDocuments(newPdfDocuments);
-          setPageImages(newPageImages);
           setLoading(false);
           
           // Dopo il caricamento, posizionati sulla prima pagina selezionata
           const currentSelections = getCurrentFileSelections();
           if (currentSelections.length > 0) {
             const firstSelectedPage = Math.min(...currentSelections);
-            setCurrentPageIndex(firstSelectedPage - 1); // Converti a 0-based
+            setCurrentPageIndex(firstSelectedPage - 1);
           }
         }
       } catch (err) {
@@ -148,8 +203,94 @@ const TopicDetailViewer = ({
 
     return () => {
       isActive = false;
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
     };
   }, [topicTitle]);
+
+  // Precarica le pagine visibili e nelle vicinanze
+  const preloadPages = useCallback(async (fileIndex, centerPageIndex) => {
+    if (!pdfDocuments[fileIndex]) return;
+
+    const totalPages = pdfDocuments[fileIndex].numPages;
+    const startPage = Math.max(1, centerPageIndex + 1 - PRELOAD_RANGE);
+    const endPage = Math.min(totalPages, centerPageIndex + 1 + PRELOAD_RANGE);
+
+    // Lista delle pagine da caricare in ordine di priorità
+    const pagesToLoad = [];
+    
+    // Prima la pagina corrente (alta priorità)
+    pagesToLoad.push({ pageNum: centerPageIndex + 1, priority: 'high' });
+    
+    // Poi le pagine adiacenti
+    for (let distance = 1; distance <= PRELOAD_RANGE; distance++) {
+      const prevPage = centerPageIndex + 1 - distance;
+      const nextPage = centerPageIndex + 1 + distance;
+      
+      if (prevPage >= startPage) {
+        pagesToLoad.push({ pageNum: prevPage, priority: distance <= 2 ? 'medium' : 'low' });
+      }
+      if (nextPage <= endPage) {
+        pagesToLoad.push({ pageNum: nextPage, priority: distance <= 2 ? 'medium' : 'low' });
+      }
+    }
+
+    // Renderizza le thumbnail per tutte le pagine
+    const thumbnailPromises = pagesToLoad.map(({ pageNum }) => 
+      renderPage(fileIndex, pageNum, THUMBNAIL_SCALE, 'low')
+    );
+
+    // Renderizza la pagina corrente ad alta risoluzione
+    const highResPromise = renderPage(fileIndex, centerPageIndex + 1, MAIN_PAGE_SCALE, 'high');
+
+    // Esegui il rendering
+    await Promise.allSettled([...thumbnailPromises, highResPromise]);
+  }, [pdfDocuments, renderPage]);
+
+  // Effetto per precaricare quando cambia la pagina corrente
+  useEffect(() => {
+    if (relevantFiles[currentFileIndex] && pdfDocuments[relevantFiles[currentFileIndex].fileIndex]) {
+      const fileIndex = relevantFiles[currentFileIndex].fileIndex;
+      preloadPages(fileIndex, currentPageIndex);
+    }
+  }, [currentFileIndex, currentPageIndex, preloadPages, relevantFiles, pdfDocuments]);
+
+  // Intersection Observer per le thumbnail
+  useEffect(() => {
+    const currentFile = relevantFiles[currentFileIndex];
+    if (!currentFile || !pdfDocuments[currentFile.fileIndex]) return;
+
+    const fileIndex = currentFile.fileIndex;
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const pageIndex = parseInt(entry.target.dataset.pageIndex);
+          const pageNum = pageIndex + 1;
+          
+          // Renderizza la thumbnail se non è già presente
+          if (!thumbnailImages[fileIndex]?.[pageIndex]) {
+            renderPage(fileIndex, pageNum, THUMBNAIL_SCALE, 'low');
+          }
+        }
+      });
+    }, {
+      rootMargin: '200px', // Inizia a caricare quando la thumbnail è vicina alla vista
+      threshold: 0.1
+    });
+
+    thumbnailObserverRef.current = observer;
+
+    // Osserva tutte le thumbnail
+    const thumbnailElements = document.querySelectorAll('.thumbnail[data-page-index]');
+    thumbnailElements.forEach(el => observer.observe(el));
+
+    return () => {
+      if (thumbnailObserverRef.current) {
+        thumbnailObserverRef.current.disconnect();
+      }
+    };
+  }, [currentFileIndex, relevantFiles, pdfDocuments, thumbnailImages, renderPage]);
 
   // Gestione zoom
   const handleZoomIn = () => {
@@ -217,7 +358,7 @@ const TopicDetailViewer = ({
     if (currentFileIndex < relevantFiles.length - 1) {
       setCurrentFileIndex(currentFileIndex + 1);
       setCurrentPageIndex(0);
-      setZoomLevel(1.0); // Reset zoom quando cambi file
+      setZoomLevel(1.0);
     }
   };
 
@@ -225,16 +366,16 @@ const TopicDetailViewer = ({
     if (currentFileIndex > 0) {
       setCurrentFileIndex(currentFileIndex - 1);
       setCurrentPageIndex(0);
-      setZoomLevel(1.0); // Reset zoom quando cambi file
+      setZoomLevel(1.0);
     }
   };
 
   // Naviga tra le pagine
   const goToNextPage = () => {
     const currentFile = relevantFiles[currentFileIndex];
-    if (!currentFile) return;
+    if (!currentFile || !pdfDocuments[currentFile.fileIndex]) return;
     
-    const totalPages = pageImages[currentFile.fileIndex]?.length || 0;
+    const totalPages = pdfDocuments[currentFile.fileIndex].numPages;
     if (currentPageIndex < totalPages - 1) {
       setCurrentPageIndex(currentPageIndex + 1);
     }
@@ -310,7 +451,15 @@ const TopicDetailViewer = ({
           </button>
           <div className="loading-content">
             <div className="spinner"></div>
-            <p>Caricamento pagine PDF...</p>
+            <p>Caricamento PDF {loadingProgress.current} di {loadingProgress.total}...</p>
+            {loadingProgress.total > 0 && (
+              <div className="progress-bar">
+                <div 
+                  className="progress-fill" 
+                  style={{ width: `${(loadingProgress.current / loadingProgress.total) * 100}%` }}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -334,10 +483,15 @@ const TopicDetailViewer = ({
   }
 
   const currentFile = relevantFiles[currentFileIndex];
-  const currentFileImages = currentFile ? pageImages[currentFile.fileIndex] : [];
-  const currentPageImage = currentFileImages?.[currentPageIndex];
   const currentSelections = getCurrentFileSelections();
   const isCurrentPageSelected = currentSelections.includes(currentPageIndex + 1);
+  
+  // Ottieni l'immagine ad alta risoluzione per la pagina corrente
+  const currentPageHighRes = currentFile ? highResImages[currentFile.fileIndex]?.[currentPageIndex] : null;
+  // Fallback alla thumbnail se l'alta risoluzione non è ancora caricata
+  const currentPageImage = currentPageHighRes || (currentFile ? thumbnailImages[currentFile.fileIndex]?.[currentPageIndex] : null);
+  
+  const totalPages = currentFile ? pdfDocuments[currentFile.fileIndex]?.numPages || 0 : 0;
 
   return (
     <div className="topic-detail-overlay">
@@ -397,24 +551,29 @@ const TopicDetailViewer = ({
                   <img
                     src={currentPageImage}
                     alt={`Pagina ${currentPageIndex + 1}`}
-                    className="large-page-image"
+                    className={`large-page-image ${currentPageHighRes ? 'high-res' : 'thumbnail-res'}`}
                     style={{ 
                       transform: `scale(${zoomLevel})`,
-                      cursor: zoomLevel > 1 ? 'grab' : 'pointer'
+                      cursor: zoomLevel > 1 ? 'grab' : 'pointer',
+                      opacity: currentPageHighRes ? 1 : 0.8 // Indica visivamente se è alta risoluzione
                     }}
                     onClick={() => handlePageToggle(currentPageIndex + 1)}
                   />
                   <div className="page-overlay">
                     <div className="page-number">
-                      Pagina {currentPageIndex + 1} di {currentFileImages.length}
+                      Pagina {currentPageIndex + 1} di {totalPages}
+                      {!currentPageHighRes && <span className="loading-indicator"> (caricamento...)</span>}
                     </div>
                     <div className={`selection-indicator ${isCurrentPageSelected ? 'selected' : ''}`}>
-                      {isCurrentPageSelected ? '✓ Selezionata' : ''}
+                      {isCurrentPageSelected ? '✓ Selezionata' : 'Clicca per selezionare'}
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="no-page">Pagina non disponibile</div>
+                <div className="no-page">
+                  <div className="spinner"></div>
+                  <span>Caricamento pagina...</span>
+                </div>
               )}
 
               {/* Page Navigation */}
@@ -436,7 +595,7 @@ const TopicDetailViewer = ({
                 </button>
                 <button 
                   onClick={goToNextPage} 
-                  disabled={currentPageIndex >= currentFileImages.length - 1}
+                  disabled={currentPageIndex >= totalPages - 1}
                   className="nav-btn"
                 >
                   Successiva
@@ -449,25 +608,29 @@ const TopicDetailViewer = ({
             <div className="thumbnail-strip">
               <h4>Tutte le pagine:</h4>
               <div className="thumbnails-container">
-                {currentFileImages.map((pageImage, index) => {
+                {Array.from({ length: totalPages }, (_, index) => {
                   const pageNumber = index + 1;
                   const isSelected = currentSelections.includes(pageNumber);
                   const isCurrent = index === currentPageIndex;
+                  const thumbnailImage = currentFile ? thumbnailImages[currentFile.fileIndex]?.[index] : null;
                   
                   return (
                     <div
                       key={index}
                       className={`thumbnail ${isSelected ? 'selected' : ''} ${isCurrent ? 'current' : ''}`}
+                      data-page-index={index}
                       onClick={() => setCurrentPageIndex(index)}
                     >
-                      {pageImage ? (
+                      {thumbnailImage ? (
                         <img
-                          src={pageImage}
+                          src={thumbnailImage}
                           alt={`Pagina ${pageNumber}`}
                           className="thumbnail-image"
                         />
                       ) : (
-                        <div className="thumbnail-error">Errore</div>
+                        <div className="thumbnail-placeholder">
+                          <div className="mini-spinner"></div>
+                        </div>
                       )}
                       <div className="thumbnail-number">{pageNumber}</div>
                       {isSelected && <div className="thumbnail-check">✓</div>}
