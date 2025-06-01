@@ -1,7 +1,7 @@
-// src/components/TopicDetailViewer.js - Updated Version
+// src/components/TopicDetailViewer.js - Updated Version with Zoom and Better Quality
 import React, { useState, useEffect, useRef } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
-import { X, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, FileText, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import './styles/TopicDetailViewer.css';
 
 // Configurazione PDF.js
@@ -28,8 +28,10 @@ const TopicDetailViewer = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [pdfDocuments, setPdfDocuments] = useState({});
+  const [zoomLevel, setZoomLevel] = useState(1.0);
   
   const canvasRef = useRef(null);
+  const imageWrapperRef = useRef(null);
 
   // Determina quali file sono rilevanti per questo argomento
   const getRelevantFiles = () => {
@@ -67,7 +69,7 @@ const TopicDetailViewer = ({
 
   const relevantFiles = getRelevantFiles();
 
-  // Carica i PDF
+  // Carica i PDF con risoluzione migliorata
   useEffect(() => {
     let isActive = true;
 
@@ -94,13 +96,14 @@ const TopicDetailViewer = ({
           newPdfDocuments[fileIndex] = pdf;
           newPageImages[fileIndex] = [];
 
-          // Renderizza tutte le pagine
+          // Renderizza tutte le pagine con scala maggiore per migliorare la qualità
           for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
             if (!isActive) break;
 
             try {
               const page = await pdf.getPage(pageNum);
-              const viewport = page.getViewport({ scale: 1.5 });
+              // Aumentiamo la scala da 1.5 a 2.5 per migliorare la qualità
+              const viewport = page.getViewport({ scale: 2.5 });
               
               const canvas = document.createElement('canvas');
               const context = canvas.getContext('2d');
@@ -124,6 +127,13 @@ const TopicDetailViewer = ({
           setPdfDocuments(newPdfDocuments);
           setPageImages(newPageImages);
           setLoading(false);
+          
+          // Dopo il caricamento, posizionati sulla prima pagina selezionata
+          const currentSelections = getCurrentFileSelections();
+          if (currentSelections.length > 0) {
+            const firstSelectedPage = Math.min(...currentSelections);
+            setCurrentPageIndex(firstSelectedPage - 1); // Converti a 0-based
+          }
         }
       } catch (err) {
         console.error("Error loading PDFs:", err);
@@ -140,6 +150,39 @@ const TopicDetailViewer = ({
       isActive = false;
     };
   }, [topicTitle]);
+
+  // Gestione zoom
+  const handleZoomIn = () => {
+    setZoomLevel(prev => Math.min(prev + 0.25, 3.0));
+  };
+
+  const handleZoomOut = () => {
+    setZoomLevel(prev => Math.max(prev - 0.25, 0.5));
+  };
+
+  const handleResetZoom = () => {
+    setZoomLevel(1.0);
+  };
+
+  // Gestione zoom con rotella del mouse
+  useEffect(() => {
+    const handleWheel = (e) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        if (e.deltaY < 0) {
+          handleZoomIn();
+        } else {
+          handleZoomOut();
+        }
+      }
+    };
+
+    const wrapper = imageWrapperRef.current;
+    if (wrapper) {
+      wrapper.addEventListener('wheel', handleWheel, { passive: false });
+      return () => wrapper.removeEventListener('wheel', handleWheel);
+    }
+  }, []);
 
   // Ottieni le selezioni correnti per il file attivo
   const getCurrentFileSelections = () => {
@@ -174,6 +217,7 @@ const TopicDetailViewer = ({
     if (currentFileIndex < relevantFiles.length - 1) {
       setCurrentFileIndex(currentFileIndex + 1);
       setCurrentPageIndex(0);
+      setZoomLevel(1.0); // Reset zoom quando cambi file
     }
   };
 
@@ -181,6 +225,7 @@ const TopicDetailViewer = ({
     if (currentFileIndex > 0) {
       setCurrentFileIndex(currentFileIndex - 1);
       setCurrentPageIndex(0);
+      setZoomLevel(1.0); // Reset zoom quando cambi file
     }
   };
 
@@ -221,6 +266,19 @@ const TopicDetailViewer = ({
             handlePageToggle(currentPageIndex + 1);
           }
           break;
+        case '+':
+        case '=':
+          e.preventDefault();
+          handleZoomIn();
+          break;
+        case '-':
+          e.preventDefault();
+          handleZoomOut();
+          break;
+        case '0':
+          e.preventDefault();
+          handleResetZoom();
+          break;
         default:
           break;
       }
@@ -229,6 +287,19 @@ const TopicDetailViewer = ({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentFileIndex, currentPageIndex]);
+
+  // Effetto per scrollare alla thumbnail corrente quando cambia pagina
+  useEffect(() => {
+    const thumbnailsContainer = document.querySelector('.thumbnails-container');
+    const currentThumbnail = document.querySelector(`.thumbnail:nth-child(${currentPageIndex + 1})`);
+    
+    if (thumbnailsContainer && currentThumbnail) {
+      currentThumbnail.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+      });
+    }
+  }, [currentPageIndex]);
 
   if (loading) {
     return (
@@ -304,12 +375,33 @@ const TopicDetailViewer = ({
           <div className="main-content">
             {/* Large Page Display */}
             <div className="large-page-container">
+              {/* Zoom Controls */}
+              <div className="zoom-controls">
+                <button onClick={handleZoomOut} className="zoom-btn" disabled={zoomLevel <= 0.5}>
+                  <ZoomOut size={18} />
+                </button>
+                <span className="zoom-level">{Math.round(zoomLevel * 100)}%</span>
+                <button onClick={handleZoomIn} className="zoom-btn" disabled={zoomLevel >= 3.0}>
+                  <ZoomIn size={18} />
+                </button>
+                <button onClick={handleResetZoom} className="zoom-btn reset-zoom" title="Reset zoom (100%)">
+                  <RotateCcw size={18} />
+                </button>
+              </div>
+
               {currentPageImage ? (
-                <div className="large-page-wrapper">
+                <div 
+                  className="large-page-wrapper"
+                  ref={imageWrapperRef}
+                >
                   <img
                     src={currentPageImage}
                     alt={`Pagina ${currentPageIndex + 1}`}
                     className="large-page-image"
+                    style={{ 
+                      transform: `scale(${zoomLevel})`,
+                      cursor: zoomLevel > 1 ? 'grab' : 'pointer'
+                    }}
                     onClick={() => handlePageToggle(currentPageIndex + 1)}
                   />
                   <div className="page-overlay">
@@ -317,7 +409,7 @@ const TopicDetailViewer = ({
                       Pagina {currentPageIndex + 1} di {currentFileImages.length}
                     </div>
                     <div className={`selection-indicator ${isCurrentPageSelected ? 'selected' : ''}`}>
-                      {isCurrentPageSelected ? '✓ Selezionata' : 'Click per selezionare'}
+                      {isCurrentPageSelected ? '✓ Selezionata' : ''}
                     </div>
                   </div>
                 </div>
