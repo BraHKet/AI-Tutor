@@ -1,11 +1,12 @@
-// src/components/StudyPlanViewer.jsx - Corrected Version
+// src/components/StudyPlanViewer.jsx - Con Gestione Solo Chunks
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc, collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import NavBar from './NavBar';
 import { 
-  Loader, BookOpen, Calendar, AlertTriangle, ArrowLeft, Clock, Lock, CheckCircle
+  Loader, BookOpen, Calendar, AlertTriangle, ArrowLeft, Clock, Lock, CheckCircle, 
+  Info, FileText, Download, ExternalLink
 } from 'lucide-react';
 import './styles/StudyPlanViewer.css';
 
@@ -101,7 +102,6 @@ const StudyPlanViewer = () => {
     }).sort((a, b) => a.day - b.day);
     
     // Calcola lo stato di blocco per ogni giorno
-    // Un giorno è bloccato se almeno uno dei giorni precedenti non è completamente completato
     const daysWithLockStatus = days.map((day, index) => {
       let isLocked = false;
       
@@ -126,7 +126,6 @@ const StudyPlanViewer = () => {
   const formatDate = (timestamp) => {
     if (!timestamp) return 'Data sconosciuta';
     
-    // Converte in data se è un timestamp Firebase
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
     
     return date.toLocaleDateString('it-IT', {
@@ -136,9 +135,152 @@ const StudyPlanViewer = () => {
     });
   };
 
+  // 🔗 Gestisce l'apertura dei link ai materiali
+  const handleMaterialClick = (source) => {
+    if (source.webViewLink) {
+      window.open(source.webViewLink, '_blank', 'noopener,noreferrer');
+    } else {
+      console.warn('StudyPlanViewer: No webViewLink available for source:', source);
+    }
+  };
+
+  // 🔄 Determina il tipo di storage del progetto
+  const getStorageMode = () => {
+    return project?.storageMode || (project?.originalFiles?.[0]?.driveFileId ? 'full' : 'chunks_only');
+  };
+
+  // 📊 Renderizza le fonti di un argomento in base al tipo di storage
+  const renderTopicSources = (topic) => {
+    const storageMode = getStorageMode();
+    const sources = topic.sources || [];
+    
+    if (sources.length === 0) {
+      return (
+        <div className="no-sources">
+          <Info size={14} />
+          <span>Nessun materiale associato</span>
+        </div>
+      );
+    }
+
+    return (
+      <div className="topic-sources">
+        <h4>Materiali di Studio:</h4>
+        <ul className="sources-list">
+          {sources.map((source, index) => {
+            switch (source.type) {
+              case 'pdf_chunk':
+                return (
+                  <li key={index} className="source-item">
+                    <FileText size={16} className="source-icon" />
+                    <div className="source-info">
+                      <button 
+                        className="source-link"
+                        onClick={() => handleMaterialClick(source)}
+                        title="Apri chunk PDF"
+                      >
+                        {source.chunkName || 'Chunk PDF'}
+                      </button>
+                      <div className="source-details">
+                        <span className="source-origin">
+                          📄 {source.originalFileName} 
+                          {source.pageStart && source.pageEnd && 
+                            ` (pagine ${source.pageStart}-${source.pageEnd})`
+                          }
+                        </span>
+                        {storageMode === 'chunks_only' && (
+                          <span className="storage-info"> • Solo chunks</span>
+                        )}
+                      </div>
+                    </div>
+                  </li>
+                );
+              
+              case 'pdf_original':
+                return (
+                  <li key={index} className="source-item">
+                    <BookOpen size={16} className="source-icon" />
+                    <div className="source-info">
+                      <button 
+                        className="source-link"
+                        onClick={() => handleMaterialClick(source)}
+                        title="Apri file completo"
+                      >
+                        {source.name} (Completo)
+                      </button>
+                      <span className="source-origin">📚 File originale completo</span>
+                    </div>
+                  </li>
+                );
+              
+              case 'pdf_metadata':
+                return (
+                  <li key={index} className="source-item">
+                    <Info size={16} className="source-icon" />
+                    <div className="source-info">
+                      <span className="source-metadata">
+                        📋 {source.originalFileName}
+                      </span>
+                      <div className="source-details">
+                        <span className="source-note">
+                          Metadati • {source.originalFileSize ? 
+                            `${Math.round(source.originalFileSize / 1024 / 1024)} MB` : 
+                            'Dimensione non disponibile'
+                          }
+                        </span>
+                        <span className="storage-info"> • File non caricato</span>
+                      </div>
+                    </div>
+                  </li>
+                );
+              
+              case 'note':
+                return (
+                  <li key={index} className="source-item">
+                    <Info size={16} className="source-icon" />
+                    <div className="source-info">
+                      <span className={`source-note ${source.noteType || ''}`}>
+                        {source.noteType === 'exam_simulation' && '🎯 '}
+                        {source.noteType === 'review' && '📚 '}
+                        {source.description}
+                      </span>
+                    </div>
+                  </li>
+                );
+              
+              case 'error_chunk':
+                return (
+                  <li key={index} className="source-item">
+                    <AlertTriangle size={16} className="source-icon error" />
+                    <div className="source-info">
+                      <span className="source-error">
+                        ❌ Errore: {source.name}
+                      </span>
+                      <span className="source-note">{source.error}</span>
+                    </div>
+                  </li>
+                );
+              
+              default:
+                return (
+                  <li key={index} className="source-item">
+                    <FileText size={16} className="source-icon" />
+                    <div className="source-info">
+                      <span className="source-unknown">
+                        📎 Materiale: {source.name || 'Sconosciuto'}
+                      </span>
+                    </div>
+                  </li>
+                );
+            }
+          })}
+        </ul>
+      </div>
+    );
+  };
+
   // --- RENDER CONDITIONALS ---
 
-  // 1. Stato di Caricamento
   if (loading) {
     return (
       <div className="study-plan-loading">
@@ -148,7 +290,6 @@ const StudyPlanViewer = () => {
     );
   }
 
-  // 2. Stato di Errore (durante il fetch)
   if (error) {
     return (
       <div className="study-plan-container">
@@ -166,7 +307,6 @@ const StudyPlanViewer = () => {
     );
   }
 
-  // 3. Stato Progetto Non Trovato
   if (!project) {
     return (
       <div className="study-plan-container">
@@ -184,7 +324,8 @@ const StudyPlanViewer = () => {
     );
   }
 
-  // --- RENDER PRINCIPALE ---
+  const storageMode = getStorageMode();
+
   return (
     <div className="study-plan-container">
       <NavBar />
@@ -208,6 +349,17 @@ const StudyPlanViewer = () => {
                 <Clock size={16} />
                 <span>Creato il: {formatDate(project.createdAt)}</span>
               </div>
+
+              {/* 🔍 Indicatore modalità storage */}
+              <div className="plan-detail">
+                <FileText size={16} />
+                <span>
+                  Storage: {storageMode === 'chunks_only' ? 
+                    '📦 Solo Chunks (Ottimizzato)' : 
+                    '📚 File Completi'
+                  }
+                </span>
+              </div>
             </div>
             
             {project.description && (
@@ -215,10 +367,21 @@ const StudyPlanViewer = () => {
                 <p>{project.description}</p>
               </div>
             )}
+
+            {/* 💡 Info sulla modalità chunks */}
+            {storageMode === 'chunks_only' && (
+              <div className="storage-mode-info">
+                <Info size={16} />
+                <span>
+                  Questo progetto utilizza la modalità ottimizzata: sono stati caricati solo i chunks 
+                  delle pagine selezionate per massimizzare l'efficienza.
+                </span>
+              </div>
+            )}
           </div>
         </div>
         
-        {/* Vista a griglia dei giorni (corretta per mostrare solo gli argomenti) */}
+        {/* Vista a griglia dei giorni */}
         <div className="days-grid">
           {daysData.length === 0 ? (
             <div className="error-container">
@@ -244,33 +407,59 @@ const StudyPlanViewer = () => {
                 <div className="day-card-header">
                   <Calendar size={20} />
                   <h3 className="day-card-title">Giorno {day.day}</h3>
+                  <div className="day-stats">
+                    <span className="completion-badge">
+                      {day.completedCount}/{day.topicsCount}
+                    </span>
+                  </div>
                 </div>
                 
                 <div className="day-card-content">
-                  {/* Elenco degli argomenti */}
-                  <div className="topics-preview">
-                    {day.topics.slice(0, 3).map(topic => (
-                      <div 
-                        key={`preview-${topic.id}`} 
-                        className="topic-preview"
-                      >
-                        {topic.isCompleted ? (
-                          <CheckCircle size={16} color="#4CAF50" />
-                        ) : (
-                          <Circle size={16} color="#6c4ad0" />
-                        )}
-                        <h4 className={`topic-preview-title ${topic.isCompleted ? 'topic-preview-completed' : ''}`}>
-                          {topic.title}
-                        </h4>
-                      </div>
-                    ))}
-                    
-                    {day.topics.length > 3 && (
-                      <div className="more-topics">
-                        + altri {day.topics.length - 3} argomenti
-                      </div>
-                    )}
-                  </div>
+                  {day.topics.length === 0 ? (
+                    <div className="empty-day">
+                      <Info size={24} />
+                      <p>Nessun argomento pianificato</p>
+                    </div>
+                  ) : (
+                    <div className="topics-list">
+                      {day.topics.map(topic => (
+                        <div 
+                          key={topic.id} 
+                          className={`topic-item ${topic.isCompleted ? 'completed' : ''}`}
+                        >
+                          <div className="topic-header">
+                            <div 
+                              className="topic-checkbox"
+                              onClick={() => {
+                                // Toggle completion - implementa se necessario
+                                console.log('Toggle completion for:', topic.title);
+                              }}
+                            >
+                              {topic.isCompleted ? (
+                                <CheckCircle size={20} className="checkbox-icon completed" />
+                              ) : (
+                                <Circle size={20} className="checkbox-icon" />
+                              )}
+                            </div>
+                            
+                            <h4 className="topic-title">{topic.title}</h4>
+                            
+                            {topic.isCompleted && (
+                              <span className="completed-badge">✓ Completato</span>
+                            )}
+                          </div>
+                          
+                          {topic.description && (
+                            <div className="topic-description">
+                              {topic.description}
+                            </div>
+                          )}
+                          
+                          {renderTopicSources(topic)}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             ))
@@ -288,8 +477,8 @@ const StudyPlanViewer = () => {
   );
 };
 
-// Helper component for the Circle icon, since it's not imported
-const Circle = ({ size, color }) => (
+// Helper component for the Circle icon
+const Circle = ({ size, color = 'currentColor' }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={size}

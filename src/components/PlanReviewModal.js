@@ -1,9 +1,9 @@
-// src/components/PlanReviewModal.jsx - Updated Version
+// src/components/PlanReviewModal.jsx - VERSIONE SOLO CHUNKS
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import TopicDetailViewer from './TopicDetailViewer';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { Loader, AlertCircle, Edit3, XCircle, Calendar, BookOpen, ChevronDown, ChevronRight, Info, Save, FileText } from 'lucide-react';
+import { Loader, AlertCircle, Edit3, XCircle, Calendar, BookOpen, Info, Save, FileText } from 'lucide-react';
 import NavBar from './NavBar';
 import './styles/PlanReviewModal.css';
 import { createPdfChunk } from '../utils/pdfProcessor';
@@ -21,27 +21,26 @@ const PlanReviewModal = ({
     finalizationMessage,
     finalizationError,
     projectData,
-    totalDays // Numero di giorni specificato nel form
+    totalDays
 }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const { user } = useGoogleAuth();
 
-    // Usa i dati dalla location se forniti (quando viene aperto come pagina)
+    // Usa i dati dalla location se forniti
     const locationState = location.state || {};
     const provPlanData = provisionalPlanData || locationState.provisionalPlanData;
     const origFiles = originalFiles || locationState.originalFiles;
     const projData = projectData || locationState.projectData;
     const days = totalDays || (locationState.totalDays || (projData?.totalDays || 7));
-    const isStandalone = !onConfirm || !onCancel; // True se usato come pagina standalone
+    const isStandalone = !onConfirm || !onCancel;
 
-    // State locale
+    // State locale per modalità standalone
     const [localIsFinalizing, setLocalIsFinalizing] = useState(false);
     const [localFinalizationMessage, setLocalFinalizationMessage] = useState('');
     const [localFinalizationError, setLocalFinalizationError] = useState('');
     const [uploadProgress, setUploadProgress] = useState({});
     
-    // Usa il valore appropriato in base alla modalità
     const effectiveIsFinalizing = isFinalizing || localIsFinalizing;
     const effectiveFinalizationMessage = finalizationMessage || localFinalizationMessage;
     const effectiveFinalizationError = finalizationError || localFinalizationError;
@@ -50,7 +49,7 @@ const PlanReviewModal = ({
     const [currentUserSelections, setCurrentUserSelections] = useState({});
     const [validationErrors, setValidationErrors] = useState({});
     
-    // State per il nuovo visualizzatore dettagli
+    // State per il visualizzatore dettagli
     const [selectedTopicForDetail, setSelectedTopicForDetail] = useState(null);
     
     // State per la distribuzione degli argomenti nei giorni
@@ -82,7 +81,6 @@ const PlanReviewModal = ({
         if (topics.length > 0 && origFiles && origFiles.length > 0) {
             console.log("PlanReviewModal: Initializing user selections. Topics count:", topics.length, "Original files count:", origFiles.length);
             
-            // Inizializza le selezioni delle pagine per ogni argomento
             const initialSelections = {};
             topics.forEach(topic => {
                 if (!topic.title) return;
@@ -118,7 +116,6 @@ const PlanReviewModal = ({
             setCurrentUserSelections(initialSelections);
             setValidationErrors({});
             
-            // Inizializza la distribuzione degli argomenti nei giorni
             initializeDayAssignments();
         }
     }, [topics, origFiles]);
@@ -133,7 +130,6 @@ const PlanReviewModal = ({
 
     // Inizializza la distribuzione degli argomenti nei giorni
     const initializeDayAssignments = useCallback(() => {
-        // Crea un oggetto con il numero esatto di giorni specificato
         const initialDays = {};
         for (let i = 1; i <= days; i++) {
             initialDays[i] = [];
@@ -142,29 +138,23 @@ const PlanReviewModal = ({
         const initialUnassigned = [];
         const assignedTopics = new Set();
         
-        // Assegna gli argomenti in base alla distribuzione iniziale dell'AI
         if (distribution && distribution.length > 0) {
             distribution.forEach(dayPlan => {
                 const day = dayPlan.day;
-                // Verifica che il giorno sia incluso nel nostro range
                 if (day && day <= days) {
-                    // Filtra argomenti di ripasso e aggiungi solo argomenti validi
                     const validTopics = (dayPlan.assignedTopics || [])
                         .filter(topic => {
-                            // Escludiamo gli argomenti di ripasso
                             const title = topic.title?.trim();
                             return title && !title.toLowerCase().includes("ripasso");
                         })
                         .map(topic => topic.title.trim());
                     
-                    // Aggiungi al giorno corrispondente
                     initialDays[day] = validTopics;
                     validTopics.forEach(title => assignedTopics.add(title));
                 }
             });
         }
         
-        // Aggiungi tutti gli argomenti che non sono stati assegnati all'elenco unassigned
         topics.forEach(topic => {
             if (topic.title && !assignedTopics.has(topic.title)) {
                 initialUnassigned.push(topic.title);
@@ -184,19 +174,16 @@ const PlanReviewModal = ({
             const existingFileEntryIndex = selectionsForTopic.findIndex(entry => entry.fileIndex === fileIndexToUpdate);
     
             if (newSelectedPagesArray && newSelectedPagesArray.length > 0) {
-                // Ordina le pagine e assicura che siano tutte numeri validi
                 const sortedValidPages = [...newSelectedPagesArray]
                     .filter(pageNum => typeof pageNum === 'number' && !isNaN(pageNum) && pageNum > 0)
                     .sort((a, b) => a - b);
                     
                 if (existingFileEntryIndex !== -1) {
-                    // Aggiorna entry esistente
                     selectionsForTopic[existingFileEntryIndex] = {
                         ...selectionsForTopic[existingFileEntryIndex],
                         pages: sortedValidPages
                     };
                 } else {
-                    // Aggiungi nuova entry
                     selectionsForTopic.push({
                         fileIndex: fileIndexToUpdate,
                         fileName: origFiles[fileIndexToUpdate]?.name || `File Indice ${fileIndexToUpdate}`,
@@ -204,7 +191,6 @@ const PlanReviewModal = ({
                     });
                 }
             } else if (existingFileEntryIndex !== -1) {
-                // Rimuovi l'entry se non ci sono più pagine selezionate
                 selectionsForTopic.splice(existingFileEntryIndex, 1);
             }
             
@@ -218,14 +204,12 @@ const PlanReviewModal = ({
         });
     }, [origFiles]);
 
-    // Implementazione ottimale della gestione drag and drop
+    // Gestione drag and drop
     const handleDragEnd = (result) => {
         const { source, destination } = result;
         
-        // Se non c'è destinazione, non fare nulla
         if (!destination) return;
         
-        // Ottieni l'elemento da spostare in base alla sorgente
         const getItemFromSource = () => {
             if (source.droppableId === 'unassigned') {
                 return unassignedTopics[source.index];
@@ -235,16 +219,14 @@ const PlanReviewModal = ({
         };
          
         const draggedItem = getItemFromSource();
-        if (!draggedItem) return; // Sicurezza extra
+        if (!draggedItem) return;
         
-        // Copia profonda dello stato attuale
         const newUnassigned = [...unassignedTopics];
         const newDayAssignments = Object.entries(dayAssignments).reduce((acc, [day, topics]) => {
-            acc[day] = [...topics]; // copia profonda di ogni array di giorno
+            acc[day] = [...topics];
             return acc;
         }, {});
         
-        // 1. RIMUOVI dalla sorgente
         if (source.droppableId === 'unassigned') {
             newUnassigned.splice(source.index, 1);
         } else {
@@ -253,18 +235,15 @@ const PlanReviewModal = ({
             }
         }
         
-        // 2. AGGIUNGI alla destinazione
         if (destination.droppableId === 'unassigned') {
             newUnassigned.splice(destination.index, 0, draggedItem);
         } else {
-            // Assicurati che esista l'array per quel giorno
             if (!newDayAssignments[destination.droppableId]) {
                 newDayAssignments[destination.droppableId] = [];
             }
             newDayAssignments[destination.droppableId].splice(destination.index, 0, draggedItem);
         }
         
-        // 3. AGGIORNA gli stati
         setUnassignedTopics(newUnassigned);
         setDayAssignments(newDayAssignments);
     };
@@ -285,11 +264,9 @@ const PlanReviewModal = ({
         const errors = {}; 
         let isValid = true;
         
-        // Verifica che ogni argomento assegnato abbia delle pagine selezionate
         Object.keys(dayAssignments).forEach(day => {
             dayAssignments[day].forEach(topicTitle => {
                 const selectionsForTopic = currentUserSelections[topicTitle];
-                // Verifica che ci sia almeno una selezione con pagine per questo topic
                 const hasSelections = selectionsForTopic && 
                     selectionsForTopic.some(fileEntry => fileEntry.pages && fileEntry.pages.length > 0);
                 
@@ -301,7 +278,6 @@ const PlanReviewModal = ({
             });
         });
         
-        // Verifica anche gli argomenti non assegnati, se presenti
         unassignedTopics.forEach(topicTitle => {
             const selectionsForTopic = currentUserSelections[topicTitle];
             const hasSelections = selectionsForTopic && 
@@ -317,11 +293,9 @@ const PlanReviewModal = ({
         setValidationErrors(errors);
         
         if (isValid) {
-            // Prepara i dati formattati per il salvataggio
             const formattedSelections = {};
             const finalDistribution = [];
             
-            // Formatta le selezioni delle pagine
             Object.entries(currentUserSelections).forEach(([topicTitle, fileEntries]) => {
                 const validFileEntries = fileEntries.filter(entry => 
                     entry && entry.pages && Array.isArray(entry.pages) && entry.pages.length > 0
@@ -336,7 +310,6 @@ const PlanReviewModal = ({
                 }
             });
             
-            // Crea la distribuzione finale in base alle assegnazioni attuali
             Object.entries(dayAssignments).forEach(([day, assignedTopicTitles]) => {
                 if (assignedTopicTitles.length > 0) {
                     finalDistribution.push({
@@ -347,7 +320,6 @@ const PlanReviewModal = ({
                         }))
                     });
                 } else {
-                    // Includi anche i giorni vuoti
                     finalDistribution.push({
                         day: parseInt(day),
                         assignedTopics: []
@@ -362,22 +334,20 @@ const PlanReviewModal = ({
             };
         }
         
-        // Se la validazione fallisce, scorri al primo errore
         const firstErrorKey = Object.keys(errors)[0];
         if (firstErrorKey) {
             console.warn("PlanReviewModal [validateAndPrepare]: Validation FAILED. First error on topic:", firstErrorKey);
-            // Apri automaticamente il dettaglio dell'argomento con errore
             setSelectedTopicForDetail(firstErrorKey);
         }
         
         return { valid: false };
     };
 
-    // Implementazione autonoma del salvataggio quando usato come pagina standalone
-    const handleStandaloneSave = async (finalUserSelections, finalDistribution) => {
-        console.log("PlanReviewModal: Starting standalone save process");
+    // 🚀 VERSIONE SOLO CHUNKS - Ultra Ottimizzata
+    const handleChunksOnlySave = async (finalUserSelections, finalDistribution) => {
+        console.log("PlanReviewModal: Starting CHUNKS-ONLY save process");
         setLocalIsFinalizing(true);
-        setLocalFinalizationMessage('Avvio finalizzazione e creazione materiale...');
+        setLocalFinalizationMessage('Inizializzazione servizio Google Drive...');
         setLocalFinalizationError('');
         setUploadProgress({});
         
@@ -388,68 +358,51 @@ const PlanReviewModal = ({
         }
         
         if (!provPlanData || !origFiles || origFiles.length === 0 || !projData) {
-            console.error("PlanReviewModal/handleStandaloneSave: Missing necessary data for save");
-            setLocalFinalizationError("Dati necessari mancanti per il salvataggio. Torna al form di creazione progetto.");
+            console.error("PlanReviewModal/handleChunksOnlySave: Missing necessary data for save");
+            setLocalFinalizationError("Dati necessari mancanti per il salvataggio.");
             setLocalIsFinalizing(false);
             return;
         }
         
         const { index: aiGeneratedIndex } = provPlanData || {};
-        const originalFileObjects = origFiles; // Oggetti File originali
+        const originalFileObjects = origFiles;
         
-        // Inizializza Drive service se necessario
+        // INIZIALIZZA DRIVE SERVICE
         try {
-            setLocalFinalizationMessage('Inizializzazione servizio Google Drive...');
+            setLocalFinalizationMessage('Inizializzazione Google Drive...');
             await googleDriveService.initialize();
         } catch (error) {
-            console.error("PlanReviewModal/handleStandaloneSave: Failed to initialize Google Drive service", error);
+            console.error("PlanReviewModal/handleChunksOnlySave: Failed to initialize Google Drive service", error);
             setLocalFinalizationError(`Errore inizializzazione Google Drive: ${error.message}`);
             setLocalIsFinalizing(false);
             return;
         }
         
-        // Inizia il processo reale di salvataggio
         const finalDailyPlanMap = {};
         const topicsDataForFirestore = [];
         
-        // Creare una mappa per accedere facilmente ai dati degli argomenti generati dall'AI
         const aiTopicDetailsMap = aiGeneratedIndex.reduce((map, topic) => {
             if (topic.title?.trim()) map[topic.title.trim()] = topic;
             return map;
         }, {});
         
         try {
-            // Carica i file originali su Drive
-            setLocalFinalizationMessage('Caricamento file originali su Google Drive...');
-            const originalUploadedFilesData = [];
+            // 📊 CREA METADATI FILE ORIGINALI (senza caricamento)
+            const originalFilesMetadata = originalFileObjects.map((file, index) => ({
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                originalFileIndex: index,
+                // ❌ NON CARICHIAMO I FILE ORIGINALI
+                driveFileId: null,
+                webViewLink: null,
+                // ✅ SALVIAMO SOLO I METADATI
+                storedAs: 'chunks_only'
+            }));
             
-            // Carica i file originali uno per uno
-            for (let i = 0; i < originalFileObjects.length; i++) {
-                const file = originalFileObjects[i];
-                setLocalFinalizationMessage(`Caricamento file originale ${i+1}/${originalFileObjects.length}: ${file.name}...`);
-                
-                const uploadedFile = await googleDriveService.uploadFile(file, (percent) => {
-                    progressCallback({
-                        type: 'upload',
-                        phase: 'original',
-                        fileName: file.name,
-                        percent: percent
-                    });
-                });
-                
-                originalUploadedFilesData.push({
-                    name: file.name,
-                    driveFileId: uploadedFile.driveFileId || uploadedFile.id,
-                    size: file.size,
-                    type: file.type,
-                    webViewLink: uploadedFile.webViewLink,
-                    originalFileIndex: i
-                });
-                
-                progressCallback({ type: 'processing', message: `File originale ${file.name} caricato.` });
-            }
+            setLocalFinalizationMessage('File originali: salvati solo metadati (nessun caricamento)');
             
-            // Calcola il numero totale di chunks da creare in base alle selezioni dell'utente
+            // Calcola chunks da creare
             let totalChunksToCreate = 0;
             Object.entries(finalUserSelections).forEach(([topicTitle, fileSelections]) => {
                 if (Array.isArray(fileSelections)) {
@@ -461,18 +414,18 @@ const PlanReviewModal = ({
                 }
             });
             
-            console.log(`PlanReviewModal/handleStandaloneSave: Estimated chunks to create: ${totalChunksToCreate}`);
+            console.log(`PlanReviewModal/handleChunksOnlySave: Chunks to create: ${totalChunksToCreate}`);
             let chunksProcessedCount = 0;
             
-            setLocalFinalizationMessage('Creazione dei chunk e caricamento su Google Drive...');
+            setLocalFinalizationMessage(`Creazione e caricamento di ${totalChunksToCreate} chunks...`);
             
-            // Crea la struttura del piano giorno per giorno
+            // 🎯 CREA E CARICA SOLO I CHUNKS NECESSARI
             for (const dayPlan of finalDistribution) {
                 const dayNumber = dayPlan.day;
                 if (!dayNumber) continue;
                 finalDailyPlanMap[dayNumber] = [];
                 
-                // Gestione dei giorni di ripasso
+                // Gestione giorni ripasso
                 if (!dayPlan.assignedTopics || dayPlan.assignedTopics.length === 0 || dayPlan.assignedTopics.some(t => t.title?.toLowerCase().includes("ripasso"))) {
                     if(dayPlan.assignedTopics && dayPlan.assignedTopics.length > 0){
                         const reviewTopic = dayPlan.assignedTopics.find(t => t.title?.toLowerCase().includes("ripasso"));
@@ -488,7 +441,6 @@ const PlanReviewModal = ({
                     continue;
                 }
                 
-                // Per ogni topic assegnato al giorno
                 for (const [topicIndexInDay, assignedTopic] of dayPlan.assignedTopics.entries()) {
                     const topicTitle = assignedTopic.title?.trim();
                     if (!topicTitle) continue;
@@ -496,37 +448,28 @@ const PlanReviewModal = ({
                     const topicId = uuidv4();
                     finalDailyPlanMap[dayNumber].push(topicId);
                     let topicSources = [];
-                    const topicDetailsFromAI = aiTopicDetailsMap[topicTitle]; // Contiene pages_info
+                    const topicDetailsFromAI = aiTopicDetailsMap[topicTitle];
                     
-                    // Ottieni le selezioni utente per questo topic dal modal
                     const userSelectionsForTopic = finalUserSelections[topicTitle] || [];
                     
-                    console.log(`\n--- Finalizing Topic: "${topicTitle}" (Day ${dayNumber}) ---`);
-                    console.log(`[DEBUG] Finalize: User selections for "${topicTitle}":`, JSON.stringify(userSelectionsForTopic));
+                    console.log(`\n--- Finalizing Topic (Chunks Only): "${topicTitle}" (Day ${dayNumber}) ---`);
                     
-                    
-                    // Verifica se si tratta di un ripasso o di una simulazione d'esame
                     const isReview = topicTitle.toLowerCase().includes("ripasso");
                     const isExamSimulation = topicTitle.toLowerCase().includes("simulazione") || 
                                            topicTitle.toLowerCase().includes("esame") ||
                                            assignedTopic.description?.toLowerCase().includes("esercizi") ||
                                            assignedTopic.description?.toLowerCase().includes("simulazione");
                     
-                    // Se è una simulazione d'esame, non creare chunks PDF
                     if (isExamSimulation) {
                         console.log(`[DEBUG] Finalize: Detected exam simulation topic "${topicTitle}" - skipping PDF chunk creation`);
-                        
-                        // Non creiamo chunks ma aggiungiamo una nota esplicativa
                         topicSources = [{
                             type: 'note',
                             noteType: 'exam_simulation',
                             description: 'Simulazione d\'esame - Prova a risolvere esercizi senza consultare il materiale.'
                         }];
                     } 
-                    // Se è un ripasso, non creare chunks (questo è per i giorni che non sono stati già gestiti in precedenza)
                     else if (isReview) {
                         console.log(`[DEBUG] Finalize: Detected review topic "${topicTitle}" - no PDF chunks needed`);
-                        // Lascia sources vuoto o aggiungi una nota di ripasso
                         topicSources = [{
                             type: 'note',
                             noteType: 'review',
@@ -535,42 +478,38 @@ const PlanReviewModal = ({
                     }
                     else {
                         if (userSelectionsForTopic.length > 0) {
-                            // Per ogni file selezionato per questo topic
+                            // 🎯 CREA E CARICA SOLO I CHUNKS SELEZIONATI
                             for (const fileSelection of userSelectionsForTopic) {
                                 const { fileIndex, fileName, pages } = fileSelection;
                                 
                                 if (!pages || pages.length === 0) continue;
                                 
-                                // Ottieni il file originale e le sue info
                                 const originalFile = originalFileObjects[fileIndex];
-                                const originalFileInfoFromDrive = originalUploadedFilesData.find(f => f.originalFileIndex === fileIndex);
+                                const originalFileMetadata = originalFilesMetadata.find(f => f.originalFileIndex === fileIndex);
                                 
-                                if (!originalFile || !originalFileInfoFromDrive) {
+                                if (!originalFile || !originalFileMetadata) {
                                     console.warn(`Finalize: Missing file data for fileIndex ${fileIndex}`);
                                     continue;
                                 }
 
-                                // Ordina le pagine in ordine crescente
                                 const sortedPages = [...pages].sort((a, b) => a - b);
                                 const firstPage = sortedPages[0];
                                 const lastPage = sortedPages[sortedPages.length - 1];
                                 
-                                // Crea un nome significativo per il chunk
                                 const safeTitlePart = topicTitle.substring(0, 15).replace(/[^a-zA-Z0-9]/g, '_');
                                 const chunkFileName = `${originalFile.name.replace(/\.pdf$/i, '')}_${safeTitlePart}_p${firstPage}-${lastPage}.pdf`;
                                 
                                 chunksProcessedCount++;
                                 try {
-                                    const progressMsgChunk = `Creazione/Upload chunk ${chunksProcessedCount}/${totalChunksToCreate || '?'}: ${chunkFileName.substring(0,30)}...`;
-                                    progressCallback({ type: 'processing', message: progressMsgChunk });
+                                    const progressMsg = `Chunk ${chunksProcessedCount}/${totalChunksToCreate}: ${chunkFileName.substring(0,35)}...`;
+                                    setLocalFinalizationMessage(progressMsg);
+                                    progressCallback({ type: 'processing', message: progressMsg });
 
-                                    // Crea il chunk PDF
-                                    setLocalFinalizationMessage(`Creazione chunk ${chunkFileName}...`);
+                                    // Crea chunk PDF
                                     const chunkFile = await createPdfChunk(originalFile, sortedPages, chunkFileName, (msg) => progressCallback({type:'processing', message:msg}));
                                     
                                     if (chunkFile) {
-                                        // Carica il chunk su Drive
-                                        setLocalFinalizationMessage(`Caricamento chunk ${chunkFileName}...`);
+                                        // Carica SOLO il chunk (non il file originale)
                                         const uploadedChunk = await googleDriveService.uploadFile(chunkFile, (percent) => progressCallback({ 
                                             type: 'upload', 
                                             phase: 'chunk', 
@@ -583,48 +522,47 @@ const PlanReviewModal = ({
                                             chunkDriveId: uploadedChunk.driveFileId || uploadedChunk.id,
                                             chunkName: chunkFileName,
                                             webViewLink: uploadedChunk.webViewLink,
-                                            originalFileId: originalFileInfoFromDrive.driveFileId,
-                                            originalFileName: originalFileInfoFromDrive.name,
+                                            // ✅ RIFERIMENTO AI METADATI (non al file caricato)
+                                            originalFileId: null, // Non caricato
+                                            originalFileName: originalFileMetadata.name,
+                                            originalFileSize: originalFileMetadata.size,
                                             pageStart: firstPage,
                                             pageEnd: lastPage
                                         });
                                         
-                                        progressCallback({ type: 'processing', message: `Chunk ${chunkFileName} caricato.` });
+                                        progressCallback({ type: 'processing', message: `✅ Chunk ${chunkFileName.substring(0,30)} caricato` });
                                     } else {
                                         topicSources.push({ 
                                             type: 'error_chunk', 
                                             name: chunkFileName, 
                                             error: 'Creazione fallita (pdfProcessor)', 
-                                            originalFileId: originalFileInfoFromDrive.driveFileId, 
-                                            originalFileName: originalFileInfoFromDrive.name 
+                                            originalFileName: originalFileMetadata.name 
                                         });
                                     }
                                 } catch (chunkError) {
                                     console.error(`Finalize: ERROR during chunk handling for ${chunkFileName}`, chunkError);
-                                    progressCallback({ type: 'error', message: `Errore chunk ${chunkFileName}: ${chunkError.message}` });
+                                    progressCallback({ type: 'error', message: `❌ Errore chunk ${chunkFileName}: ${chunkError.message}` });
                                     
                                     topicSources.push({ 
                                         type: 'error_chunk', 
                                         name: chunkFileName, 
                                         error: chunkError.message, 
-                                        originalFileId: originalFileInfoFromDrive.driveFileId, 
-                                        originalFileName: originalFileInfoFromDrive.name 
+                                        originalFileName: originalFileMetadata.name 
                                     });
                                 }
                             }
                         } else {
-                            // Caso estremo: nessuna selezione e nessun suggerimento AI
-                            console.warn(`Finalize: No user selections or AI suggestions for topic "${topicTitle}" (Day ${dayNumber}). Applying fallback to original files.`);
-                            topicSources.push(...originalUploadedFilesData.map(f => ({ 
-                                type: 'pdf_original', 
-                                driveFileId: f.driveFileId, 
-                                name: f.name, 
-                                webViewLink: f.webViewLink 
+                            console.warn(`Finalize: No user selections for topic "${topicTitle}" (Day ${dayNumber}). Adding metadata reference.`);
+                            // Aggiungi riferimento ai metadati invece del file completo
+                            topicSources.push(...originalFilesMetadata.map(f => ({ 
+                                type: 'pdf_metadata', 
+                                originalFileName: f.name,
+                                originalFileSize: f.size,
+                                note: 'File originale non caricato - solo metadati disponibili'
                             })));
                         }
                     }
                     
-                    console.log(`[DEBUG] Finalize: Final sources collected for topic "${topicTitle}" (Day ${dayNumber}):`, JSON.stringify(topicSources));
                     topicsDataForFirestore.push({
                         id: topicId,
                         title: topicTitle,
@@ -634,38 +572,40 @@ const PlanReviewModal = ({
                         isCompleted: false,
                         sources: topicSources
                     });
-                    console.log(`--- Finished Finalizing Topic: "${topicTitle}" ---`);
+                    console.log(`--- Finished Finalizing Topic (Chunks Only): "${topicTitle}" ---`);
                 }
             }
 
-            // Prepara i dati del progetto per il salvataggio
+            // Prepara i dati del progetto
             const projectCoreData = {
                title: projData.title, 
                examName: projData.examName, 
                totalDays: days,
                description: projData.description, 
                userId: user.uid,
-               originalFiles: originalUploadedFilesData.map(({originalFileIndex, ...rest}) => rest),
-               aiModelUsed: 'gemini-1.5-flash-latest (direct PDF, 2-step, reviewed)', 
+               // ✅ SALVA SOLO METADATI FILE ORIGINALI
+               originalFiles: originalFilesMetadata,
+               aiModelUsed: 'gemini-1.5-flash-latest (chunks-only optimized)', 
                dailyPlan: finalDailyPlanMap,
+               storageMode: 'chunks_only' // Flag per indicare che abbiamo solo chunks
             };
 
             // Salvataggio su Firestore
             setLocalFinalizationMessage('Salvataggio finale del piano su Firebase...');
-            console.log("PlanReviewModal/handleStandaloneSave: Saving final plan to Firestore...");
+            console.log("PlanReviewModal/handleChunksOnlySave: Saving chunks-only plan to Firestore...");
             const finalProjectId = await saveProjectWithPlan(projectCoreData, topicsDataForFirestore);
-            console.log("PlanReviewModal/handleStandaloneSave: Final plan saved! Project ID:", finalProjectId);
+            console.log("PlanReviewModal/handleChunksOnlySave: Chunks-only plan saved! Project ID:", finalProjectId);
 
-            setLocalFinalizationMessage('Piano salvato con successo!');
+            setLocalFinalizationMessage('✅ Piano salvato con successo (solo chunks)!');
             setLocalIsFinalizing(false);
             
-            // Reindirizzamento alla visualizzazione del piano
+            // Reindirizzamento
             setTimeout(() => {
                 navigate(`/projects/${finalProjectId}/plan`);
             }, 1500);
 
         } catch(error) {
-            console.error("PlanReviewModal/handleStandaloneSave: Error during finalization phase:", error);
+            console.error("PlanReviewModal/handleChunksOnlySave: Error during chunks-only finalization:", error);
             setLocalFinalizationError(`Errore durante il salvataggio: ${error.message}` || 'Errore imprevisto durante la finalizzazione.');
             setLocalIsFinalizing(false);
         }
@@ -679,10 +619,9 @@ const PlanReviewModal = ({
                 // Se usato come modale, usa la funzione prop
                 onConfirm(result.selections, result.distribution);
             } else {
-                // Se usato come pagina autonoma
-                console.log("PlanReviewModal: Executing standalone save process");
-                // Avvia il processo di salvataggio autonomo
-                handleStandaloneSave(result.selections, result.distribution);
+                // Se usato come pagina autonoma - VERSIONE CHUNKS-ONLY
+                console.log("PlanReviewModal: Executing CHUNKS-ONLY save process");
+                handleChunksOnlySave(result.selections, result.distribution);
             }
         }
     };
@@ -692,7 +631,6 @@ const PlanReviewModal = ({
         if (onCancel) {
             onCancel();
         } else {
-            // Se usato come pagina autonoma
             navigate('/create-project');
         }
     };
@@ -777,7 +715,6 @@ const PlanReviewModal = ({
                                                                             <BookOpen size={14} />
                                                                             <h4>{topicTitle}</h4>
                                                                             
-                                                                            {/* Mostra il numero di pagine selezionate */}
                                                                             <div className="topic-pages-count">
                                                                                 <FileText size={12} />
                                                                                 <span>{getTotalSelectedPages(topicTitle)} </span>
@@ -836,7 +773,6 @@ const PlanReviewModal = ({
                                                                 <BookOpen size={14} />
                                                                 <h4>{topicTitle}</h4>
                                                                 
-                                                                {/* Mostra il numero di pagine selezionate */}
                                                                 <div className="topic-pages-count">
                                                                     <FileText size={12} />
                                                                     <span>{getTotalSelectedPages(topicTitle)} </span>
@@ -879,14 +815,14 @@ const PlanReviewModal = ({
                         ) : (
                             <>
                                 <Save size={18} />
-                                Conferma e Genera
+                                Solo Chunks
                             </>
                         )}
                     </button>
                 </div>
             </div>
 
-            {/* Nuovo visualizzatore dettagli separato */}
+            {/* Visualizzatore dettagli separato */}
             {selectedTopicForDetail && (
                 <TopicDetailViewer
                     topicTitle={selectedTopicForDetail}
