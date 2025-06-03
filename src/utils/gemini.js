@@ -1,5 +1,5 @@
-// src/utils/gemini.js - Entry Point con Analisi Locale
-// Re-exports from the modular architecture (optimized version)
+// src/utils/gemini.js - Entry Point Aggiornato per Nuova Architettura
+// Re-exports from the modular architecture (updated version)
 
 // ===== IMPORT FROM MODULES =====
 import { 
@@ -24,24 +24,29 @@ import {
   prepareFilesForAI,
   executeAIPhase,
   getCacheStats,
-  clearAllCaches
+  clearAllCaches,
+  extractTextFromFilesForAI // NUOVO: per modalità text
 } from './gemini/geminiCore.js';
 
+// ===== IMPORT NUOVE FASI AGGIORNATE =====
 import {
-  phaseStructuralAnalysis,
-  phaseContentMapping,
-  phaseTopicExtraction,
-  phasePageAssignment,
-  phaseValidationOptimization,
+  phaseIndexSearch,
+  phaseIndexValidation,
+  phasePageByPageAnalysis,
+  phaseTopicGrouping as phaseTopicGroupingNew,
+  phaseTopicValidation,
   analyzeContentStructureMultiPhase
 } from './gemini/contentAnalysisPhases.js';
 
 import {
+  phaseEquitableDistribution,
+  phaseDistributionValidation,
+  distributeTopicsMultiPhase,
+  // Legacy functions (redirected to new system)
   phaseWorkloadAnalysis,
   phaseTopicGrouping,
   phaseDayDistribution,
-  phaseBalancingOptimization,
-  distributeTopicsMultiPhase
+  phaseBalancingOptimization
 } from './gemini/distributionPhases.js';
 
 // ===== MAIN EXPORTS (Compatibilità totale + nuova funzione) =====
@@ -83,19 +88,22 @@ export {
   clearAllCaches
 };
 
-// ===== FASI INDIVIDUALI (per testing) =====
+// ===== FASI INDIVIDUALI AGGIORNATE =====
 
-// Fasi analisi contenuti
+// Fasi analisi contenuti (NUOVE)
 export {
-  phaseStructuralAnalysis,
-  phaseContentMapping,
-  phaseTopicExtraction,
-  phasePageAssignment,
-  phaseValidationOptimization
+  phaseIndexSearch,
+  phaseIndexValidation,
+  phasePageByPageAnalysis,
+  phaseTopicGroupingNew as phaseTopicExtractionNew, // Alias per compatibilità
+  phaseTopicValidation
 };
 
-// Fasi distribuzione
+// Fasi distribuzione (NUOVE + Legacy Compatibility)
 export {
+  phaseEquitableDistribution,
+  phaseDistributionValidation,
+  // Legacy functions (mantengono nomi originali ma usano nuovo sistema)
   phaseWorkloadAnalysis,
   phaseTopicGrouping,
   phaseDayDistribution,
@@ -128,16 +136,19 @@ export default {
   CONFIG,
   GeminiUtils,
   
-  // Fasi (per uso avanzato)
+  // Fasi aggiornate (per uso avanzato)
   phases: {
     content: {
-      structural: phaseStructuralAnalysis,
-      mapping: phaseContentMapping,
-      extraction: phaseTopicExtraction,
-      assignment: phasePageAssignment,
-      validation: phaseValidationOptimization
+      indexSearch: phaseIndexSearch,
+      indexValidation: phaseIndexValidation,
+      pageAnalysis: phasePageByPageAnalysis,
+      topicGrouping: phaseTopicGroupingNew,
+      validation: phaseTopicValidation
     },
     distribution: {
+      equitable: phaseEquitableDistribution,
+      validation: phaseDistributionValidation,
+      // Legacy (per compatibilità)
       workload: phaseWorkloadAnalysis,
       grouping: phaseTopicGrouping,
       dayDistribution: phaseDayDistribution,
@@ -146,75 +157,60 @@ export default {
   }
 };
 
-// ===== INFO ARCHITETTURA OTTIMIZZATA =====
+// ===== INFO ARCHITETTURA AGGIORNATA =====
 
 /**
- * ARCHITETTURA MODULARE GEMINI AI (VERSIONE OTTIMIZZATA)
+ * ARCHITETTURA MODULARE GEMINI AI (VERSIONE 2.0)
  * 
- * NOVITÀ - ANALISI LOCALE:
- * ✅ generateCompleteStudyPlanLocal() - Analisi veloce senza caricamento Drive
- * ✅ Conversione PDF → Base64 → Gemini in locale
- * ✅ Caricamento Drive solo DOPO conferma utente
- * ✅ Riduzione tempo di attesa ~80%
+ * NOVITÀ - NUOVA ARCHITETTURA 5+1 FASI:
  * 
- * File Structure:
- * - gemini.js (questo file) - Entry point principale
- * - gemini/geminiCore.js - Cache e utilità core
- * - gemini/contentAnalysisPhases.js - 5 fasi analisi contenuti
- * - gemini/distributionPhases.js - 4 fasi distribuzione  
- * - gemini/geminiOrchestrator.js - Orchestratore principale + analisi locale
+ * ANALISI CONTENUTI (5 fasi ottimizzate):
+ * 1. Index Search - Cerca indice/sommario nei PDF
+ * 2. Index Validation - Valida indice o crea struttura base
+ * 3. Page Analysis - Analizza pagina per pagina
+ * 4. Topic Grouping - Raggruppa pagine in argomenti
+ * 5. Topic Validation - Valida e corregge argomenti
+ * 
+ * DISTRIBUZIONE (1 fase semplificata):
+ * 1. Equitable Distribution - Distribuisce equamente + validazione
+ * 
+ * VANTAGGI:
+ * ✅ Meno chiamate AI ripetitive (da 9 a 6 fasi)
+ * ✅ Uso intelligente dell'indice come guida
+ * ✅ Analisi pagina per pagina più precisa
+ * ✅ Distribuzione semplificata ed efficace
+ * ✅ Compatibilità 100% con codice esistente
  * 
  * WORKFLOW OTTIMIZZATO:
  * 
- * 1. FASE ANALISI (Locale - Veloce):
+ * 1. FASE ANALISI (Locale - 5 fasi):
  *    - CreateProject chiama generateCompleteStudyPlanLocal()
- *    - PDF → Base64 → Gemini (nessun caricamento Drive)
- *    - Risultato: piano provvisorio in ~30-60 secondi
+ *    - Nuova architettura 5 fasi per analisi contenuti
+ *    - 1 fase per distribuzione equa
  * 
  * 2. FASE REVISIONE (Interattiva):
  *    - PlanReviewModal mostra risultati AI
  *    - Utente trascina argomenti tra giorni
- *    - Utente seleziona pagine specifiche per ogni argomento
+ *    - Utente seleziona pagine specifiche
  * 
- * 3. FASE FINALIZZAZIONE (Solo materiali selezionati):
- *    - Caricamento Drive solo dei file originali
- *    - Creazione chunks solo delle pagine selezionate
- *    - Salvataggio Firebase con dati finali
- * 
- * VANTAGGI:
- * ✅ 80% riduzione tempo iniziale (da 3-5 min a 30-60 sec)
- * ✅ Feedback immediato per l'utente
- * ✅ Caricamento Drive solo quando necessario
- * ✅ Chunks solo del materiale effettivamente utilizzato
- * ✅ Compatibilità 100% con codice esistente
+ * 3. FASE FINALIZZAZIONE (Solo chunks):
+ *    - Caricamento Drive solo dei chunks necessari
+ *    - Salvataggio Firebase ottimizzato
  * 
  * UTILIZZO:
  * 
- * // Analisi veloce (per CreateProject)
+ * // Analisi locale (nuova architettura)
  * import { generateCompleteStudyPlanLocal } from './utils/gemini';
- * const plan = await generateCompleteStudyPlanLocal(exam, days, files, desc, callback);
+ * const plan = await generateCompleteStudyPlanLocal(exam, days, files, desc, callback, mode);
  * 
- * // Analisi completa (per casi speciali)
+ * // Fasi individuali (per debugging)
+ * import { phaseIndexSearch, phaseEquitableDistribution } from './utils/gemini';
+ * 
+ * // Legacy (mantenuto per compatibilità)
  * import { generateCompleteStudyPlan } from './utils/gemini';
- * const plan = await generateCompleteStudyPlan(exam, days, files, driveInfo, desc, callback);
- * 
- * Processo Multi-Fase (invariato):
- * 
- * ANALISI CONTENUTI (5 fasi):
- * 1. Structural Analysis - Analizza struttura
- * 2. Content Mapping - Mappa contenuti  
- * 3. Topic Extraction - Estrae argomenti
- * 4. Page Assignment - Assegna pagine
- * 5. Validation - Valida risultati
- * 
- * DISTRIBUZIONE (4 fasi):
- * 1. Workload Analysis - Analizza carico
- * 2. Topic Grouping - Raggruppa argomenti
- * 3. Day Distribution - Distribuzione giornaliera
- * 4. Balancing - Bilanciamento finale
  */
 
-console.log('Gemini AI: Optimized multi-phase architecture loaded');
-console.log('- Content phases: 5 | Distribution phases: 4');
+console.log('Gemini AI: Updated architecture v2.0 loaded');
+console.log('- Content phases: 5 (optimized) | Distribution phases: 1 (simplified)');
 console.log('- Legacy compatibility: 100% | Cache: Optimized');
-console.log('- NEW: Local analysis mode for faster processing');
+console.log('- NEW: Index-guided analysis + Page-by-page processing');

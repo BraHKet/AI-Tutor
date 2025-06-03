@@ -1,18 +1,18 @@
-// src/utils/gemini/geminiCore.js - Core utilities con supporto modalità testo
+// src/utils/gemini/geminiCore.js - Core utilities con gestione errori migliorata
 import { genAI, model as geminiDefaultModel } from '../geminiSetup';
 import { extractTextFromFiles } from '../pdfProcessor';
 
 // ===== CACHE SEMPLIFICATA =====
 const PDF_CACHE = new Map();
 const PHASE_CACHE = new Map();
-const TEXT_CACHE = new Map(); // NUOVO: Cache per testi estratti
+const TEXT_CACHE = new Map();
 
 // Configurazioni essenziali
 export const CONFIG = {
   AI_GENERATION: {
     responseMimeType: "application/json",
     temperature: 0.1,
-    maxOutputTokens: 8192,
+    maxOutputTokens: 4096, // RIDOTTO per evitare overflow
   },
   CONTENT_ANALYSIS: {
     minTopicPages: 5,
@@ -52,7 +52,7 @@ export function cleanupCache(cache, maxEntries = CONFIG.CACHE.maxEntries) {
 }
 
 /**
- * NUOVO: Estrae testo dai PDF per modalità text-only
+ * Estrae testo dai PDF per modalità text-only
  */
 export async function extractTextFromFilesForAI(files, progressCallback) {
   const fileHash = generateFileHash(files) + '_text';
@@ -219,7 +219,7 @@ export async function prepareFilesForAI(filesArray, originalFilesDriveInfo, prog
 }
 
 /**
- * NUOVO: Prepara il testo per l'analisi AI (modalità text-only)
+ * Prepara il testo per l'analisi AI (modalità text-only)
  */
 export async function prepareTextForAI(filesArray, progressCallback) {
   progressCallback?.({ type: 'processing', message: 'Estrazione testo per analisi AI...' });
@@ -230,17 +230,108 @@ export async function prepareTextForAI(filesArray, progressCallback) {
     throw new Error('Testo estratto insufficiente per l\'analisi AI (meno di 100 caratteri).');
   }
 
+  // Limita il testo per evitare overflow
+  const maxChars = 15000; // Limite conservativo
+  let processedText = textData.fullText;
+  
+  if (processedText.length > maxChars) {
+    console.warn(`GeminiCore: Text too long (${processedText.length} chars), truncating to ${maxChars}`);
+    processedText = processedText.substring(0, maxChars) + '\n\n[TESTO TRONCATO]';
+  }
+
   progressCallback?.({ type: 'processing', message: `Testo preparato: ${textData.wordCount} parole` });
   
   return {
-    textContent: textData.fullText,
+    textContent: processedText,
     metadata: {
       totalPages: textData.totalPages,
       wordCount: textData.wordCount,
       charCount: textData.charCount,
-      fileCount: filesArray.length
+      fileCount: filesArray.length,
+      truncated: textData.fullText.length > maxChars
     }
   };
+}
+
+/**
+ * Pulisce e corregge JSON malformato
+ */
+function cleanAndParseJSON(jsonString) {
+  try {
+    // Rimuovi markdown code blocks
+    let cleaned = jsonString
+      .replace(/^```json\s*/gi, '')
+      .replace(/```\s*$/g, '')
+      .trim();
+    
+    // Prova il parsing normale
+    return JSON.parse(cleaned);
+  } catch (error) {
+    console.warn('GeminiCore: JSON parsing failed, attempting repair...');
+    
+    try {
+      // Tentativi di riparazione automatica
+      let repaired = jsonString
+        .replace(/^```json\s*/gi, '')
+        .replace(/```\s*$/g, '')
+        .trim();
+      
+      // Trova l'ultimo carattere valido
+      let lastValidIndex = repaired.length;
+      let braceCount = 0;
+      let inString = false;
+      let escaped = false;
+      
+      for (let i = 0; i < repaired.length; i++) {
+        const char = repaired[i];
+        
+        if (escaped) {
+          escaped = false;
+          continue;
+        }
+        
+        if (char === '\\') {
+          escaped = true;
+          continue;
+        }
+        
+        if (char === '"' && !escaped) {
+          inString = !inString;
+          continue;
+        }
+        
+        if (!inString) {
+          if (char === '{') braceCount++;
+          if (char === '}') {
+            braceCount--;
+            if (braceCount === 0) {
+              lastValidIndex = i + 1;
+              break;
+            }
+          }
+        }
+      }
+      
+      // Tronca al punto valido
+      repaired = repaired.substring(0, lastValidIndex);
+      
+      // Chiudi eventuali stringhe aperte
+      if (inString) {
+        repaired += '"';
+      }
+      
+      // Chiudi eventuali oggetti aperti
+      while (braceCount > 0) {
+        repaired += '}';
+        braceCount--;
+      }
+      
+      return JSON.parse(repaired);
+    } catch (repairError) {
+      console.error('GeminiCore: JSON repair failed:', repairError);
+      throw new Error(`JSON parsing failed: ${error.message}. Response was likely truncated.`);
+    }
+  }
 }
 
 /**
@@ -272,7 +363,7 @@ export async function executeAIPhase(phaseName, promptText, filesArray, original
       
       // Aggiungi il testo estratto al prompt
       const textPart = {
-        text: `\n\n=== CONTENUTO ESTRATTO DAI PDF ===\n\n${textPreparation.textContent}\n\n=== METADATI ===\nFile processati: ${textPreparation.metadata.fileCount}\nPagine totali: ${textPreparation.metadata.totalPages}\nParole: ${textPreparation.metadata.wordCount}\nCaratteri: ${textPreparation.metadata.charCount}\n\n=== FINE CONTENUTO ===\n\n`
+        text: `\n\n=== CONTENUTO ESTRATTO DAI PDF ===\n\n${textPreparation.textContent}\n\n=== METADATI ===\nFile: ${textPreparation.metadata.fileCount}\nPagine: ${textPreparation.metadata.totalPages}\nParole: ${textPreparation.metadata.wordCount}\n${textPreparation.metadata.truncated ? 'NOTA: Testo troncato per lunghezza\n' : ''}=== FINE CONTENUTO ===\n\n`
       };
       parts.push(textPart);
     } else {
@@ -291,7 +382,7 @@ export async function executeAIPhase(phaseName, promptText, filesArray, original
   };
 
   // Retry logic semplice
-  const maxRetries = 2;
+  const maxRetries = 3;
   let lastError;
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -306,16 +397,17 @@ export async function executeAIPhase(phaseName, promptText, filesArray, original
         textResponse = response.text();
       }
 
-      const cleanedResponse = textResponse
-        .replace(/^```json\s*/gi, '')
-        .replace(/```\s*$/g, '')
-        .trim();
-        
-      if (!cleanedResponse) {
+      if (!textResponse || textResponse.trim().length === 0) {
         throw new Error('Risposta vuota dall\'AI');
       }
       
-      const parsedResponse = JSON.parse(cleanedResponse);
+      // Usa la funzione di pulizia JSON migliorata
+      const parsedResponse = cleanAndParseJSON(textResponse);
+      
+      // Validazione base del risultato
+      if (!parsedResponse || typeof parsedResponse !== 'object') {
+        throw new Error('Risposta AI non è un oggetto JSON valido');
+      }
       
       PHASE_CACHE.set(phaseHash, parsedResponse);
       cleanupCache(PHASE_CACHE);
@@ -328,14 +420,14 @@ export async function executeAIPhase(phaseName, promptText, filesArray, original
       console.error(`GeminiCore: Error in phase ${phaseName} (attempt ${attempt}, ${analysisMode} mode):`, error);
       
       if (attempt < maxRetries) {
-        const delayMs = 2000 * attempt;
-        progressCallback?.({ type: 'processing', message: `Errore fase ${phaseName}, nuovo tentativo...` });
+        const delayMs = 1000 * attempt; // Ridotto il delay
+        progressCallback?.({ type: 'processing', message: `Errore fase ${phaseName}, tentativo ${attempt + 1}/${maxRetries}...` });
         await new Promise(resolve => setTimeout(resolve, delayMs));
       }
     }
   }
   
-  throw new Error(`Errore nella fase ${phaseName} (${analysisMode}): ${lastError?.message || 'Errore sconosciuto'}`);
+  throw new Error(`Errore nella fase ${phaseName} (${analysisMode}) dopo ${maxRetries} tentativi: ${lastError?.message || 'Errore sconosciuto'}`);
 }
 
 // ===== CACHE MANAGEMENT =====
@@ -343,7 +435,7 @@ export async function executeAIPhase(phaseName, promptText, filesArray, original
 export function getCacheStats() {
   return {
     pdfCache: PDF_CACHE.size,
-    textCache: TEXT_CACHE.size, // NUOVO
+    textCache: TEXT_CACHE.size,
     phaseCache: PHASE_CACHE.size,
     maxEntries: CONFIG.CACHE.maxEntries
   };
@@ -352,7 +444,7 @@ export function getCacheStats() {
 export function clearAllCaches() {
   const totalSize = PDF_CACHE.size + TEXT_CACHE.size + PHASE_CACHE.size;
   PDF_CACHE.clear();
-  TEXT_CACHE.clear(); // NUOVO
+  TEXT_CACHE.clear();
   PHASE_CACHE.clear();
   console.log(`GeminiCore: Cleared all caches (${totalSize} entries)`);
   return totalSize;

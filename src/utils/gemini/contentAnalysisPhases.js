@@ -1,122 +1,209 @@
-// src/utils/gemini/contentAnalysisPhases.js - Content Analysis Phases (Con supporto modalità)
+// src/utils/gemini/contentAnalysisPhases.js - NUOVA ARCHITETTURA 5 FASI OTTIMIZZATA
 import { executeAIPhase, CONFIG } from './geminiCore.js';
 
-// ===== FASE 1: Analisi strutturale =====
-export async function phaseStructuralAnalysis(examName, filesArray, originalFilesDriveInfo, userDescription, progressCallback, analysisMode = 'pdf') {
+// ===== FASE 1: Ricerca Indice =====
+export async function phaseIndexSearch(examName, filesArray, originalFilesDriveInfo, userDescription, progressCallback, analysisMode = 'pdf') {
   const filesList = originalFilesDriveInfo
     .map((fInfo, index) => `- PDF ${index}: ${fInfo.name}`)
     .join('\n');
 
   const modeNote = analysisMode === 'text' 
-    ? '\n\nNOTA: Analisi basata su testo estratto. Concentrati su struttura logica e contenuti testuali.'
-    : '\n\nNOTA: Analisi completa con accesso a immagini, grafici e formattazione.';
+    ? '\n\nNOTA: Analisi basata su testo estratto. Cerca sezioni come "Indice", "Sommario", "Contenuti".'
+    : '\n\nNOTA: Analisi completa. Cerca indici visivi, sommari, elenchi di capitoli.';
 
-  const promptText = `Analizza la STRUTTURA dei seguenti documenti PDF per l'esame "${examName}":
+  const promptText = `CERCA L'INDICE nei seguenti documenti PDF per l'esame "${examName}":
 
 ${filesList}
 
 ${userDescription ? `Note utente: "${userDescription}"` : ''}${modeNote}
 
-Identifica:
-1. Organizzazione generale (capitoli, sezioni)
-2. Tipi di contenuto (teoria, esercizi, esempi)
-3. Pattern organizzativi
+OBIETTIVO: Identificare se esiste un indice/sommario e dove si trova.
+
+Cerca:
+1. Pagine con titoli come "Indice", "Sommario", "Contenuti", "Table of Contents"
+2. Elenchi di capitoli con numeri di pagina
+3. Strutture organizzative del contenuto
 
 JSON richiesto:
 {
-  "documentStructure": [
+  "indexFound": true/false,
+  "indexLocation": {
+    "pdf_index": 0,
+    "filename": "nome.pdf",
+    "startPage": 2,
+    "endPage": 4,
+    "indexType": "detailed" // "detailed", "simple", "none"
+  },
+  "indexContent": [
     {
-      "pdf_index": 0,
-      "filename": "nome.pdf",
-      "totalPages": 100,
-      "chapters": [
+      "chapter": "Capitolo 1: Introduzione",
+      "startPage": 5,
+      "endPage": 20,
+      "subsections": [
         {
-          "title": "Capitolo 1",
-          "startPage": 3,
-          "endPage": 15,
-          "contentType": "theory"
+          "title": "1.1 Concetti base",
+          "startPage": 5,
+          "endPage": 10
         }
       ]
     }
   ],
-  "recommendations": ["Suggerimenti organizzazione"],
+  "totalChapters": 5,
   "analysisMode": "${analysisMode}"
 }`;
 
-  return await executeAIPhase('structural_analysis', promptText, filesArray, originalFilesDriveInfo, progressCallback, analysisMode);
+  return await executeAIPhase('index_search', promptText, filesArray, originalFilesDriveInfo, progressCallback, analysisMode);
 }
 
-// ===== FASE 2: Mappatura contenuti =====
-export async function phaseContentMapping(examName, structuralResult, filesArray, originalFilesDriveInfo, progressCallback, analysisMode = 'pdf') {
-  const structureInfo = JSON.stringify(structuralResult.documentStructure, null, 2);
+// ===== FASE 2: Validazione e Raffinamento Indice =====
+export async function phaseIndexValidation(examName, indexResult, filesArray, originalFilesDriveInfo, progressCallback, analysisMode = 'pdf') {
+  const indexInfo = JSON.stringify(indexResult, null, 2);
 
   const modeNote = analysisMode === 'text' 
-    ? '\n\nNOTA: Focus sui contenuti testuali, formule in formato testo, concetti descrittivi.'
-    : '\n\nNOTA: Analisi completa inclusi elementi visivi, grafici, diagrammi e formule.';
+    ? '\n\nNOTA: Valida l\'indice basandoti sul testo estratto. Se non trovato, crea struttura base.'
+    : '\n\nNOTA: Valida l\'indice con accesso completo. Se non trovato, analizza primi capitoli.';
 
-  const promptText = `Basandoti sulla struttura identificata, mappa i CONTENUTI DETTAGLIATI per l'esame "${examName}":
+  let promptText;
 
-STRUTTURA IDENTIFICATA:
-${structureInfo}${modeNote}
+  if (indexResult.indexFound && indexResult.indexContent && indexResult.indexContent.length > 0) {
+    // Se l'indice è stato trovato, validalo e raffinalo
+    promptText = `VALIDA E RAFFINA L'INDICE trovato per l'esame "${examName}":
 
-Identifica per ogni sezione:
-1. Concetti specifici trattati
-2. Livello di complessità
-3. Importanza per l'esame
+INDICE IDENTIFICATO:
+${indexInfo}${modeNote}
+
+OBIETTIVO: Verificare e migliorare l'indice trovato.
+
+Verifica:
+1. Coerenza dei numeri di pagina
+2. Completezza delle sezioni
+3. Logica dell'organizzazione
 
 JSON richiesto:
 {
-  "contentMap": [
+  "indexValid": true/false,
+  "validatedIndex": [
     {
-      "pdf_index": 0,
-      "sections": [
+      "chapter": "Nome capitolo",
+      "startPage": 5,
+      "endPage": 25,
+      "importance": "high", // "high", "medium", "low"
+      "difficulty": "beginner", // "beginner", "intermediate", "advanced"
+      "subsections": [
         {
-          "title": "Sezione nome",
-          "startPage": 3,
-          "endPage": 15,
-          "concepts": [
-            {
-              "name": "Concetto",
-              "importance": "high",
-              "complexity": "low",
-              "pageRange": [3, 8]
-            }
-          ],
-          "examRelevance": "essential"
+          "title": "Sottosezione",
+          "startPage": 5,
+          "endPage": 10,
+          "contentType": "theory" // "theory", "exercises", "examples"
         }
       ]
     }
   ],
+  "recommendations": ["Suggerimenti per lo studio"],
+  "analysisMode": "${analysisMode}"
+}`;
+  } else {
+    // Se l'indice non è stato trovato, crea una struttura base
+    promptText = `CREA STRUTTURA BASE per l'esame "${examName}" (nessun indice trovato):
+
+INFORMAZIONI DISPONIBILI:
+${indexInfo}${modeNote}
+
+OBIETTIVO: Creare una struttura logica analizzando i primi contenuti.
+
+Analizza le prime 10-15 pagine per identificare:
+1. Pattern di organizzazione
+2. Titoli e sottotitoli principali
+3. Sequenza logica del materiale
+
+JSON richiesto:
+{
+  "indexValid": false,
+  "estimatedStructure": [
+    {
+      "chapter": "Sezione stimata",
+      "startPage": 1,
+      "endPage": 30,
+      "confidence": "medium", // "high", "medium", "low"
+      "basedOn": "Analisi prime pagine",
+      "contentType": "theory"
+    }
+  ],
+  "needsDetailedAnalysis": true,
+  "analysisMode": "${analysisMode}"
+}`;
+  }
+
+  return await executeAIPhase('index_validation', promptText, filesArray, originalFilesDriveInfo, progressCallback, analysisMode);
+}
+
+// ===== FASE 3: Analisi Pagina per Pagina =====
+export async function phasePageByPageAnalysis(examName, indexResult, validationResult, filesArray, originalFilesDriveInfo, progressCallback, analysisMode = 'pdf') {
+  const hasValidIndex = validationResult.indexValid || (indexResult.indexFound && indexResult.indexContent?.length > 0);
+
+  const modeNote = analysisMode === 'text' 
+    ? '\n\nNOTA: Analisi testuale. Focus su contenuti descrittivi.'
+    : '\n\nNOTA: Analisi completa con elementi visivi.';
+
+  // Prompt più conciso per evitare overflow di token
+  const promptText = `ANALISI PAGINE per l'esame "${examName}":
+
+${hasValidIndex ? 'INDICE TROVATO - Usalo come guida per identificare transizioni tra argomenti.' : 'NESSUN INDICE - Identifica transizioni basandoti sui contenuti.'}${modeNote}
+
+OBIETTIVO: Identifica le transizioni principali tra argomenti.
+
+Analizza le pagine e trova:
+1. Quando inizia un nuovo argomento principale
+2. Quando finisce un argomento
+3. Pagine di esercizi/esempi vs teoria
+
+MANTIENI BREVE - Max 50 transizioni principali.
+
+JSON richiesto:
+{
+  "mainTransitions": [
+    {
+      "startPage": 1,
+      "endPage": 15,
+      "topicTitle": "Titolo argomento",
+      "description": "Breve descrizione",
+      "contentType": "theory",
+      "importance": "high",
+      "pdf_index": 0
+    }
+  ],
+  "totalSections": 8,
   "analysisMode": "${analysisMode}"
 }`;
 
-  return await executeAIPhase('content_mapping', promptText, filesArray, originalFilesDriveInfo, progressCallback, analysisMode);
+  return await executeAIPhase('page_analysis', promptText, filesArray, originalFilesDriveInfo, progressCallback, analysisMode);
 }
 
-// ===== FASE 3: Estrazione argomenti =====
-export async function phaseTopicExtraction(examName, structuralResult, contentMapResult, userDescription, progressCallback, analysisMode = 'pdf') {
-  const structureInfo = JSON.stringify(structuralResult.documentStructure, null, 2);
-  const contentInfo = JSON.stringify(contentMapResult.contentMap, null, 2);
+// ===== FASE 4: Raggruppamento in Argomenti (AGGIORNATO) =====
+export async function phaseTopicGrouping(examName, pageAnalysisResult, validationResult, userDescription, progressCallback, analysisMode = 'pdf') {
+  const transitions = pageAnalysisResult.mainTransitions || [];
+  
+  if (transitions.length === 0) {
+    throw new Error('Nessuna transizione identificata nella fase precedente');
+  }
+  
+  // Crea una descrizione concisa delle transizioni per evitare overflow
+  const transitionsInfo = transitions.slice(0, 20).map((t, i) => 
+    `${i+1}. ${t.topicTitle} (pag.${t.startPage}-${t.endPage}) [${t.contentType}]`
+  ).join('\n');
 
-  const modeNote = analysisMode === 'text' 
-    ? '\n\nNOTA: Argomenti basati su analisi testuale. Considera principalmente contenuti descrittivi e teorici.'
-    : '\n\nNOTA: Argomenti basati su analisi completa inclusi elementi visivi e formattazione.';
+  const promptText = `RAGGRUPPA IN ARGOMENTI per l'esame "${examName}":
 
-  const promptText = `Crea ARGOMENTI DI STUDIO OTTIMALI per l'esame "${examName}":
+SEZIONI IDENTIFICATE:
+${transitionsInfo}
 
-STRUTTURA:
-${structureInfo}
+${userDescription ? `Note: ${userDescription}` : ''}
 
-CONTENUTI:
-${contentInfo}
-
-${userDescription ? `Note utente: "${userDescription}"` : ''}${modeNote}
-
-Regole:
+REGOLE:
 - ${CONFIG.CONTENT_ANALYSIS.minTopicsTotal}-${CONFIG.CONTENT_ANALYSIS.maxTopicsTotal} argomenti totali
 - ${CONFIG.CONTENT_ANALYSIS.minTopicPages}-${CONFIG.CONTENT_ANALYSIS.maxTopicPages} pagine per argomento
-- Raggruppa concetti correlati
-- Sequenza logica di apprendimento
+- Raggruppa sezioni correlate
+- Mantieni sequenza logica
 
 JSON richiesto:
 {
@@ -124,87 +211,39 @@ JSON richiesto:
     {
       "id": "topic_001",
       "title": "Nome argomento",
-      "description": "Descrizione dettagliata",
-      "priority": "high",
-      "difficulty": "beginner",
-      "estimatedHours": 3,
-      "concepts": ["Concetto1", "Concetto2"]
-    }
-  ],
-  "topicSequence": ["topic_001", "topic_002"],
-  "analysisMode": "${analysisMode}"
-}`;
-
-  return await executeAIPhase('topic_extraction', promptText, [], [], progressCallback, 'text'); // Sempre text per questa fase
-}
-
-// ===== FASE 4: Assegnazione pagine =====
-export async function phasePageAssignment(examName, structuralResult, contentMapResult, topicsResult, originalFilesDriveInfo, progressCallback, analysisMode = 'pdf') {
-  const structureInfo = JSON.stringify(structuralResult.documentStructure, null, 2);
-  const contentInfo = JSON.stringify(contentMapResult.contentMap, null, 2);
-  const topicsInfo = JSON.stringify(topicsResult.studyTopics, null, 2);
-
-  const modeNote = analysisMode === 'text' 
-    ? '\n\nNOTA: Assegnazione basata su contenuti testuali estratti. Concentrati su coerenza logica.'
-    : '\n\nNOTA: Assegnazione basata su analisi completa con elementi visivi.';
-
-  const promptText = `Assegna PAGINE SPECIFICHE agli argomenti per l'esame "${examName}":
-
-STRUTTURA:
-${structureInfo}
-
-CONTENUTI:
-${contentInfo}
-
-ARGOMENTI:
-${topicsInfo}
-
-File disponibili:
-${originalFilesDriveInfo.map((f, i) => `${i}: ${f.name}`).join('\n')}${modeNote}
-
-REGOLE CRITICHE:
-- ZERO sovrapposizioni di pagine
-- Pagine contigue quando possibile
-- Rispetta coerenza concettuale
-
-JSON richiesto:
-{
-  "pageAssignments": [
-    {
-      "topicId": "topic_001",
-      "title": "Nome argomento",
       "description": "Descrizione",
       "pages_info": [
         {
-          "original_filename": "nome.pdf",
           "pdf_index": 0,
-          "start_page": 3,
-          "end_page": 15
+          "original_filename": "file.pdf",
+          "start_page": 5,
+          "end_page": 20
         }
       ],
-      "totalPages": 13
+      "totalPages": 16,
+      "priority": "high",
+      "difficulty": "beginner",
+      "estimatedHours": 3
     }
   ],
-  "analysisMode": "${analysisMode}"
+  "statistics": {
+    "totalTopics": 8,
+    "averagePagesPerTopic": 12
+  }
 }`;
 
-  return await executeAIPhase('page_assignment', promptText, [], [], progressCallback, 'text'); // Sempre text per questa fase
+  return await executeAIPhase('topic_grouping', promptText, [], [], progressCallback, 'text');
 }
 
-// ===== FASE 5: Validazione =====
-export async function phaseValidationOptimization(pageAssignmentResult, originalFilesDriveInfo, progressCallback, analysisMode = 'pdf') {
-  console.log(`ContentAnalysis: Starting validation (${analysisMode} mode)...`);
-  progressCallback?.({ type: 'processing', message: 'Validazione finale...' });
+// ===== FASE 5: Validazione Finale =====
+export async function phaseTopicValidation(topicGroupingResult, originalFilesDriveInfo, progressCallback, analysisMode = 'pdf') {
+  console.log(`ContentAnalysis: Starting topic validation (${analysisMode} mode)...`);
+  progressCallback?.({ type: 'processing', message: 'Validazione finale argomenti...' });
 
-  const assignments = pageAssignmentResult.pageAssignments;
+  const topics = topicGroupingResult.studyTopics || [];
   
-  const tableOfContents = assignments.map(assignment => ({
-    title: assignment.title,
-    description: assignment.description,
-    pages_info: assignment.pages_info || []
-  }));
-
-  const validatedTopics = validateAndFixPageOverlaps(tableOfContents);
+  // Validazione e correzione automatica
+  const validatedTopics = validateAndFixTopics(topics, originalFilesDriveInfo);
   
   const finalStats = {
     totalTopics: validatedTopics.length,
@@ -220,24 +259,29 @@ export async function phaseValidationOptimization(pageAssignmentResult, original
     ? Math.round(finalStats.totalAssignedPages / finalStats.totalTopics) 
     : 0;
 
-  console.log(`ContentAnalysis: Validation completed (${analysisMode}). Stats:`, finalStats);
+  console.log(`ContentAnalysis: Topic validation completed (${analysisMode}). Stats:`, finalStats);
   
   return {
     validatedTopics,
     statistics: finalStats,
-    originalAssignments: assignments
+    originalGrouping: topicGroupingResult
   };
 }
 
-// ===== FUNZIONE DI SUPPORTO =====
-function validateAndFixPageOverlaps(tableOfContents) {
-  console.log("ContentAnalysis: Fixing page overlaps...");
+// ===== FUNZIONI DI SUPPORTO =====
+function validateAndFixTopics(topics, originalFilesDriveInfo) {
+  console.log("ContentAnalysis: Validating and fixing topics...");
   
+  // Rimuovi topic senza pagine
+  let validTopics = topics.filter(topic => 
+    topic.pages_info && topic.pages_info.length > 0
+  );
+
+  // Correggi sovrapposizioni di pagine
   const pageAssignments = new Map();
   const overlappingPages = [];
 
-  // Trova sovrapposizioni
-  tableOfContents.forEach(topic => {
+  validTopics.forEach(topic => {
     topic.pages_info?.forEach(pInfo => {
       const pdfIndex = pInfo.pdf_index;
       if (!pageAssignments.has(pdfIndex)) {
@@ -262,13 +306,13 @@ function validateAndFixPageOverlaps(tableOfContents) {
   if (overlappingPages.length > 0) {
     console.warn(`ContentAnalysis: Found ${overlappingPages.length} overlapping pages, fixing...`);
     
-    const sortedTopics = [...tableOfContents].sort((a, b) => {
+    // Ordina topic per priorità (quelli con meno pagine hanno precedenza)
+    const sortedTopics = [...validTopics].sort((a, b) => {
       const pagesA = a.pages_info?.reduce((sum, p) => sum + (p.end_page - p.start_page + 1), 0) || 0;
       const pagesB = b.pages_info?.reduce((sum, p) => sum + (p.end_page - p.start_page + 1), 0) || 0;
-      return pagesA - pagesB; // Quelli con meno pagine hanno priorità
+      return pagesA - pagesB;
     });
 
-    pageAssignments.clear();
     const correctedPageAssignments = new Map();
     
     for (const topic of sortedTopics) {
@@ -315,44 +359,52 @@ function validateAndFixPageOverlaps(tableOfContents) {
       }
       
       topic.pages_info = newPagesInfo;
+      // Ricalcola totalPages
+      topic.totalPages = newPagesInfo.reduce((sum, pInfo) => 
+        sum + (pInfo.end_page - pInfo.start_page + 1), 0
+      );
     }
     
     console.log("ContentAnalysis: Page overlaps fixed.");
   }
 
-  return tableOfContents.filter(topic => 
-    topic.pages_info && topic.pages_info.length > 0
+  // Filtra topic che non hanno più pagine dopo la correzione
+  validTopics = validTopics.filter(topic => 
+    topic.pages_info && topic.pages_info.length > 0 && topic.totalPages > 0
   );
+
+  console.log(`ContentAnalysis: Validation completed. ${validTopics.length} valid topics.`);
+  return validTopics;
 }
 
 // ===== ORCHESTRATORE AGGIORNATO =====
 export async function analyzeContentStructureMultiPhase(examName, filesArray, originalFilesDriveInfo, userDescription = "", progressCallback, analysisMode = 'pdf') {
-  console.log(`ContentAnalysis: Starting multi-phase analysis (${analysisMode} mode)...`);
+  console.log(`ContentAnalysis: Starting NEW 5-phase analysis (${analysisMode} mode)...`);
   
   try {
-    progressCallback?.({ type: 'processing', message: `Fase 1/5: Analisi strutturale (${analysisMode})...` });
-    const structuralResult = await phaseStructuralAnalysis(examName, filesArray, originalFilesDriveInfo, userDescription, progressCallback, analysisMode);
+    progressCallback?.({ type: 'processing', message: `Fase 1/5: Ricerca indice (${analysisMode})...` });
+    const indexResult = await phaseIndexSearch(examName, filesArray, originalFilesDriveInfo, userDescription, progressCallback, analysisMode);
     
-    progressCallback?.({ type: 'processing', message: `Fase 2/5: Mappatura contenuti (${analysisMode})...` });
-    const contentMapResult = await phaseContentMapping(examName, structuralResult, filesArray, originalFilesDriveInfo, progressCallback, analysisMode);
+    progressCallback?.({ type: 'processing', message: `Fase 2/5: Validazione indice (${analysisMode})...` });
+    const validationResult = await phaseIndexValidation(examName, indexResult, filesArray, originalFilesDriveInfo, progressCallback, analysisMode);
     
-    progressCallback?.({ type: 'processing', message: 'Fase 3/5: Estrazione argomenti...' });
-    const topicsResult = await phaseTopicExtraction(examName, structuralResult, contentMapResult, userDescription, progressCallback, analysisMode);
+    progressCallback?.({ type: 'processing', message: `Fase 3/5: Analisi pagina per pagina (${analysisMode})...` });
+    const pageAnalysisResult = await phasePageByPageAnalysis(examName, indexResult, validationResult, filesArray, originalFilesDriveInfo, progressCallback, analysisMode);
     
-    progressCallback?.({ type: 'processing', message: 'Fase 4/5: Assegnazione pagine...' });
-    const pageAssignmentResult = await phasePageAssignment(examName, structuralResult, contentMapResult, topicsResult, originalFilesDriveInfo, progressCallback, analysisMode);
+    progressCallback?.({ type: 'processing', message: 'Fase 4/5: Raggruppamento argomenti...' });
+    const topicGroupingResult = await phaseTopicGrouping(examName, pageAnalysisResult, validationResult, userDescription, progressCallback, analysisMode);
     
     progressCallback?.({ type: 'processing', message: 'Fase 5/5: Validazione finale...' });
-    const finalResult = await phaseValidationOptimization(pageAssignmentResult, originalFilesDriveInfo, progressCallback, analysisMode);
+    const finalResult = await phaseTopicValidation(topicGroupingResult, originalFilesDriveInfo, progressCallback, analysisMode);
     
     const result = {
       tableOfContents: finalResult.validatedTopics,
-      pageMapping: {},
+      pageMapping: {}, // Non più necessario con la nuova architettura
       phaseResults: {
-        structural: structuralResult,
-        contentMap: contentMapResult,
-        topics: topicsResult,
-        pageAssignment: pageAssignmentResult,
+        indexSearch: indexResult,
+        indexValidation: validationResult,
+        pageAnalysis: pageAnalysisResult,
+        topicGrouping: topicGroupingResult,
         validation: finalResult
       },
       statistics: finalResult.statistics
