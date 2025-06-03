@@ -1,9 +1,9 @@
-// src/components/CreateProject.jsx - VERSIONE OTTIMIZZATA
+// src/components/CreateProject.jsx - VERSIONE CON SWITCH MODALITÀ ANALISI
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import useGoogleAuth from '../hooks/useGoogleAuth';
-import { generateCompleteStudyPlanLocal } from '../utils/gemini'; // NUOVA FUNZIONE
-import { FilePlus, Upload, X, Calendar, BookOpen, Info, AlertCircle, Loader, BrainCircuit, FileText } from 'lucide-react';
+import { generateCompleteStudyPlanLocal } from '../utils/gemini';
+import { FilePlus, Upload, X, Calendar, BookOpen, Info, AlertCircle, Loader, BrainCircuit, FileText, Zap, Clock } from 'lucide-react';
 import NavBar from './NavBar';
 import './styles/CreateProject.css';
 
@@ -19,6 +19,9 @@ const CreateProject = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   
+  // NUOVO: Modalità di analisi
+  const [analysisMode, setAnalysisMode] = useState('pdf'); // 'pdf' o 'text'
+  
   const isMounted = useRef(true);
 
   const resetAllState = useCallback(() => {
@@ -31,6 +34,7 @@ const CreateProject = () => {
     setLoadingMessage('');
     setError('');
     setSuccess('');
+    setAnalysisMode('pdf');
   }, []);
 
   useEffect(() => {
@@ -58,7 +62,7 @@ const CreateProject = () => {
 
     const validFiles = [];
     const errors = [];
-    const MAX_FILE_SIZE_MB = 50;
+    const MAX_FILE_SIZE_MB = analysisMode === 'pdf' ? 50 : 100; // Più permissivo per modalità testo
 
     newFiles.forEach(file => {
       if (file.type !== 'application/pdf') {
@@ -97,9 +101,40 @@ const CreateProject = () => {
     }
   }, []);
 
+  // NUOVO: Calcolo stime tempi
+  const getTimeEstimate = () => {
+    if (files.length === 0) return { min: 0, max: 0 };
+    
+    const totalSizeMB = files.reduce((sum, file) => sum + (file.size / (1024 * 1024)), 0);
+    const fileCount = files.length;
+    
+    if (analysisMode === 'text') {
+      // Modalità testo: più veloce, dipende dalle pagine
+      const estimatedPages = Math.ceil(totalSizeMB * 20); // ~20 pagine per MB
+      const timePerPage = 0.5; // 0.5 secondi per pagina per estrazione testo
+      const baseTime = 15; // 15 secondi base per analisi AI
+      const total = Math.ceil((estimatedPages * timePerPage + baseTime) / fileCount);
+      return {
+        min: Math.max(20, total * 0.8),
+        max: Math.max(45, total * 1.5)
+      };
+    } else {
+      // Modalità PDF: più lenta, dipende dalla dimensione
+      const timePerMB = 8; // 8 secondi per MB per conversione base64
+      const baseTime = 30; // 30 secondi base per analisi AI
+      const total = Math.ceil(totalSizeMB * timePerMB + baseTime);
+      return {
+        min: Math.max(45, total * 0.9),
+        max: Math.max(120, total * 1.3)
+      };
+    }
+  };
+
+  const timeEstimate = getTimeEstimate();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('CreateProject: Form submitted for LOCAL ANALYSIS');
+    console.log(`CreateProject: Form submitted for LOCAL ANALYSIS (${analysisMode.toUpperCase()} mode)`);
 
     setError(''); 
     setSuccess(''); 
@@ -123,15 +158,16 @@ const CreateProject = () => {
     }
 
     try {
-      // ANALISI AI LOCALE (senza caricamento Drive)
-      setLoadingMessage('Analisi AI dei PDF...');
+      // ANALISI AI LOCALE con modalità selezionata
+      setLoadingMessage(`Analisi AI dei PDF (modalità ${analysisMode === 'pdf' ? 'completa' : 'testo'})...`);
       
       const planData = await generateCompleteStudyPlanLocal(
         formData.examName,
         formData.totalDays,
         files, // File objects diretti
         formData.description,
-        progressCallback
+        progressCallback,
+        analysisMode // NUOVO PARAMETRO
       );
 
       // SUCCESSO: naviga alla pagina di revisione
@@ -150,7 +186,8 @@ const CreateProject = () => {
             examName: formData.examName,
             totalDays: formData.totalDays,
             description: formData.description
-          }
+          },
+          analysisMode: analysisMode // Passa la modalità usata
         }
       });
 
@@ -176,7 +213,7 @@ const CreateProject = () => {
         <div className="create-project-container">
           <div className="create-project-header">
             <h1 className="page-title">Genera Piano di Studio (Analisi Locale)</h1>
-            <p className="page-subtitle">Carica i PDF, l'AI li analizzerà direttamente senza caricamenti online.</p>
+            <p className="page-subtitle">Carica i PDF e scegli la modalità di analisi. L'AI analizzerà i contenuti senza caricamenti online.</p>
           </div>
 
            {error && (
@@ -229,6 +266,65 @@ const CreateProject = () => {
 
                       <div className="form-section">
                           <h2 className="section-title">Materiale Studio</h2>
+                          
+                          {/* NUOVO: Switch modalità analisi */}
+                          <div className="form-group">
+                              <label><span className="label-text">Modalità Analisi</span><span className="required-mark">*</span></label>
+                              <div className="analysis-mode-selector">
+                                  <div 
+                                      className={`mode-option ${analysisMode === 'pdf' ? 'active' : ''}`}
+                                      onClick={() => setAnalysisMode('pdf')}
+                                  >
+                                      <div className="mode-header">
+                                          <FileText size={20} />
+                                          <span className="mode-title">PDF Completo</span>
+                                          <span className="mode-badge premium">Avanzata</span>
+                                      </div>
+                                      <div className="mode-description">
+                                          <p>Analisi completa con immagini, grafici e formattazione. Qualità massima.</p>
+                                          <div className="mode-stats">
+                                              <div className="stat-item">
+                                                  <Clock size={14} />
+                                                  <span>~{timeEstimate.min}-{timeEstimate.max}s</span>
+                                              </div>
+                                              <div className="stat-item quality">
+                                                  <span>🎯 Precisione: 95%</span>
+                                              </div>
+                                          </div>
+                                      </div>
+                                  </div>
+                                  
+                                  <div 
+                                      className={`mode-option ${analysisMode === 'text' ? 'active' : ''}`}
+                                      onClick={() => setAnalysisMode('text')}
+                                  >
+                                      <div className="mode-header">
+                                          <Zap size={20} />
+                                          <span className="mode-title">Solo Testo</span>
+                                          <span className="mode-badge fast">Veloce</span>
+                                      </div>
+                                      <div className="mode-description">
+                                          <p>Estrazione rapida del testo. Ideale per documenti principalmente testuali.</p>
+                                          <div className="mode-stats">
+                                              <div className="stat-item">
+                                                  <Clock size={14} />
+                                                  <span>~{Math.ceil(timeEstimate.min * 0.4)}-{Math.ceil(timeEstimate.max * 0.4)}s</span>
+                                              </div>
+                                              <div className="stat-item quality">
+                                                  <span>📝 Precisione: 85%</span>
+                                              </div>
+                                          </div>
+                                      </div>
+                                  </div>
+                              </div>
+                              <p className="field-hint">
+                                  {analysisMode === 'pdf' 
+                                      ? 'Modalità raccomandata per documenti con grafici, formule e immagini importanti.'
+                                      : 'Modalità veloce ideale per libri di testo principalmente testuali.'
+                                  }
+                              </p>
+                          </div>
+
                           <div className="form-group">
                               <label><span className="label-text">File PDF</span><span className="required-mark">*</span></label>
                               <div className="file-upload-area">
@@ -236,7 +332,13 @@ const CreateProject = () => {
                                       <label className="file-upload-btn" htmlFor="fileInput"><Upload size={20} /><span>Carica PDF</span></label>
                                       <input type="file" id="fileInput" onChange={handleFileChange} multiple accept=".pdf" className="hidden-file-input" />
                                   </div>
-                                  <p className="file-upload-info">Carica libri, dispense, appunti.<br /><small>Max 50MB/file. Solo analisi locale.</small></p>
+                                  <p className="file-upload-info">
+                                      Carica libri, dispense, appunti.<br />
+                                      <small>
+                                          Max {analysisMode === 'pdf' ? '50' : '100'}MB/file. 
+                                          {analysisMode === 'text' && ' (Limite maggiore per modalità testo)'}
+                                      </small>
+                                  </p>
                               </div>
                               {files.length > 0 && (
                                   <div className="file-list">
@@ -251,6 +353,15 @@ const CreateProject = () => {
                                               </li>
                                           ))}
                                       </ul>
+                                      
+                                      {/* Stima tempo totale */}
+                                      {files.length > 0 && (
+                                          <div className="time-estimate">
+                                              <Clock size={16} />
+                                              <span>Tempo stimato: {timeEstimate.min}-{timeEstimate.max} secondi</span>
+                                              <span className="estimate-mode">({analysisMode === 'pdf' ? 'PDF completo' : 'Solo testo'})</span>
+                                          </div>
+                                      )}
                                   </div>
                               )}
                               {files.length === 0 && (<div className="no-files-message">Nessun file PDF selezionato.</div>)}
@@ -262,8 +373,8 @@ const CreateProject = () => {
                      <button type="button" className="cancel-btn" onClick={handleCancel} > Annulla </button>
                      <button type="submit" className="submit-btn" disabled={files.length === 0 || loading}>
                        {loading ?
-                          (<> <Loader size={16} className="spin-icon" /> Analisi AI... </> ) :
-                          (<> <BrainCircuit size={16} style={{marginRight:'5px'}}/> Analisi Locale </>)
+                          (<> <Loader size={16} className="spin-icon" /> Analisi {analysisMode === 'pdf' ? 'PDF' : 'Testo'}... </> ) :
+                          (<> <BrainCircuit size={16} style={{marginRight:'5px'}}/> Analisi {analysisMode === 'pdf' ? 'Completa' : 'Veloce'} </>)
                        }
                      </button>
                    </div>

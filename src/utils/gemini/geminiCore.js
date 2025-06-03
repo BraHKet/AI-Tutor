@@ -1,9 +1,11 @@
-// src/utils/gemini/geminiCore.js - Core utilities, caching, and file processing
+// src/utils/gemini/geminiCore.js - Core utilities con supporto modalità testo
 import { genAI, model as geminiDefaultModel } from '../geminiSetup';
+import { extractTextFromFiles } from '../pdfProcessor';
 
 // ===== CACHE SEMPLIFICATA =====
 const PDF_CACHE = new Map();
 const PHASE_CACHE = new Map();
+const TEXT_CACHE = new Map(); // NUOVO: Cache per testi estratti
 
 // Configurazioni essenziali
 export const CONFIG = {
@@ -46,6 +48,48 @@ export function cleanupCache(cache, maxEntries = CONFIG.CACHE.maxEntries) {
     const entriesToRemove = entries.slice(0, Math.floor(maxEntries / 2));
     entriesToRemove.forEach(([key]) => cache.delete(key));
     console.log(`Cache cleanup: removed ${entriesToRemove.length} entries`);
+  }
+}
+
+/**
+ * NUOVO: Estrae testo dai PDF per modalità text-only
+ */
+export async function extractTextFromFilesForAI(files, progressCallback) {
+  const fileHash = generateFileHash(files) + '_text';
+  
+  if (TEXT_CACHE.has(fileHash)) {
+    progressCallback?.({ type: 'processing', message: 'Riutilizzo testo già estratto...' });
+    return TEXT_CACHE.get(fileHash);
+  }
+
+  progressCallback?.({ type: 'processing', message: 'Estrazione testo dai PDF...' });
+
+  try {
+    const { fullText, pagedTextData } = await extractTextFromFiles(files, (message) => {
+      progressCallback?.({ type: 'processing', message });
+    });
+
+    if (!fullText || fullText.trim().length === 0) {
+      throw new Error('Nessun testo estratto dai PDF. Verifica che i file contengano testo selezionabile.');
+    }
+
+    const result = {
+      fullText: fullText.trim(),
+      pagedTextData,
+      totalPages: pagedTextData.length,
+      wordCount: fullText.split(/\s+/).length,
+      charCount: fullText.length
+    };
+
+    TEXT_CACHE.set(fileHash, result);
+    cleanupCache(TEXT_CACHE);
+
+    progressCallback?.({ type: 'processing', message: `Testo estratto: ${result.wordCount} parole, ${result.totalPages} pagine` });
+    return result;
+
+  } catch (error) {
+    console.error('Error extracting text from files:', error);
+    throw new Error(`Errore estrazione testo: ${error.message}`);
   }
 }
 
@@ -124,7 +168,7 @@ export async function fileToGenerativePart(file) {
 }
 
 /**
- * Prepara i file PDF per l'analisi AI
+ * Prepara i file PDF per l'analisi AI (modalità PDF completa)
  */
 export async function prepareFilesForAI(filesArray, originalFilesDriveInfo, progressCallback) {
   const fileHash = generateFileHash(filesArray);
@@ -175,19 +219,44 @@ export async function prepareFilesForAI(filesArray, originalFilesDriveInfo, prog
 }
 
 /**
- * Esegue una singola fase AI con caching e retry
+ * NUOVO: Prepara il testo per l'analisi AI (modalità text-only)
  */
-export async function executeAIPhase(phaseName, promptText, filesArray, originalFilesDriveInfo, progressCallback, useFiles = true) {
-  const phaseHash = generatePhaseHash(phaseName, promptText.substring(0, 100), filesArray);
+export async function prepareTextForAI(filesArray, progressCallback) {
+  progressCallback?.({ type: 'processing', message: 'Estrazione testo per analisi AI...' });
+
+  const textData = await extractTextFromFilesForAI(filesArray, progressCallback);
+  
+  if (!textData.fullText || textData.fullText.length < 100) {
+    throw new Error('Testo estratto insufficiente per l\'analisi AI (meno di 100 caratteri).');
+  }
+
+  progressCallback?.({ type: 'processing', message: `Testo preparato: ${textData.wordCount} parole` });
+  
+  return {
+    textContent: textData.fullText,
+    metadata: {
+      totalPages: textData.totalPages,
+      wordCount: textData.wordCount,
+      charCount: textData.charCount,
+      fileCount: filesArray.length
+    }
+  };
+}
+
+/**
+ * Esegue una singola fase AI con caching e retry (supporta entrambe le modalità)
+ */
+export async function executeAIPhase(phaseName, promptText, filesArray, originalFilesDriveInfo, progressCallback, analysisMode = 'pdf') {
+  const phaseHash = generatePhaseHash(phaseName, promptText.substring(0, 100), filesArray, analysisMode);
   
   if (PHASE_CACHE.has(phaseHash)) {
-    console.log(`GeminiCore: Using cached result for phase ${phaseName}`);
+    console.log(`GeminiCore: Using cached result for phase ${phaseName} (${analysisMode} mode)`);
     progressCallback?.({ type: 'processing', message: `Utilizzo cache per fase ${phaseName}...` });
     return PHASE_CACHE.get(phaseHash);
   }
 
-  console.log(`GeminiCore: Executing phase ${phaseName}...`);
-  progressCallback?.({ type: 'processing', message: `Esecuzione fase ${phaseName}...` });
+  console.log(`GeminiCore: Executing phase ${phaseName} (${analysisMode} mode)...`);
+  progressCallback?.({ type: 'processing', message: `Esecuzione fase ${phaseName} (${analysisMode === 'pdf' ? 'PDF completo' : 'solo testo'})...` });
 
   if (!genAI || !geminiDefaultModel) {
     throw new Error('Servizio AI Gemini non inizializzato correttamente.');
@@ -195,9 +264,22 @@ export async function executeAIPhase(phaseName, promptText, filesArray, original
 
   const parts = [{ text: promptText.trim() }];
   
-  if (useFiles && filesArray && filesArray.length > 0) {
-    const { partsArray } = await prepareFilesForAI(filesArray, originalFilesDriveInfo, progressCallback);
-    parts.push(...partsArray);
+  // Prepara i contenuti in base alla modalità
+  if (filesArray && filesArray.length > 0) {
+    if (analysisMode === 'text') {
+      // Modalità text-only: estrai e invia solo il testo
+      const textPreparation = await prepareTextForAI(filesArray, progressCallback);
+      
+      // Aggiungi il testo estratto al prompt
+      const textPart = {
+        text: `\n\n=== CONTENUTO ESTRATTO DAI PDF ===\n\n${textPreparation.textContent}\n\n=== METADATI ===\nFile processati: ${textPreparation.metadata.fileCount}\nPagine totali: ${textPreparation.metadata.totalPages}\nParole: ${textPreparation.metadata.wordCount}\nCaratteri: ${textPreparation.metadata.charCount}\n\n=== FINE CONTENUTO ===\n\n`
+      };
+      parts.push(textPart);
+    } else {
+      // Modalità PDF completa: invia i PDF come base64
+      const { partsArray } = await prepareFilesForAI(filesArray, originalFilesDriveInfo, progressCallback);
+      parts.push(...partsArray);
+    }
   }
 
   const requestPayload = {
@@ -238,12 +320,12 @@ export async function executeAIPhase(phaseName, promptText, filesArray, original
       PHASE_CACHE.set(phaseHash, parsedResponse);
       cleanupCache(PHASE_CACHE);
 
-      progressCallback?.({ type: 'processing', message: `Fase ${phaseName} completata.` });
+      progressCallback?.({ type: 'processing', message: `Fase ${phaseName} completata (${analysisMode}).` });
       return parsedResponse;
 
     } catch (error) {
       lastError = error;
-      console.error(`GeminiCore: Error in phase ${phaseName} (attempt ${attempt}):`, error);
+      console.error(`GeminiCore: Error in phase ${phaseName} (attempt ${attempt}, ${analysisMode} mode):`, error);
       
       if (attempt < maxRetries) {
         const delayMs = 2000 * attempt;
@@ -253,7 +335,7 @@ export async function executeAIPhase(phaseName, promptText, filesArray, original
     }
   }
   
-  throw new Error(`Errore nella fase ${phaseName}: ${lastError?.message || 'Errore sconosciuto'}`);
+  throw new Error(`Errore nella fase ${phaseName} (${analysisMode}): ${lastError?.message || 'Errore sconosciuto'}`);
 }
 
 // ===== CACHE MANAGEMENT =====
@@ -261,17 +343,19 @@ export async function executeAIPhase(phaseName, promptText, filesArray, original
 export function getCacheStats() {
   return {
     pdfCache: PDF_CACHE.size,
+    textCache: TEXT_CACHE.size, // NUOVO
     phaseCache: PHASE_CACHE.size,
     maxEntries: CONFIG.CACHE.maxEntries
   };
 }
 
 export function clearAllCaches() {
-  const totalSize = PDF_CACHE.size + PHASE_CACHE.size;
+  const totalSize = PDF_CACHE.size + TEXT_CACHE.size + PHASE_CACHE.size;
   PDF_CACHE.clear();
+  TEXT_CACHE.clear(); // NUOVO
   PHASE_CACHE.clear();
   console.log(`GeminiCore: Cleared all caches (${totalSize} entries)`);
   return totalSize;
 }
 
-export { PDF_CACHE, PHASE_CACHE };
+export { PDF_CACHE, TEXT_CACHE, PHASE_CACHE };

@@ -1,17 +1,21 @@
-// src/utils/gemini/contentAnalysisPhases.js - Content Analysis Phases (Simplified)
+// src/utils/gemini/contentAnalysisPhases.js - Content Analysis Phases (Con supporto modalità)
 import { executeAIPhase, CONFIG } from './geminiCore.js';
 
 // ===== FASE 1: Analisi strutturale =====
-export async function phaseStructuralAnalysis(examName, filesArray, originalFilesDriveInfo, userDescription, progressCallback) {
+export async function phaseStructuralAnalysis(examName, filesArray, originalFilesDriveInfo, userDescription, progressCallback, analysisMode = 'pdf') {
   const filesList = originalFilesDriveInfo
     .map((fInfo, index) => `- PDF ${index}: ${fInfo.name}`)
     .join('\n');
+
+  const modeNote = analysisMode === 'text' 
+    ? '\n\nNOTA: Analisi basata su testo estratto. Concentrati su struttura logica e contenuti testuali.'
+    : '\n\nNOTA: Analisi completa con accesso a immagini, grafici e formattazione.';
 
   const promptText = `Analizza la STRUTTURA dei seguenti documenti PDF per l'esame "${examName}":
 
 ${filesList}
 
-${userDescription ? `Note utente: "${userDescription}"` : ''}
+${userDescription ? `Note utente: "${userDescription}"` : ''}${modeNote}
 
 Identifica:
 1. Organizzazione generale (capitoli, sezioni)
@@ -35,20 +39,25 @@ JSON richiesto:
       ]
     }
   ],
-  "recommendations": ["Suggerimenti organizzazione"]
+  "recommendations": ["Suggerimenti organizzazione"],
+  "analysisMode": "${analysisMode}"
 }`;
 
-  return await executeAIPhase('structural_analysis', promptText, filesArray, originalFilesDriveInfo, progressCallback, true);
+  return await executeAIPhase('structural_analysis', promptText, filesArray, originalFilesDriveInfo, progressCallback, analysisMode);
 }
 
 // ===== FASE 2: Mappatura contenuti =====
-export async function phaseContentMapping(examName, structuralResult, filesArray, originalFilesDriveInfo, progressCallback) {
+export async function phaseContentMapping(examName, structuralResult, filesArray, originalFilesDriveInfo, progressCallback, analysisMode = 'pdf') {
   const structureInfo = JSON.stringify(structuralResult.documentStructure, null, 2);
+
+  const modeNote = analysisMode === 'text' 
+    ? '\n\nNOTA: Focus sui contenuti testuali, formule in formato testo, concetti descrittivi.'
+    : '\n\nNOTA: Analisi completa inclusi elementi visivi, grafici, diagrammi e formule.';
 
   const promptText = `Basandoti sulla struttura identificata, mappa i CONTENUTI DETTAGLIATI per l'esame "${examName}":
 
 STRUTTURA IDENTIFICATA:
-${structureInfo}
+${structureInfo}${modeNote}
 
 Identifica per ogni sezione:
 1. Concetti specifici trattati
@@ -77,16 +86,21 @@ JSON richiesto:
         }
       ]
     }
-  ]
+  ],
+  "analysisMode": "${analysisMode}"
 }`;
 
-  return await executeAIPhase('content_mapping', promptText, filesArray, originalFilesDriveInfo, progressCallback, true);
+  return await executeAIPhase('content_mapping', promptText, filesArray, originalFilesDriveInfo, progressCallback, analysisMode);
 }
 
 // ===== FASE 3: Estrazione argomenti =====
-export async function phaseTopicExtraction(examName, structuralResult, contentMapResult, userDescription, progressCallback) {
+export async function phaseTopicExtraction(examName, structuralResult, contentMapResult, userDescription, progressCallback, analysisMode = 'pdf') {
   const structureInfo = JSON.stringify(structuralResult.documentStructure, null, 2);
   const contentInfo = JSON.stringify(contentMapResult.contentMap, null, 2);
+
+  const modeNote = analysisMode === 'text' 
+    ? '\n\nNOTA: Argomenti basati su analisi testuale. Considera principalmente contenuti descrittivi e teorici.'
+    : '\n\nNOTA: Argomenti basati su analisi completa inclusi elementi visivi e formattazione.';
 
   const promptText = `Crea ARGOMENTI DI STUDIO OTTIMALI per l'esame "${examName}":
 
@@ -96,7 +110,7 @@ ${structureInfo}
 CONTENUTI:
 ${contentInfo}
 
-${userDescription ? `Note utente: "${userDescription}"` : ''}
+${userDescription ? `Note utente: "${userDescription}"` : ''}${modeNote}
 
 Regole:
 - ${CONFIG.CONTENT_ANALYSIS.minTopicsTotal}-${CONFIG.CONTENT_ANALYSIS.maxTopicsTotal} argomenti totali
@@ -117,17 +131,22 @@ JSON richiesto:
       "concepts": ["Concetto1", "Concetto2"]
     }
   ],
-  "topicSequence": ["topic_001", "topic_002"]
+  "topicSequence": ["topic_001", "topic_002"],
+  "analysisMode": "${analysisMode}"
 }`;
 
-  return await executeAIPhase('topic_extraction', promptText, [], [], progressCallback, false);
+  return await executeAIPhase('topic_extraction', promptText, [], [], progressCallback, 'text'); // Sempre text per questa fase
 }
 
 // ===== FASE 4: Assegnazione pagine =====
-export async function phasePageAssignment(examName, structuralResult, contentMapResult, topicsResult, originalFilesDriveInfo, progressCallback) {
+export async function phasePageAssignment(examName, structuralResult, contentMapResult, topicsResult, originalFilesDriveInfo, progressCallback, analysisMode = 'pdf') {
   const structureInfo = JSON.stringify(structuralResult.documentStructure, null, 2);
   const contentInfo = JSON.stringify(contentMapResult.contentMap, null, 2);
   const topicsInfo = JSON.stringify(topicsResult.studyTopics, null, 2);
+
+  const modeNote = analysisMode === 'text' 
+    ? '\n\nNOTA: Assegnazione basata su contenuti testuali estratti. Concentrati su coerenza logica.'
+    : '\n\nNOTA: Assegnazione basata su analisi completa con elementi visivi.';
 
   const promptText = `Assegna PAGINE SPECIFICHE agli argomenti per l'esame "${examName}":
 
@@ -141,7 +160,7 @@ ARGOMENTI:
 ${topicsInfo}
 
 File disponibili:
-${originalFilesDriveInfo.map((f, i) => `${i}: ${f.name}`).join('\n')}
+${originalFilesDriveInfo.map((f, i) => `${i}: ${f.name}`).join('\n')}${modeNote}
 
 REGOLE CRITICHE:
 - ZERO sovrapposizioni di pagine
@@ -165,15 +184,16 @@ JSON richiesto:
       ],
       "totalPages": 13
     }
-  ]
+  ],
+  "analysisMode": "${analysisMode}"
 }`;
 
-  return await executeAIPhase('page_assignment', promptText, [], [], progressCallback, false);
+  return await executeAIPhase('page_assignment', promptText, [], [], progressCallback, 'text'); // Sempre text per questa fase
 }
 
 // ===== FASE 5: Validazione =====
-export async function phaseValidationOptimization(pageAssignmentResult, originalFilesDriveInfo, progressCallback) {
-  console.log("ContentAnalysis: Starting validation...");
+export async function phaseValidationOptimization(pageAssignmentResult, originalFilesDriveInfo, progressCallback, analysisMode = 'pdf') {
+  console.log(`ContentAnalysis: Starting validation (${analysisMode} mode)...`);
   progressCallback?.({ type: 'processing', message: 'Validazione finale...' });
 
   const assignments = pageAssignmentResult.pageAssignments;
@@ -192,14 +212,15 @@ export async function phaseValidationOptimization(pageAssignmentResult, original
       return sum + (topic.pages_info?.reduce((pageSum, pInfo) => {
         return pageSum + (pInfo.end_page - pInfo.start_page + 1);
       }, 0) || 0);
-    }, 0)
+    }, 0),
+    analysisMode: analysisMode
   };
   
   finalStats.averagePagesPerTopic = finalStats.totalTopics > 0 
     ? Math.round(finalStats.totalAssignedPages / finalStats.totalTopics) 
     : 0;
 
-  console.log("ContentAnalysis: Validation completed. Stats:", finalStats);
+  console.log(`ContentAnalysis: Validation completed (${analysisMode}). Stats:`, finalStats);
   
   return {
     validatedTopics,
@@ -304,25 +325,25 @@ function validateAndFixPageOverlaps(tableOfContents) {
   );
 }
 
-// ===== ORCHESTRATORE =====
-export async function analyzeContentStructureMultiPhase(examName, filesArray, originalFilesDriveInfo, userDescription = "", progressCallback) {
-  console.log('ContentAnalysis: Starting multi-phase analysis...');
+// ===== ORCHESTRATORE AGGIORNATO =====
+export async function analyzeContentStructureMultiPhase(examName, filesArray, originalFilesDriveInfo, userDescription = "", progressCallback, analysisMode = 'pdf') {
+  console.log(`ContentAnalysis: Starting multi-phase analysis (${analysisMode} mode)...`);
   
   try {
-    progressCallback?.({ type: 'processing', message: 'Fase 1/5: Analisi strutturale...' });
-    const structuralResult = await phaseStructuralAnalysis(examName, filesArray, originalFilesDriveInfo, userDescription, progressCallback);
+    progressCallback?.({ type: 'processing', message: `Fase 1/5: Analisi strutturale (${analysisMode})...` });
+    const structuralResult = await phaseStructuralAnalysis(examName, filesArray, originalFilesDriveInfo, userDescription, progressCallback, analysisMode);
     
-    progressCallback?.({ type: 'processing', message: 'Fase 2/5: Mappatura contenuti...' });
-    const contentMapResult = await phaseContentMapping(examName, structuralResult, filesArray, originalFilesDriveInfo, progressCallback);
+    progressCallback?.({ type: 'processing', message: `Fase 2/5: Mappatura contenuti (${analysisMode})...` });
+    const contentMapResult = await phaseContentMapping(examName, structuralResult, filesArray, originalFilesDriveInfo, progressCallback, analysisMode);
     
     progressCallback?.({ type: 'processing', message: 'Fase 3/5: Estrazione argomenti...' });
-    const topicsResult = await phaseTopicExtraction(examName, structuralResult, contentMapResult, userDescription, progressCallback);
+    const topicsResult = await phaseTopicExtraction(examName, structuralResult, contentMapResult, userDescription, progressCallback, analysisMode);
     
     progressCallback?.({ type: 'processing', message: 'Fase 4/5: Assegnazione pagine...' });
-    const pageAssignmentResult = await phasePageAssignment(examName, structuralResult, contentMapResult, topicsResult, originalFilesDriveInfo, progressCallback);
+    const pageAssignmentResult = await phasePageAssignment(examName, structuralResult, contentMapResult, topicsResult, originalFilesDriveInfo, progressCallback, analysisMode);
     
     progressCallback?.({ type: 'processing', message: 'Fase 5/5: Validazione finale...' });
-    const finalResult = await phaseValidationOptimization(pageAssignmentResult, originalFilesDriveInfo, progressCallback);
+    const finalResult = await phaseValidationOptimization(pageAssignmentResult, originalFilesDriveInfo, progressCallback, analysisMode);
     
     const result = {
       tableOfContents: finalResult.validatedTopics,
@@ -337,11 +358,11 @@ export async function analyzeContentStructureMultiPhase(examName, filesArray, or
       statistics: finalResult.statistics
     };
 
-    progressCallback?.({ type: 'processing', message: 'Analisi completata!' });
+    progressCallback?.({ type: 'processing', message: `Analisi completata (${analysisMode})!` });
     return result;
 
   } catch (error) {
-    console.error('ContentAnalysis: Error:', error);
-    throw new Error(`Errore analisi contenuti: ${error.message}`);
+    console.error(`ContentAnalysis: Error (${analysisMode} mode):`, error);
+    throw new Error(`Errore analisi contenuti (${analysisMode}): ${error.message}`);
   }
 }

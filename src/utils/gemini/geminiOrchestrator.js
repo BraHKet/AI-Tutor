@@ -1,22 +1,23 @@
-// src/utils/gemini/geminiOrchestrator.js - Con Analisi Locale Ottimizzata
+// src/utils/gemini/geminiOrchestrator.js - Con Analisi Locale Ottimizzata + Modalità Testo
 import { analyzeContentStructureMultiPhase } from './contentAnalysisPhases.js';
 import { distributeTopicsMultiPhase } from './distributionPhases.js';
 import { CONFIG, clearAllCaches, getCacheStats } from './geminiCore.js';
 
-// ===== NUOVA FUNZIONE ANALISI LOCALE =====
+// ===== NUOVA FUNZIONE ANALISI LOCALE CON SUPPORTO MODALITÀ =====
 
 /**
  * VERSIONE OTTIMIZZATA: Analisi completamente locale senza caricamento Drive
- * Molto più veloce per la fase di generazione del piano
+ * Supporta modalità PDF (base64) e TEXT (solo testo estratto)
  */
 export const generateCompleteStudyPlanLocal = async (
   examName, 
   totalDays, 
   files, // File objects diretti (no drive info)
   userDescription = "", 
-  progressCallback = null
+  progressCallback = null,
+  analysisMode = 'pdf' // NUOVO: 'pdf' o 'text'
 ) => {
-  console.log('GeminiOrchestrator: Starting LOCAL multi-phase AI analysis');
+  console.log(`GeminiOrchestrator: Starting LOCAL multi-phase AI analysis (${analysisMode.toUpperCase()} mode)`);
   
   try {
     // Simula le drive info per compatibilità con le fasi esistenti
@@ -30,15 +31,16 @@ export const generateCompleteStudyPlanLocal = async (
       type: file.type
     }));
 
-    // ANALISI CONTENUTI (5 fasi) - Locale
-    progressCallback?.({ type: 'processing', message: 'AI - Analisi contenuti (locale)...' });
+    // ANALISI CONTENUTI (5 fasi) - Locale con modalità selezionata
+    progressCallback?.({ type: 'processing', message: `AI - Analisi contenuti (${analysisMode === 'pdf' ? 'PDF completo' : 'solo testo'})...` });
     
     const aiIndexResult = await analyzeContentStructureMultiPhase(
       examName,
       files, // File objects diretti
       mockDriveInfo, // Info simulate per compatibilità
       userDescription,
-      progressCallback
+      progressCallback,
+      analysisMode // NUOVO PARAMETRO
     );
 
     const contentIndex = aiIndexResult.tableOfContents;
@@ -47,7 +49,7 @@ export const generateCompleteStudyPlanLocal = async (
       throw new Error("AI non ha generato argomenti dai PDF.");
     }
     
-    progressCallback?.({ type: 'processing', message: 'Analisi contenuti completata.' });
+    progressCallback?.({ type: 'processing', message: `Analisi contenuti completata (${analysisMode}).` });
 
     // DISTRIBUZIONE (4 fasi)
     progressCallback?.({ type: 'processing', message: 'AI - Distribuzione argomenti...' });
@@ -74,6 +76,7 @@ export const generateCompleteStudyPlanLocal = async (
       originalFilesInfo: mockDriveInfo, // Info simulate per compatibilità
       // Dati per la successiva fase di caricamento Drive
       localFiles: files, // File objects originali
+      analysisMode: analysisMode, // NUOVO: modalità utilizzata
       // Statistiche per debugging
       multiPhaseResults: {
         contentAnalysis: aiIndexResult.phaseResults,
@@ -85,14 +88,14 @@ export const generateCompleteStudyPlanLocal = async (
       }
     };
 
-    console.log('GeminiOrchestrator: LOCAL analysis completed successfully');
-    progressCallback?.({ type: 'processing', message: 'Analisi locale completata!' });
+    console.log(`GeminiOrchestrator: LOCAL analysis completed successfully (${analysisMode} mode)`);
+    progressCallback?.({ type: 'processing', message: `Analisi locale completata (${analysisMode})!` });
     
     return completePlan;
 
   } catch (error) {
-    console.error('GeminiOrchestrator: LOCAL analysis error:', error);
-    throw new Error(`Errore analisi locale: ${error.message}`);
+    console.error(`GeminiOrchestrator: LOCAL analysis error (${analysisMode} mode):`, error);
+    throw new Error(`Errore analisi locale (${analysisMode}): ${error.message}`);
   }
 };
 
@@ -126,132 +129,131 @@ export const generateCompleteStudyPlan = async (
 
     const contentIndex = aiIndexResult.tableOfContents;
     const pageMapping = aiIndexResult.pageMapping || {};
-
     if (!contentIndex || contentIndex.length === 0) {
-      throw new Error("AI non ha generato argomenti dai PDF.");
-    }
-    
-    progressCallback?.({ type: 'processing', message: 'Analisi contenuti completata.' });
+     throw new Error("AI non ha generato argomenti dai PDF.");
+   }
+   
+   progressCallback?.({ type: 'processing', message: 'Analisi contenuti completata.' });
 
-    // DISTRIBUZIONE (4 fasi)
-    progressCallback?.({ type: 'processing', message: 'AI - Distribuzione argomenti...' });
-    
-    const topicDistribution = await distributeTopicsMultiPhase(
-      examName, 
-      totalDays, 
-      contentIndex, 
-      userDescription,
-      progressCallback
-    );
+   // DISTRIBUZIONE (4 fasi)
+   progressCallback?.({ type: 'processing', message: 'AI - Distribuzione argomenti...' });
+   
+   const topicDistribution = await distributeTopicsMultiPhase(
+     examName, 
+     totalDays, 
+     contentIndex, 
+     userDescription,
+     progressCallback
+   );
 
-    if (!topicDistribution || !topicDistribution.dailyPlan || topicDistribution.dailyPlan.length === 0) {
-      throw new Error("AI non ha generato distribuzione giornaliera.");
-    }
+   if (!topicDistribution || !topicDistribution.dailyPlan || topicDistribution.dailyPlan.length === 0) {
+     throw new Error("AI non ha generato distribuzione giornaliera.");
+   }
 
-    progressCallback?.({ type: 'processing', message: 'Distribuzione completata.' });
+   progressCallback?.({ type: 'processing', message: 'Distribuzione completata.' });
 
-    // Piano completo (formato compatibile)
-    const completePlan = {
-      index: contentIndex,
-      distribution: topicDistribution.dailyPlan,
-      pageMapping: pageMapping,
-      originalFilesInfo: originalFilesDriveInfo,
-      // Statistiche per debugging
-      multiPhaseResults: {
-        contentAnalysis: aiIndexResult.phaseResults,
-        distribution: topicDistribution.phaseResults,
-        statistics: {
-          content: aiIndexResult.statistics,
-          distribution: topicDistribution.statistics
-        }
-      }
-    };
+   // Piano completo (formato compatibile)
+   const completePlan = {
+     index: contentIndex,
+     distribution: topicDistribution.dailyPlan,
+     pageMapping: pageMapping,
+     originalFilesInfo: originalFilesDriveInfo,
+     // Statistiche per debugging
+     multiPhaseResults: {
+       contentAnalysis: aiIndexResult.phaseResults,
+       distribution: topicDistribution.phaseResults,
+       statistics: {
+         content: aiIndexResult.statistics,
+         distribution: topicDistribution.statistics
+       }
+     }
+   };
 
-    console.log('GeminiOrchestrator: Analysis completed successfully');
-    return completePlan;
+   console.log('GeminiOrchestrator: Analysis completed successfully');
+   return completePlan;
 
-  } catch (error) {
-    console.error('GeminiOrchestrator: Error:', error);
-    throw new Error(`Errore AI: ${error.message}`);
-  }
+ } catch (error) {
+   console.error('GeminiOrchestrator: Error:', error);
+   throw new Error(`Errore AI: ${error.message}`);
+ }
 };
 
 // ===== FUNZIONI LEGACY (compatibilità) =====
 
 export const generateContentIndex = async (examName, filesArray, originalFilesDriveInfo, userDescription = "") => {
-  console.warn('GeminiOrchestrator: Using legacy generateContentIndex');
-  const result = await analyzeContentStructureMultiPhase(examName, filesArray, originalFilesDriveInfo, userDescription);
-  return {
-    tableOfContents: result.tableOfContents,
-    pageMapping: result.pageMapping
-  };
+ console.warn('GeminiOrchestrator: Using legacy generateContentIndex');
+ const result = await analyzeContentStructureMultiPhase(examName, filesArray, originalFilesDriveInfo, userDescription);
+ return {
+   tableOfContents: result.tableOfContents,
+   pageMapping: result.pageMapping
+ };
 };
 
 export const distributeTopicsToDays = async (examName, totalDays, topics, userDescription = "") => {
-  console.warn('GeminiOrchestrator: Using legacy distributeTopicsToDays');
-  const result = await distributeTopicsMultiPhase(examName, totalDays, topics, userDescription);
-  return {
-    dailyPlan: result.dailyPlan
-  };
+ console.warn('GeminiOrchestrator: Using legacy distributeTopicsToDays');
+ const result = await distributeTopicsMultiPhase(examName, totalDays, topics, userDescription);
+ return {
+   dailyPlan: result.dailyPlan
+ };
 };
 
 // ===== ACCESSO DIRETTO ALLE FASI =====
 
 export const analyzeContentMultiPhase = async (examName, filesArray, originalFilesDriveInfo, userDescription = "", progressCallback = null) => {
-  return await analyzeContentStructureMultiPhase(examName, filesArray, originalFilesDriveInfo, userDescription, progressCallback);
+ return await analyzeContentStructureMultiPhase(examName, filesArray, originalFilesDriveInfo, userDescription, progressCallback);
 };
 
 export const distributeTopicsMultiPhaseAdvanced = async (examName, totalDays, topics, userDescription = "", progressCallback = null) => {
-  return await distributeTopicsMultiPhase(examName, totalDays, topics, userDescription, progressCallback);
+ return await distributeTopicsMultiPhase(examName, totalDays, topics, userDescription, progressCallback);
 };
 
 // ===== UTILITÀ SEMPLIFICATE =====
 
 export const GeminiUtils = {
-  // Cache management
-  clearAllCaches: () => {
-    const clearedCount = clearAllCaches();
-    console.log(`GeminiOrchestrator: Cleared ${clearedCount} cache entries`);
-    return clearedCount;
-  },
-  
-  getCacheStats: () => {
-    const stats = getCacheStats();
-    return {
-      ...stats,
-      maxEntries: CONFIG.CACHE.maxEntries,
-      ttlHours: CONFIG.CACHE.ttlHours
-    };
-  },
-  
-  // Configurazione
-  getConfig: () => ({ ...CONFIG }),
-  
-  updateConfig: (newConfig) => {
-    Object.assign(CONFIG, newConfig);
-    console.log('GeminiOrchestrator: Configuration updated');
-  }
+ // Cache management
+ clearAllCaches: () => {
+   const clearedCount = clearAllCaches();
+   console.log(`GeminiOrchestrator: Cleared ${clearedCount} cache entries`);
+   return clearedCount;
+ },
+ 
+ getCacheStats: () => {
+   const stats = getCacheStats();
+   return {
+     ...stats,
+     maxEntries: CONFIG.CACHE.maxEntries,
+     ttlHours: CONFIG.CACHE.ttlHours
+   };
+ },
+ 
+ // Configurazione
+ getConfig: () => ({ ...CONFIG }),
+ 
+ updateConfig: (newConfig) => {
+   Object.assign(CONFIG, newConfig);
+   console.log('GeminiOrchestrator: Configuration updated');
+ }
 };
 
 // ===== LAYER COMPATIBILITÀ =====
 
 export const LegacyCompatibility = {
-  analyzeContentStructure: async (examName, filesArray, originalFilesDriveInfo, userDescription = "", progressCallback) => {
-    console.warn('GeminiOrchestrator: Legacy analyzeContentStructure -> multi-phase');
-    const result = await analyzeContentStructureMultiPhase(examName, filesArray, originalFilesDriveInfo, userDescription, progressCallback);
-    return {
-      tableOfContents: result.tableOfContents,
-      pageMapping: result.pageMapping
-    };
-  },
-  
-  distributeTopicsOptimized: async (examName, totalDays, topics, userDescription = "", progressCallback) => {
-    console.warn('GeminiOrchestrator: Legacy distributeTopicsOptimized -> multi-phase');
-    const result = await distributeTopicsMultiPhase(examName, totalDays, topics, userDescription, progressCallback);
-    return {
-      dailyPlan: result.dailyPlan
-    };
-  }
+ analyzeContentStructure: async (examName, filesArray, originalFilesDriveInfo, userDescription = "", progressCallback) => {
+   console.warn('GeminiOrchestrator: Legacy analyzeContentStructure -> multi-phase');
+   const result = await analyzeContentStructureMultiPhase(examName, filesArray, originalFilesDriveInfo, userDescription, progressCallback);
+   return {
+     tableOfContents: result.tableOfContents,
+     pageMapping: result.pageMapping
+   };
+ },
+ 
+ distributeTopicsOptimized: async (examName, totalDays, topics, userDescription = "", progressCallback) => {
+   console.warn('GeminiOrchestrator: Legacy distributeTopicsOptimized -> multi-phase');
+   const result = await distributeTopicsMultiPhase(examName, totalDays, topics, userDescription, progressCallback);
+   return {
+     dailyPlan: result.dailyPlan
+   };
+ }
 };
 
 // Esporta funzioni legacy
@@ -261,22 +263,22 @@ export const distributeTopicsOptimized = LegacyCompatibility.distributeTopicsOpt
 // ===== EXPORT DEFAULT =====
 
 export default {
-  // Funzioni principali
-  generateCompleteStudyPlan,
-  generateCompleteStudyPlanLocal, // NUOVA FUNZIONE OTTIMIZZATA
-  analyzeContentMultiPhase,
-  distributeTopicsMultiPhase,
-  
-  // Legacy
-  generateContentIndex,
-  distributeTopicsToDays,
-  analyzeContentStructure,
-  distributeTopicsOptimized,
-  
-  // Utilità
-  GeminiUtils,
-  CONFIG,
-  
-  // Compatibilità
-  LegacyCompatibility
+ // Funzioni principali
+ generateCompleteStudyPlan,
+ generateCompleteStudyPlanLocal, // NUOVA FUNZIONE OTTIMIZZATA
+ analyzeContentMultiPhase,
+ distributeTopicsMultiPhase,
+ 
+ // Legacy
+ generateContentIndex,
+ distributeTopicsToDays,
+ analyzeContentStructure,
+ distributeTopicsOptimized,
+ 
+ // Utilità
+ GeminiUtils,
+ CONFIG,
+ 
+ // Compatibilità
+ LegacyCompatibility
 };
