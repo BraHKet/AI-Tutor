@@ -47,8 +47,6 @@ const MODULE_CONFIG = {
 async function phaseMegaPageByPageAnalysis(input) {
   const { examName, files, userDescription, analysisMode, progressCallback } = input;
   
-  logPhase('mega-page-analysis', `SINGLE-CALL: Analisi completa (${analysisMode} mode) - ${files.length} file`);
-  
   const filesList = files
     .map((file, index) => `${index + 1}. ${file.name} (${Math.round(file.size / 1024 / 1024)} MB)`)
     .join('\n');
@@ -177,13 +175,14 @@ IMPORTANTE:
   const aiInput = createAIServiceInput(prompt, files, analysisMode, 'mega-page-analysis', progressCallback);
   const result = await executeAIRequest(aiInput);
   
+  // ===== LOG JSON OUTPUT GEMINI - FASE 1 =====
+  console.log('\n🤖 === GEMINI OUTPUT - MEGA PAGE ANALYSIS ===');
+  console.log('📊 JSON Response:', JSON.stringify(result.data, null, 2));
+  console.log('=== END GEMINI OUTPUT ===\n');
+  
   validateAIServiceOutput(result, ['globalStructure', 'pageByPageAnalysis', 'contentSummary']);
   
-  const analysisData = result.data;
-  const pagesAnalyzed = analysisData.pageByPageAnalysis?.length || 0;
-  
-  logPhase('mega-page-analysis', `SINGLE-CALL completata: ${pagesAnalyzed} pagine analizzate`);
-  return analysisData;
+  return result.data;
 }
 
 /**
@@ -193,8 +192,6 @@ IMPORTANTE:
  */
 async function phaseIntelligentTopicSynthesis(input) {
   const { examName, megaAnalysisResult, userDescription, progressCallback } = input;
-  
-  logPhase('intelligent-topic-synthesis', `Sintesi da ${megaAnalysisResult.pageByPageAnalysis?.length || 0} pagine analizzate`);
   
   const pageAnalysisData = megaAnalysisResult.pageByPageAnalysis || [];
   const globalStructure = megaAnalysisResult.globalStructure || {};
@@ -309,10 +306,12 @@ IMPORTANTE:
   const aiInput = createAIServiceInput(prompt, [], 'text', 'intelligent-topic-synthesis', progressCallback);
   const result = await executeAIRequest(aiInput);
   
-  validateAIServiceOutput(result, ['synthesizedTopics']);
+  // ===== LOG JSON OUTPUT GEMINI - FASE 2 =====
+  console.log('\n🤖 === GEMINI OUTPUT - TOPIC SYNTHESIS ===');
+  console.log('📊 JSON Response:', JSON.stringify(result.data, null, 2));
+  console.log('=== END GEMINI OUTPUT ===\n');
   
-  const synthesizedTopics = result.data.synthesizedTopics || [];
-  logPhase('intelligent-topic-synthesis', `Sintesi completata: ${synthesizedTopics.length} argomenti finali`);
+  validateAIServiceOutput(result, ['synthesizedTopics']);
   
   return result.data;
 }
@@ -325,8 +324,6 @@ IMPORTANTE:
 async function phaseFinalValidationAndOptimization(input) {
   const { synthesisResult, files, megaAnalysisResult, examName, progressCallback } = input;
   
-  logPhase('final-validation', `Validazione finale ${synthesisResult.synthesizedTopics?.length || 0} argomenti`);
-  
   const topics = synthesisResult.synthesizedTopics || [];
   const originalPageAnalysis = megaAnalysisResult.pageByPageAnalysis || [];
   
@@ -338,8 +335,6 @@ async function phaseFinalValidationAndOptimization(input) {
   
   // Statistiche finali complete
   const finalStats = calculateComprehensiveStatisticsWithAnalysis(optimizedTopics, originalPageAnalysis);
-  
-  logPhase('final-validation', `Validazione completata: ${optimizedTopics.length} argomenti finali ottimizzati`);
   
   return {
     validatedTopics: optimizedTopics,
@@ -365,8 +360,6 @@ async function phaseFinalValidationAndOptimization(input) {
  * Validazione approfondita con analisi pagina-per-pagina
  */
 async function performDeepValidationWithPageAnalysis(topics, files, pageAnalysis) {
-  logPhase('deep-validation', `Validazione con analisi di ${pageAnalysis.length} pagine...`);
-  
   const validatedTopics = [];
   const pageAssignments = new Map(); // Traccia assegnazioni pagine per file
   
@@ -380,7 +373,6 @@ async function performDeepValidationWithPageAnalysis(topics, files, pageAnalysis
   for (const topic of topics) {
     // Validazione base
     if (!topic.title || !topic.pages_info || topic.pages_info.length === 0) {
-      logPhase('deep-validation', `Scartato "${topic.title}" - dati insufficienti`);
       continue;
     }
     
@@ -393,7 +385,6 @@ async function performDeepValidationWithPageAnalysis(topics, files, pageAnalysis
       
       // Verifica che il file esista
       if (fileIndex < 0 || fileIndex >= files.length) {
-        logPhase('deep-validation', `Pagine ignorate - file index ${fileIndex} non valido`);
         continue;
       }
       
@@ -414,7 +405,6 @@ async function performDeepValidationWithPageAnalysis(topics, files, pageAnalysis
       }
       
       if (!analysisConfirmed) {
-        logPhase('deep-validation', `Range ${startPage}-${endPage} non trovato nell'analisi - tentativo correzione`);
         // Tenta di trovare pagine vicine nell'analisi
         validatedPageRange = findNearestAnalyzedPages(fileIndex, startPage, endPage, pageAnalysisMap);
       }
@@ -447,8 +437,6 @@ async function performDeepValidationWithPageAnalysis(topics, files, pageAnalysis
         
         validPagesInfo.push(enrichedPagesInfo);
         totalValidPages += (validatedPageRange.end - validatedPageRange.start + 1);
-      } else {
-        logPhase('deep-validation', `Sovrapposizione detectata per "${topic.title}" pagine ${validatedPageRange.start}-${validatedPageRange.end}`);
       }
     }
     
@@ -469,14 +457,9 @@ async function performDeepValidationWithPageAnalysis(topics, files, pageAnalysis
           analysisIntegration: true
         }
       });
-      
-      logPhase('deep-validation', `Validato "${topic.title}" - ${totalValidPages} pagine (con analisi)`);
-    } else {
-      logPhase('deep-validation', `Scartato "${topic.title}" - pagine insufficienti`);
     }
   }
   
-  logPhase('deep-validation', `Validazione completata: ${validatedTopics.length}/${topics.length} argomenti validi`);
   return validatedTopics;
 }
 
@@ -651,8 +634,6 @@ function enrichTopicWithAnalysis(topic, validPagesInfo, pageAnalysisMap) {
  * Ottimizzazione intelligente con contesto dell'analisi
  */
 async function performIntelligentOptimizationWithContext(topics, files, pageAnalysis) {
-  logPhase('intelligent-optimization', `Ottimizzazione con contesto di ${pageAnalysis.length} pagine analizzate...`);
-  
   let optimizedTopics = [...topics];
   
   // 1. Unisci argomenti troppo piccoli basandosi su analisi di contenuto
@@ -667,7 +648,6 @@ async function performIntelligentOptimizationWithContext(topics, files, pageAnal
   // 4. Ottimizza priorità e difficoltà basandosi sull'analisi reale
   optimizedTopics = optimizePriorityAndDifficultyWithAnalysis(optimizedTopics, pageAnalysis);
   
-  logPhase('intelligent-optimization', `Ottimizzazione completata: ${optimizedTopics.length} argomenti finali`);
   return optimizedTopics;
 }
 
@@ -703,7 +683,6 @@ function mergeSmallTopicsWithAnalysis(topics, pageAnalysis) {
         
         mergedTopics.push(mergedTopic);
         pendingSmallTopic = null;
-        logPhase('optimization', `Uniti "${pendingSmallTopic?.title}" e "${topic.title}" (basato su analisi)`);
       } else {
         // Mantieni per possibile unione futura
         if (pendingSmallTopic) {
@@ -803,7 +782,6 @@ function splitLargeTopicsWithAnalysis(topics, pageAnalysis) {
         // Suddividi secondo le divisioni naturali trovate
         const parts = createTopicPartsFromBreaks(topic, naturalBreaks);
         splitTopics.push(...parts);
-        logPhase('optimization', `Suddiviso "${topic.title}" in ${parts.length} parti (basato su analisi)`);
       } else {
         // Suddivisione semplice a metà se non ci sono divisioni naturali
         const midPoint = Math.floor(topic.pages_info.length / 2);
@@ -825,7 +803,6 @@ function splitLargeTopicsWithAnalysis(topics, pageAnalysis) {
         };
         
         splitTopics.push(firstHalf, secondHalf);
-        logPhase('optimization', `Suddiviso "${topic.title}" in 2 parti (divisione semplice)`);
       }
     } else {
       splitTopics.push(topic);
@@ -1317,9 +1294,6 @@ export async function analyzeContent(input) {
   // Validazione input
   validatePhaseInput('content-analysis', examName, files);
   
-  logPhase('content-analysis', `ANALISI CONTENUTI SINGLE-CALL (${analysisMode.toUpperCase()})`);
-  logPhase('content-analysis', `📚 ${examName} | 📁 ${files?.length || 0} file | 📝 ${userDescription || 'Nessuna nota'}`);
-  
   try {
     // MEGA-FASE 1: Analisi Completa Single-Call (sostituisce le prime 4 fasi)
     progressCallback?.({ type: 'processing', message: `Mega-analisi pagina-per-pagina (${analysisMode})...` });
@@ -1363,384 +1337,23 @@ export async function analyzeContent(input) {
       pagesAnalyzed: megaAnalysisResult.pageByPageAnalysis?.length || 0
     });
 
-    logPhase('content-analysis', `ANALISI SINGLE-CALL COMPLETATA: ${output.data.topics.length} argomenti, ${output.data.statistics.totalPages} pagine`);
-    logPhase('content-analysis', `QUALITÀ: ${Math.round(finalResult.validationReport.qualityScore * 100)}% | PAGINE ANALIZZATE: ${megaAnalysisResult.pageByPageAnalysis?.length || 0}`);
-    logPhase('content-analysis', `ARCHITETTURA: Single-call (1 mega-chiamata + 1 sintesi + 1 validazione)`);
+    // ===== LOG FINAL RESULT =====
+    console.log('\n🎯 === FINAL CONTENT ANALYSIS RESULT ===');
+    console.log('📈 Final Topics:', JSON.stringify(output.data.topics, null, 2));
+    console.log('📊 Final Statistics:', JSON.stringify(output.data.statistics, null, 2));
+    console.log('=== END FINAL RESULT ===\n');
+    
     progressCallback?.({ type: 'processing', message: `Analisi single-call completata (${analysisMode})!` });
     
     return output;
 
   } catch (error) {
-    logPhase('content-analysis', `ERRORE ANALISI SINGLE-CALL (${analysisMode}): ${error.message}`);
     throw createPhaseError('content-analysis', `Errore analisi contenuti single-call (${analysisMode}): ${error.message}`, error);
   }
-}
-
-// ===== FUNZIONI DI FALLBACK E RECOVERY =====
-
-/**
- * Fallback intelligente se la mega-analisi fallisce parzialmente
- */
-async function handlePartialMegaAnalysisFailure(partialResult, input) {
-  logPhase('fallback-recovery', 'Gestione fallimento parziale mega-analisi...');
-  
-  const { examName, files, userDescription, analysisMode, progressCallback } = input;
-  
-  // Se abbiamo almeno una struttura globale, proviamo a recuperare
-  if (partialResult.globalStructure && partialResult.globalStructure.estimatedTotalPages > 0) {
-    logPhase('fallback-recovery', 'Struttura globale disponibile, tentativo recupero...');
-    
-    // Genera analisi pagina-per-pagina semplificata basata sulla struttura
-    const fallbackPageAnalysis = generateFallbackPageAnalysis(
-      partialResult.globalStructure, 
-      files, 
-      analysisMode
-    );
-    
-    return {
-      ...partialResult,
-      pageByPageAnalysis: fallbackPageAnalysis,
-      contentSummary: generateFallbackContentSummary(fallbackPageAnalysis),
-      analysisMetadata: {
-        analysisMode: analysisMode,
-        completeness: 0.7, // Parziale
-        confidence: 0.6,
-        processingNotes: 'Analisi recuperata tramite fallback intelligente'
-      }
-    };
-  }
-  
-  // Se non abbiamo nemmeno la struttura, generiamo analisi minimale
-  logPhase('fallback-recovery', 'Generazione analisi minimale...');
-  return generateMinimalAnalysis(files, examName, analysisMode);
-}
-
-/**
- * Genera analisi pagina-per-pagina di fallback
- */
-function generateFallbackPageAnalysis(globalStructure, files, analysisMode) {
-  const fallbackPages = [];
-  const totalPages = globalStructure.estimatedTotalPages || 100;
-  
-  files.forEach((file, fileIndex) => {
-    const pagesPerFile = Math.ceil(totalPages / files.length);
-    
-    for (let pageNum = 1; pageNum <= pagesPerFile; pageNum++) {
-      fallbackPages.push({
-        fileIndex: fileIndex,
-        fileName: file.name,
-        pageNumber: pageNum,
-        pageTitle: `Pagina ${pageNum} - ${file.name}`,
-        mainTopics: [{
-          topicName: `Argomento da ${file.name} p.${pageNum}`,
-          description: `Contenuto della pagina ${pageNum} del file ${file.name}`,
-          importance: 'medium',
-          keyPoints: [`Concetto pagina ${pageNum}`, `Punto chiave ${pageNum}`]
-        }],
-        contentType: 'mixed',
-        difficulty: 'intermediate',
-        hasFormulas: false,
-        hasExercises: false,
-        hasImages: false,
-        hasTables: false,
-        estimatedStudyTime: 20,
-        conceptDensity: 'medium',
-        prerequisites: [],
-        keyTerms: [`termine_${pageNum}`],
-        connections: [],
-        studyNotes: `Studio normale della pagina ${pageNum}`
-      });
-    }
-  });
-  
-  return fallbackPages;
-}
-
-/**
- * Genera content summary di fallback
- */
-function generateFallbackContentSummary(pageAnalysis) {
-  return {
-    totalPagesAnalyzed: pageAnalysis.length,
-    contentDistribution: {
-      theory: Math.floor(pageAnalysis.length * 0.6),
-      examples: Math.floor(pageAnalysis.length * 0.2),
-      exercises: Math.floor(pageAnalysis.length * 0.1),
-      mixed: Math.floor(pageAnalysis.length * 0.1)
-    },
-    difficultyBreakdown: {
-      beginner: Math.floor(pageAnalysis.length * 0.3),
-      intermediate: Math.floor(pageAnalysis.length * 0.5),
-      advanced: Math.floor(pageAnalysis.length * 0.2)
-    },
-    specialElements: {
-      formulaPages: Math.floor(pageAnalysis.length * 0.1),
-      exercisePages: Math.floor(pageAnalysis.length * 0.15),
-      imagePages: Math.floor(pageAnalysis.length * 0.2),
-      tablePages: Math.floor(pageAnalysis.length * 0.05)
-    },
-    estimatedTotalStudyTime: pageAnalysis.length * 20 // 20 minuti per pagina
-  };
-}
-
-/**
- * Genera analisi minimale in caso di fallimento completo
- */
-function generateMinimalAnalysis(files, examName, analysisMode) {
-  logPhase('minimal-analysis', 'Generazione analisi minimale per recovery...');
-  
-  const estimatedPagesPerFile = 50; // Stima di default
-  const totalEstimatedPages = files.length * estimatedPagesPerFile;
-  
-  return {
-    globalStructure: {
-      totalFiles: files.length,
-      materialType: 'mixed',
-      overallOrganization: `Materiale per l'esame ${examName} - ${files.length} file`,
-      estimatedTotalPages: totalEstimatedPages,
-      mainSections: files.map((file, index) => ({
-        sectionTitle: file.name,
-        fileIndex: index,
-        startPage: 1,
-        endPage: estimatedPagesPerFile,
-        sectionType: 'chapter',
-        importance: 'medium',
-        description: `Contenuto del file ${file.name}`
-      })),
-      structuralElements: []
-    },
-    pageByPageAnalysis: generateFallbackPageAnalysis(
-      { estimatedTotalPages: totalEstimatedPages }, 
-      files, 
-      analysisMode
-    ),
-    contentSummary: {
-      totalPagesAnalyzed: totalEstimatedPages,
-      contentDistribution: { theory: 30, examples: 10, exercises: 5, mixed: 5 },
-      difficultyBreakdown: { beginner: 15, intermediate: 25, advanced: 10 },
-      specialElements: { formulaPages: 5, exercisePages: 7, imagePages: 10, tablePages: 2 },
-      estimatedTotalStudyTime: totalEstimatedPages * 20
-    },
-    analysisMetadata: {
-      analysisMode: analysisMode,
-      completeness: 0.4,
-      confidence: 0.3,
-      processingNotes: 'Analisi minimale generata per recovery da fallimento completo'
-    }
-  };
-}
-
-// ===== VALIDATION E QUALITY ASSURANCE =====
-
-/**
- * Valida il risultato della mega-analisi
- */
-function validateMegaAnalysisResult(result) {
-  const errors = [];
-  
-  // Verifica struttura globale
-  if (!result.globalStructure) {
-    errors.push('globalStructure mancante');
-  } else {
-    if (!result.globalStructure.totalFiles || result.globalStructure.totalFiles <= 0) {
-      errors.push('totalFiles non valido in globalStructure');
-    }
-    if (!result.globalStructure.estimatedTotalPages || result.globalStructure.estimatedTotalPages <= 0) {
-      errors.push('estimatedTotalPages non valido in globalStructure');
-    }
-  }
-  
-  // Verifica analisi pagina-per-pagina
-  if (!result.pageByPageAnalysis || !Array.isArray(result.pageByPageAnalysis)) {
-    errors.push('pageByPageAnalysis mancante o non è array');
-  } else if (result.pageByPageAnalysis.length === 0) {
-    errors.push('pageByPageAnalysis vuoto');
-  } else {
-    // Verifica qualità delle entries
-    const validPages = result.pageByPageAnalysis.filter(page => 
-      page.fileIndex !== undefined && 
-      page.pageNumber !== undefined && 
-      page.mainTopics && 
-      Array.isArray(page.mainTopics)
-    );
-    
-    if (validPages.length < result.pageByPageAnalysis.length * 0.8) {
-      errors.push('Troppi record pageByPageAnalysis incompleti');
-    }
-  }
-  
-  // Verifica content summary
-  if (!result.contentSummary) {
-    errors.push('contentSummary mancante');
-  }
-  
-  if (errors.length > 0) {
-    throw new Error(`Validazione mega-analisi fallita: ${errors.join(', ')}`);
-  }
-  
-  return true;
-}
-
-/**
- * Migliora la qualità del risultato della sintesi
- */
-function enhanceSynthesisQuality(synthesisResult, megaAnalysisResult) {
-  logPhase('quality-enhancement', 'Miglioramento qualità sintesi...');
-  
-  const enhancedTopics = synthesisResult.synthesizedTopics.map(topic => {
-    // Arricchisci con statistiche dall'analisi completa
-    const topicStats = calculateTopicStatisticsFromAnalysis(topic, megaAnalysisResult);
-    
-    return {
-      ...topic,
-      enhancedMetrics: topicStats,
-      qualityScore: calculateEnhancedQualityScore(topic, topicStats),
-      studyRecommendations: generateStudyRecommendations(topic, topicStats)
-    };
-  });
-  
-  return {
-    ...synthesisResult,
-    synthesizedTopics: enhancedTopics,
-    qualityEnhancement: {
-      applied: true,
-      enhancedTopics: enhancedTopics.length,
-      averageQualityScore: enhancedTopics.reduce((sum, t) => sum + t.qualityScore, 0) / enhancedTopics.length
-    }
-  };
-}
-
-/**
- * Calcola statistiche del topic dall'analisi completa
- */
-function calculateTopicStatisticsFromAnalysis(topic, megaAnalysisResult) {
-  const pageAnalysisMap = new Map();
-  megaAnalysisResult.pageByPageAnalysis.forEach(page => {
-    const key = `${page.fileIndex}-${page.pageNumber}`;
-    pageAnalysisMap.set(key, page);
-  });
-  
-  let totalStudyTime = 0;
-  let conceptDensityScores = [];
-  let importanceScores = [];
-  let difficultyScores = [];
-  
-  topic.pages_info?.forEach(pInfo => {
-    for (let pageNum = pInfo.start_page; pageNum <= pInfo.end_page; pageNum++) {
-      const analysisKey = `${pInfo.pdf_index}-${pageNum}`;
-      const pageAnalysis = pageAnalysisMap.get(analysisKey);
-      
-      if (pageAnalysis) {
-        if (pageAnalysis.estimatedStudyTime) totalStudyTime += pageAnalysis.estimatedStudyTime;
-        if (pageAnalysis.conceptDensity) conceptDensityScores.push(pageAnalysis.conceptDensity);
-        if (pageAnalysis.importance) importanceScores.push(pageAnalysis.importance);
-        if (pageAnalysis.difficulty) difficultyScores.push(pageAnalysis.difficulty);
-      }
-    }
-  });
-  
-  return {
-    totalStudyTimeFromAnalysis: totalStudyTime,
-    averageConceptDensity: calculateAverageConceptDensity(conceptDensityScores),
-    averageImportance: calculateAverageImportance(importanceScores),
-    difficultyDistribution: calculateDifficultyDistribution(difficultyScores),
-    analysisBasedEstimation: true
-  };
-}
-
-function calculateAverageConceptDensity(densityScores) {
-  if (densityScores.length === 0) return 'medium';
-  
-  const densityValues = { low: 1, medium: 2, high: 3 };
-  const avgScore = densityScores.reduce((sum, density) => sum + (densityValues[density] || 2), 0) / densityScores.length;
-  
-  if (avgScore <= 1.3) return 'low';
-  if (avgScore >= 2.7) return 'high';
-  return 'medium';
-}
-
-function calculateAverageImportance(importanceScores) {
-  if (importanceScores.length === 0) return 'medium';
-  
-  const importanceValues = { low: 1, medium: 2, high: 3 };
-  const avgScore = importanceScores.reduce((sum, importance) => sum + (importanceValues[importance] || 2), 0) / importanceScores.length;
-  
-  if (avgScore <= 1.3) return 'low';
-  if (avgScore >= 2.7) return 'high';
-  return 'medium';
-}
-
-function calculateDifficultyDistribution(difficultyScores) {
-  const distribution = { beginner: 0, intermediate: 0, advanced: 0 };
-  
-  difficultyScores.forEach(difficulty => {
-    if (distribution.hasOwnProperty(difficulty)) {
-      distribution[difficulty]++;
-    }
-  });
-  
-  return distribution;
-}
-
-/**
- * Calcola quality score migliorato
- */
-function calculateEnhancedQualityScore(topic, topicStats) {
-  let score = calculateTopicQualityScore(topic, topic.totalPages);
-  
-  // Bonus basati su statistiche dall'analisi
-  if (topicStats.averageImportance === 'high') score += 0.1;
-  if (topicStats.averageConceptDensity === 'high') score += 0.05;
-  if (topicStats.analysisBasedEstimation) score += 0.05;
-  
-  return Math.min(1.0, score);
-}
-
-/**
- * Genera raccomandazioni di studio
- */
-function generateStudyRecommendations(topic, topicStats) {
-  const recommendations = [];
-  
-  if (topicStats.averageConceptDensity === 'high') {
-    recommendations.push('Alta densità concettuale: studia in sessioni brevi con pause frequenti');
-  }
-  
-  if (topicStats.averageImportance === 'high') {
-    recommendations.push('Argomento ad alta importanza: dedica tempo extra e ripassa più volte');
-  }
-  
-  if (topicStats.totalStudyTimeFromAnalysis > 120) { // > 2 ore
-    recommendations.push('Argomento lungo: suddividi in sessioni multiple');
-  }
-  
-  const difficultyDistrib = topicStats.difficultyDistribution;
-  if (difficultyDistrib.advanced > difficultyDistrib.beginner + difficultyDistrib.intermediate) {
-    recommendations.push('Prevalentemente avanzato: assicurati di avere solide basi prima di affrontarlo');
-  }
-  
-  if (recommendations.length === 0) {
-    recommendations.push('Approccio standard: studio costante con revisioni regolari');
-  }
-  
-  return recommendations;
 }
 
 // ===== EXPORT DEFAULT =====
 export default {
   analyzeContent,
-  MODULE_CONFIG,
-  
-  // Funzioni di supporto esposte per testing/debugging
-  phaseMegaPageByPageAnalysis,
-  phaseIntelligentTopicSynthesis,
-  phaseFinalValidationAndOptimization,
-  
-  // Funzioni di fallback
-  handlePartialMegaAnalysisFailure,
-  generateMinimalAnalysis,
-  
-  // Validation e quality assurance
-  validateMegaAnalysisResult,
-  enhanceSynthesisQuality
+  MODULE_CONFIG
 };
