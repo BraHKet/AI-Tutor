@@ -1,6 +1,6 @@
 // src/utils/gemini/geminiMainOrchestrator.js - ORCHESTRATORE PRINCIPALE COMPLETAMENTE MODULARE
 
-import { analyzeContent } from './modules/contentAnalysisModule.js';
+import { analyzeContent } from './modules/contentAnalysis/contentAnalysisOrchestrator.js';
 import { distributeTopics } from './modules/distributionModule.js';
 import { 
   createContentPhaseInput, 
