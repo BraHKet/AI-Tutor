@@ -53,7 +53,6 @@ export function cleanupCache(cache, maxEntries = CONFIG.CACHE.maxEntries) {
     const entries = Array.from(cache.entries());
     const entriesToRemove = entries.slice(0, Math.floor(maxEntries / 2));
     entriesToRemove.forEach(([key]) => cache.delete(key));
-    console.log(`GeminiCore: Cache cleanup - removed ${entriesToRemove.length} entries`);
   }
 }
 
@@ -63,10 +62,7 @@ export function cleanupCache(cache, maxEntries = CONFIG.CACHE.maxEntries) {
  * Suddivide il testo in chunk intelligenti senza tagliare parole
  */
 function splitTextIntelligently(text, maxChars, overlapChars = 1000) {
-  console.log(`GeminiCore: Splitting text intelligently (${text.length} chars -> max ${maxChars} per chunk)`);
-  
   if (text.length <= maxChars) {
-    console.log('GeminiCore: Text fits in single chunk');
     return [text];
   }
 
@@ -93,7 +89,6 @@ function splitTextIntelligently(text, maxChars, overlapChars = 1000) {
     const chunk = text.substring(startIndex, endIndex).trim();
     if (chunk.length > 0) {
       chunks.push(chunk);
-      console.log(`GeminiCore: Created chunk ${chunks.length}: ${chunk.length} chars`);
     }
 
     // Calcola il prossimo punto di partenza con overlap
@@ -105,7 +100,6 @@ function splitTextIntelligently(text, maxChars, overlapChars = 1000) {
     }
   }
 
-  console.log(`GeminiCore: Text split into ${chunks.length} chunks`);
   return chunks;
 }
 
@@ -117,16 +111,14 @@ export async function extractTextFromFilesForAI(files, progressCallback, analysi
   
   if (TEXT_CACHE.has(fileHash)) {
     progressCallback?.({ type: 'processing', message: 'Riutilizzo testo già estratto...' });
-    console.log('GeminiCore: Using cached text extraction');
     return TEXT_CACHE.get(fileHash);
   }
 
-  console.log(`GeminiCore: Starting text extraction for ${files.length} files (${analysisMode} mode)`);
+  console.log(`📄 Estraendo testo da ${files.length} file (modalità ${analysisMode})`);
   progressCallback?.({ type: 'processing', message: 'Estrazione testo dai PDF...' });
 
   try {
     const { fullText, pagedTextData } = await extractTextFromFiles(files, (message) => {
-      console.log(`GeminiCore: PDF extraction - ${message}`);
       progressCallback?.({ type: 'processing', message });
     });
 
@@ -138,8 +130,6 @@ export async function extractTextFromFilesForAI(files, progressCallback, analysi
     const wordCount = cleanText.split(/\s+/).length;
     const charCount = cleanText.length;
 
-    console.log(`GeminiCore: Text extracted - ${wordCount} words, ${charCount} characters, ${pagedTextData.length} pages`);
-
     // Scegli il limite appropriato basato sulla modalità
     const maxChars = analysisMode === 'pdf' ? CONFIG.TEXT_LIMITS.maxCharsForPdf : CONFIG.TEXT_LIMITS.maxCharsForText;
     
@@ -148,7 +138,7 @@ export async function extractTextFromFilesForAI(files, progressCallback, analysi
     let isTruncated = false;
 
     if (charCount > maxChars) {
-      console.log(`GeminiCore: Text too long (${charCount} > ${maxChars}), splitting intelligently`);
+      console.log(`📄 Testo troppo lungo (${charCount} > ${maxChars}), suddivido in chunk`);
       
       // Suddividi in chunk intelligenti invece di troncare
       chunks = splitTextIntelligently(cleanText, CONFIG.TEXT_LIMITS.chunkSize, CONFIG.TEXT_LIMITS.overlapSize);
@@ -162,7 +152,6 @@ export async function extractTextFromFilesForAI(files, progressCallback, analysi
       if (selectedChunks.length < chunks.length) {
         isTruncated = true;
         processedText += `\n\n[NOTA: Testo suddiviso in ${chunks.length} sezioni, analizzate le prime ${selectedChunks.length} sezioni più rappresentative]`;
-        console.log(`GeminiCore: Using ${selectedChunks.length}/${chunks.length} chunks for analysis`);
       }
     }
 
@@ -187,12 +176,12 @@ export async function extractTextFromFilesForAI(files, progressCallback, analysi
       : `Testo estratto: ${wordCount} parole, ${pagedTextData.length} pagine`;
     
     progressCallback?.({ type: 'processing', message });
-    console.log(`GeminiCore: Text extraction completed - ${message}`);
+    console.log(`✅ ${message}`);
     
     return result;
 
   } catch (error) {
-    console.error('GeminiCore: Error extracting text from files:', error);
+    console.error('❌ Errore estrazione testo:', error);
     throw new Error(`Errore estrazione testo: ${error.message}`);
   }
 }
@@ -204,11 +193,10 @@ export async function fileToGenerativePart(file) {
   const fileKey = `${file.name}-${file.size}-${file.lastModified || 'unknown'}`;
   
   if (PDF_CACHE.has(fileKey)) {
-    console.log(`GeminiCore: Using cached PDF conversion for ${file.name}`);
     return PDF_CACHE.get(fileKey);
   }
 
-  console.log(`GeminiCore: Converting PDF to base64 for ${file.name}...`);
+  console.log(`📄 Convertendo ${file.name} in base64...`);
   
   // Validazione file
   if (!file || !(file instanceof File)) {
@@ -263,11 +251,11 @@ export async function fileToGenerativePart(file) {
 
     PDF_CACHE.set(fileKey, generativePart);
     cleanupCache(PDF_CACHE);
-    console.log(`GeminiCore: PDF conversion completed for ${file.name}`);
+    console.log(`✅ ${file.name} convertito`);
     return generativePart;
     
   } catch (error) {
-    console.error(`GeminiCore: Error converting ${file.name}:`, error);
+    console.error(`❌ Errore conversione ${file.name}:`, error);
     throw new Error(`Failed to convert ${file.name}: ${error.message}`);
   }
 }
@@ -280,12 +268,10 @@ export async function prepareFilesForAI(filesArray, originalFilesDriveInfo, prog
   
   if (PDF_CACHE.has(fileHash + '_prepared')) {
     progressCallback?.({ type: 'processing', message: 'Riutilizzo file già processati...' });
-    console.log('GeminiCore: Using cached prepared files');
     return PDF_CACHE.get(fileHash + '_prepared');
   }
 
-  console.log(`GeminiCore: Preparing ${filesArray.length} files for AI analysis`);
-  progressCallback?.({ type: 'processing', message: 'Preparazione file per analisi AI...' });
+  console.log(`📄 Preparando ${filesArray.length} file per AI`);
 
   const partsArray = [];
   let validPdfFilesSent = 0;
@@ -295,17 +281,16 @@ export async function prepareFilesForAI(filesArray, originalFilesDriveInfo, prog
     const driveInfo = originalFilesDriveInfo.find(df => df.originalFileIndex === i);
 
     if (file.type === "application/pdf" && driveInfo && driveInfo.name === file.name) {
-      progressCallback?.({ type: 'processing', message: `Conversione file ${i + 1}/${filesArray.length}: ${file.name}...` });
+      progressCallback?.({ type: 'processing', message: `Conversione ${i + 1}/${filesArray.length}: ${file.name}...` });
       
       try {
         const filePart = await fileToGenerativePart(file);
         partsArray.push(filePart);
         validPdfFilesSent++;
-        progressCallback?.({ type: 'processing', message: `File ${file.name} preparato.` });
-        console.log(`GeminiCore: File ${file.name} prepared successfully`);
+        console.log(`✅ ${file.name} preparato`);
       } catch (fileConvError) {
-        console.error(`GeminiCore: Error converting file ${file.name}:`, fileConvError);
-        progressCallback?.({ type: 'warning', message: `Errore file ${file.name}: ${fileConvError.message}` });
+        console.error(`❌ Errore ${file.name}:`, fileConvError);
+        progressCallback?.({ type: 'warning', message: `Errore ${file.name}: ${fileConvError.message}` });
       }
     }
   }
@@ -323,7 +308,7 @@ export async function prepareFilesForAI(filesArray, originalFilesDriveInfo, prog
   PDF_CACHE.set(fileHash + '_prepared', result);
   cleanupCache(PDF_CACHE);
   
-  console.log(`GeminiCore: Prepared ${validPdfFilesSent}/${filesArray.length} files for AI`);
+  console.log(`✅ Preparati ${validPdfFilesSent}/${filesArray.length} file`);
   return result;
 }
 
@@ -331,17 +316,13 @@ export async function prepareFilesForAI(filesArray, originalFilesDriveInfo, prog
  * Prepara il testo per l'analisi AI (modalità text-only)
  */
 export async function prepareTextForAI(filesArray, progressCallback, analysisMode = 'text') {
-  console.log(`GeminiCore: Preparing text for AI analysis (${analysisMode} mode)`);
-  progressCallback?.({ type: 'processing', message: 'Estrazione testo per analisi AI...' });
-
   const textData = await extractTextFromFilesForAI(filesArray, progressCallback, analysisMode);
   
   if (!textData.fullText || textData.fullText.length < 100) {
     throw new Error('Testo estratto insufficiente per l\'analisi AI (meno di 100 caratteri).');
   }
 
-  progressCallback?.({ type: 'processing', message: `Testo preparato: ${textData.wordCount} parole (${textData.isTruncated ? 'processato a sezioni' : 'completo'})` });
-  console.log(`GeminiCore: Text prepared - ${textData.processedCharCount} chars, ${textData.isTruncated ? 'chunked' : 'complete'}`);
+  progressCallback?.({ type: 'processing', message: `Testo preparato: ${textData.wordCount} parole` });
   
   return {
     textContent: textData.fullText,
@@ -362,8 +343,6 @@ export async function prepareTextForAI(filesArray, progressCallback, analysisMod
  * Pulisce e corregge JSON malformato
  */
 function cleanAndParseJSON(jsonString) {
-  console.log('GeminiCore: Parsing AI response JSON...');
-  
   try {
     // Rimuovi markdown code blocks
     let cleaned = jsonString
@@ -371,10 +350,9 @@ function cleanAndParseJSON(jsonString) {
       .replace(/```\s*$/g, '')
       .trim();
     
-    console.log('GeminiCore: JSON parsing successful (direct)');
     return JSON.parse(cleaned);
   } catch (error) {
-    console.warn('GeminiCore: JSON parsing failed, attempting repair...', error.message);
+    console.warn('⚠️ JSON malformato, tentando riparazione...');
     
     try {
       // Tentativi di riparazione automatica
@@ -433,10 +411,10 @@ function cleanAndParseJSON(jsonString) {
         braceCount--;
       }
       
-      console.log('GeminiCore: JSON repair successful');
+      console.log('✅ JSON riparato con successo');
       return JSON.parse(repaired);
     } catch (repairError) {
-      console.error('GeminiCore: JSON repair failed:', repairError);
+      console.error('❌ Riparazione JSON fallita:', repairError);
       throw new Error(`JSON parsing failed: ${error.message}. Response was likely truncated.`);
     }
   }
@@ -449,27 +427,24 @@ export async function executeAIPhase(phaseName, promptText, filesArray, original
   const phaseHash = generatePhaseHash(phaseName, promptText.substring(0, 100), filesArray, analysisMode);
   
   if (PHASE_CACHE.has(phaseHash)) {
-    console.log(`GeminiCore: Using cached result for phase ${phaseName} (${analysisMode} mode)`);
+    console.log(`💾 Cache hit per fase ${phaseName}`);
     progressCallback?.({ type: 'processing', message: `Utilizzo cache per fase ${phaseName}...` });
     return PHASE_CACHE.get(phaseHash);
   }
 
-  console.log(`GeminiCore: ================================`);
-  console.log(`GeminiCore: EXECUTING PHASE: ${phaseName} (${analysisMode} mode)`);
-  console.log(`GeminiCore: ================================`);
-  progressCallback?.({ type: 'processing', message: `Esecuzione fase ${phaseName} (${analysisMode === 'pdf' ? 'PDF completo' : 'solo testo'})...` });
+  console.log(`\n🤖 ===== FASE AI: ${phaseName.toUpperCase()} (${analysisMode}) =====`);
+  progressCallback?.({ type: 'processing', message: `Esecuzione ${phaseName} (${analysisMode})...` });
 
   if (!genAI || !geminiDefaultModel) {
     throw new Error('Servizio AI Gemini non inizializzato correttamente.');
   }
 
   const parts = [{ text: promptText.trim() }];
-  console.log(`GeminiCore: Base prompt length: ${promptText.length} characters`);
+  console.log(`📝 Prompt: ${promptText.length} caratteri`);
   
   // Prepara i contenuti in base alla modalità
   if (filesArray && filesArray.length > 0) {
     if (analysisMode === 'text') {
-      console.log(`GeminiCore: Preparing text-only analysis for ${filesArray.length} files`);
       // Modalità text-only: estrai e invia solo il testo
       const textPreparation = await prepareTextForAI(filesArray, progressCallback, analysisMode);
       
@@ -478,13 +453,12 @@ export async function executeAIPhase(phaseName, promptText, filesArray, original
         text: `\n\n=== CONTENUTO ESTRATTO DAI PDF ===\n\n${textPreparation.textContent}\n\n=== METADATI ===\nFile: ${textPreparation.metadata.fileCount}\nPagine: ${textPreparation.metadata.totalPages}\nParole: ${textPreparation.metadata.wordCount}\nCaratteri processati: ${textPreparation.metadata.processedCharCount}/${textPreparation.metadata.charCount}\n${textPreparation.metadata.isTruncated ? `Testo suddiviso in ${textPreparation.metadata.chunksCount} sezioni\n` : 'Testo completo\n'}=== FINE CONTENUTO ===\n\n`
       };
       parts.push(textPart);
-      console.log(`GeminiCore: Added text content: ${textPart.text.length} characters`);
+      console.log(`📄 Testo aggiunto: ${textPart.text.length} caratteri`);
     } else {
-      console.log(`GeminiCore: Preparing PDF analysis for ${filesArray.length} files`);
       // Modalità PDF completa: invia i PDF come base64
       const { partsArray } = await prepareFilesForAI(filesArray, originalFilesDriveInfo, progressCallback);
       parts.push(...partsArray);
-      console.log(`GeminiCore: Added ${partsArray.length} PDF parts`);
+      console.log(`📄 PDF aggiunti: ${partsArray.length} file`);
     }
   }
 
@@ -496,7 +470,7 @@ export async function executeAIPhase(phaseName, promptText, filesArray, original
     generationConfig: CONFIG.AI_GENERATION
   };
 
-  console.log(`GeminiCore: Request prepared - ${parts.length} parts, max tokens: ${CONFIG.AI_GENERATION.maxOutputTokens}`);
+  console.log(`🚀 Invio richiesta a Gemini (${parts.length} parti)...`);
 
   // Retry logic semplice
   const maxRetries = 3;
@@ -504,14 +478,13 @@ export async function executeAIPhase(phaseName, promptText, filesArray, original
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      console.log(`GeminiCore: Sending request to AI (attempt ${attempt}/${maxRetries})...`);
       const startTime = Date.now();
       
       const aiResult = await geminiDefaultModel.generateContent(requestPayload);
       const response = aiResult.response;
 
       const duration = Date.now() - startTime;
-      console.log(`GeminiCore: AI response received in ${duration}ms`);
+      console.log(`⏱️ Risposta ricevuta in ${duration}ms`);
 
       let textResponse;
       if (response.candidates?.[0]?.content?.parts?.[0]?.text) {
@@ -524,9 +497,14 @@ export async function executeAIPhase(phaseName, promptText, filesArray, original
         throw new Error('Risposta vuota dall\'AI');
       }
       
-      console.log(`GeminiCore: Raw AI response length: ${textResponse.length} characters`);
-      console.log(`GeminiCore: Raw AI response preview:`);
-      console.log(textResponse.substring(0, 500) + (textResponse.length > 500 ? '...' : ''));
+      // ===== LOG DETTAGLIATO RISPOSTA GEMINI =====
+      console.log(`\n📤 ===== RISPOSTA GEMINI FASE ${phaseName.toUpperCase()} =====`);
+      console.log(`📏 Lunghezza: ${textResponse.length} caratteri`);
+      console.log(`📄 CONTENUTO RAW:`);
+      console.log('```');
+      console.log(textResponse);
+      console.log('```');
+      console.log(`📤 ===== FINE RISPOSTA GEMINI =====\n`);
       
       // Usa la funzione di pulizia JSON migliorata
       const parsedResponse = cleanAndParseJSON(textResponse);
@@ -536,29 +514,35 @@ export async function executeAIPhase(phaseName, promptText, filesArray, original
         throw new Error('Risposta AI non è un oggetto JSON valido');
       }
       
-      console.log(`GeminiCore: Phase ${phaseName} completed successfully`);
-      console.log(`GeminiCore: Response keys:`, Object.keys(parsedResponse));
+      // ===== LOG DETTAGLIATO JSON PARSATO =====
+      console.log(`\n🔍 ===== JSON PARSATO FASE ${phaseName.toUpperCase()} =====`);
+      console.log('📋 Chiavi principali:', Object.keys(parsedResponse));
+      console.log('📊 JSON COMPLETO:');
+      console.log(JSON.stringify(parsedResponse, null, 2));
+      console.log(`🔍 ===== FINE JSON PARSATO =====\n`);
+      
+      console.log(`✅ Fase ${phaseName} completata`);
       
       PHASE_CACHE.set(phaseHash, parsedResponse);
       cleanupCache(PHASE_CACHE);
 
-      progressCallback?.({ type: 'processing', message: `Fase ${phaseName} completata (${analysisMode}).` });
+      progressCallback?.({ type: 'processing', message: `Fase ${phaseName} completata.` });
       return parsedResponse;
 
     } catch (error) {
       lastError = error;
-      console.error(`GeminiCore: Error in phase ${phaseName} (attempt ${attempt}/${maxRetries}, ${analysisMode} mode):`, error);
+      console.error(`❌ Errore fase ${phaseName} (tentativo ${attempt}/${maxRetries}):`, error);
       
       if (attempt < maxRetries) {
         const delayMs = 1000 * attempt;
-        progressCallback?.({ type: 'processing', message: `Errore fase ${phaseName}, tentativo ${attempt + 1}/${maxRetries}...` });
-        console.log(`GeminiCore: Retrying in ${delayMs}ms...`);
+        progressCallback?.({ type: 'processing', message: `Ritentando ${phaseName}...` });
+        console.log(`🔄 Ritento tra ${delayMs}ms...`);
         await new Promise(resolve => setTimeout(resolve, delayMs));
       }
     }
   }
   
-  console.error(`GeminiCore: Phase ${phaseName} failed after ${maxRetries} attempts`);
+  console.error(`❌ Fase ${phaseName} fallita dopo ${maxRetries} tentativi`);
   throw new Error(`Errore nella fase ${phaseName} (${analysisMode}) dopo ${maxRetries} tentativi: ${lastError?.message || 'Errore sconosciuto'}`);
 }
 
@@ -578,7 +562,7 @@ export function clearAllCaches() {
   PDF_CACHE.clear();
   TEXT_CACHE.clear();
   PHASE_CACHE.clear();
-  console.log(`GeminiCore: Cleared all caches (${totalSize} entries)`);
+  console.log(`🗑️ Cache pulite (${totalSize} elementi)`);
   return totalSize;
 }
 
