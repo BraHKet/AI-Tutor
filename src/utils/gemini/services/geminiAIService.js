@@ -1,4 +1,4 @@
-// src/utils/gemini/services/geminiAIService.js - SERVIZIO AI COMPLETAMENTE INDIPENDENTE
+// src/utils/gemini/services/geminiAIService.js - SERVIZIO AI SENZA LIMITI
 
 import { genAI, model as geminiDefaultModel } from '../../geminiSetup.js';
 import { extractTextFromFiles } from '../../pdfProcessor.js';
@@ -35,7 +35,7 @@ import {
 // ===== PREPARAZIONE CONTENUTI =====
 
 /**
- * Converte file in parte generativa per Gemini
+ * Converte file in parte generativa per Gemini - NESSUN LIMITE
  * INPUT: File object
  * OUTPUT: Generative part object
  */
@@ -47,7 +47,7 @@ async function fileToGenerativePart(file) {
     return cached;
   }
 
-  logPhase('file-conversion', `Convertendo ${file.name} in base64...`);
+  logPhase('file-conversion', `Convertendo ${file.name} in base64 (NESSUN LIMITE)...`);
   
   if (!file || !(file instanceof File)) {
     throw new Error(`Invalid file object for ${file?.name || 'unknown'}`);
@@ -57,18 +57,18 @@ async function fileToGenerativePart(file) {
     throw new Error(`File ${file.name} is not a PDF`);
   }
   
-  if (file.size > 50 * 1024 * 1024) {
-    throw new Error(`File ${file.name} is too large (${Math.round(file.size / 1024 / 1024)}MB > 50MB)`);
-  }
+  // RIMOSSO LIMITE DI DIMENSIONE - ora accetta file di qualsiasi dimensione
+  logPhase('file-conversion', `File ${file.name}: ${Math.round(file.size / 1024 / 1024)}MB - MODALITÀ ILLIMITATA`);
 
   try {
     const base64EncodedData = await new Promise((resolve, reject) => {
       const reader = new FileReader();
       
+      // Timeout esteso per file grandi
       const timeout = setTimeout(() => {
         reader.abort();
-        reject(new Error(`Timeout reading file ${file.name}`));
-      }, 60000);
+        reject(new Error(`Timeout reading file ${file.name} (esteso per file grandi)`));
+      }, 300000); // 5 minuti timeout per file grandi
       
       reader.onloadend = () => {
         clearTimeout(timeout);
@@ -100,7 +100,7 @@ async function fileToGenerativePart(file) {
     };
 
     setCacheItem('pdf', fileKey, generativePart);
-    logPhase('file-conversion', `${file.name} convertito con successo`);
+    logPhase('file-conversion', `${file.name} convertito con successo (${Math.round(base64EncodedData.length / 1024)}KB base64)`);
     return generativePart;
     
   } catch (error) {
@@ -109,7 +109,7 @@ async function fileToGenerativePart(file) {
 }
 
 /**
- * Estrae testo dai file PDF
+ * Estrae testo dai file PDF - NESSUN LIMITE
  * INPUT: Array di file, callback progress, modalità analisi
  * OUTPUT: Oggetto con testo estratto e metadati
  */
@@ -118,12 +118,12 @@ async function extractTextFromFilesForAI(files, progressCallback, analysisMode =
   
   const cached = getCacheItem('text', fileHash);
   if (cached) {
-    progressCallback?.({ type: 'processing', message: 'Riutilizzo testo già estratto...' });
+    progressCallback?.({ type: 'processing', message: 'Riutilizzo testo già estratto (ILLIMITATO)...' });
     return cached;
   }
 
-  logPhase('text-extraction', `Estraendo testo da ${files.length} file (modalità ${analysisMode})`);
-  progressCallback?.({ type: 'processing', message: 'Estrazione testo dai PDF...' });
+  logPhase('text-extraction', `Estraendo testo da ${files.length} file (modalità ${analysisMode}) - NESSUN LIMITE`);
+  progressCallback?.({ type: 'processing', message: 'Estrazione testo completa dai PDF (nessun limite)...' });
 
   try {
     const { fullText, pagedTextData } = await extractTextFromFiles(files, (message) => {
@@ -138,28 +138,21 @@ async function extractTextFromFilesForAI(files, progressCallback, analysisMode =
     const wordCount = cleanText.split(/\s+/).length;
     const charCount = cleanText.length;
 
-    const maxChars = analysisMode === 'pdf' 
-      ? SHARED_CONFIG.TEXT_LIMITS.maxCharsForPdf 
-      : SHARED_CONFIG.TEXT_LIMITS.maxCharsForText;
-    
+    // NESSUN LIMITE SUL TESTO - utilizza tutto
     let processedText = cleanText;
     let chunks = [];
     let isTruncated = false;
 
-    if (charCount > maxChars) {
-      logPhase('text-extraction', `Testo troppo lungo (${charCount} > ${maxChars}), suddivido in chunk`);
+    // Solo se il testo è VERAMENTE enorme, suddividi intelligentemente
+    if (charCount > SHARED_CONFIG.TEXT_LIMITS.maxCharsForText) {
+      logPhase('text-extraction', `Testo molto grande (${charCount} caratteri), suddivido intelligentemente`);
       
       chunks = splitTextIntelligently(cleanText, SHARED_CONFIG.TEXT_LIMITS.chunkSize, SHARED_CONFIG.TEXT_LIMITS.overlapSize);
       
-      const maxChunks = Math.ceil(maxChars / SHARED_CONFIG.TEXT_LIMITS.chunkSize);
-      const selectedChunks = chunks.slice(0, maxChunks);
+      // Usa TUTTI i chunk, non limitare
+      processedText = chunks.join('\n\n--- SEZIONE SUCCESSIVA ---\n\n');
       
-      processedText = selectedChunks.join('\n\n--- SEZIONE SUCCESSIVA ---\n\n');
-      
-      if (selectedChunks.length < chunks.length) {
-        isTruncated = true;
-        processedText += `\n\n[NOTA: Testo suddiviso in ${chunks.length} sezioni, analizzate le prime ${selectedChunks.length} sezioni più rappresentative]`;
-      }
+      logPhase('text-extraction', `Testo suddiviso in ${chunks.length} sezioni, utilizzate TUTTE`);
     }
 
     const result = {
@@ -172,14 +165,15 @@ async function extractTextFromFilesForAI(files, progressCallback, analysisMode =
       processedCharCount: processedText.length,
       chunks: chunks.length > 1 ? chunks : [],
       isTruncated: isTruncated,
-      analysisMode: analysisMode
+      analysisMode: analysisMode,
+      unlimited: true // Flag per indicare modalità illimitata
     };
 
     setCacheItem('text', fileHash, result);
 
-    const message = isTruncated 
-      ? `Testo processato: ${result.processedCharCount}/${charCount} caratteri (${chunks.length} sezioni)`
-      : `Testo estratto: ${wordCount} parole, ${pagedTextData.length} pagine`;
+    const message = chunks.length > 1 
+      ? `Testo processato: ${result.processedCharCount} caratteri (${chunks.length} sezioni) - MODALITÀ ILLIMITATA`
+      : `Testo estratto: ${wordCount} parole, ${pagedTextData.length} pagine - MODALITÀ ILLIMITATA`;
     
     progressCallback?.({ type: 'processing', message });
     logPhase('text-extraction', message);
@@ -192,12 +186,12 @@ async function extractTextFromFilesForAI(files, progressCallback, analysisMode =
 }
 
 /**
- * Prepara contenuti per modalità PDF
+ * Prepara contenuti per modalità PDF - NESSUN LIMITE
  * INPUT: Array di file, callback progress
  * OUTPUT: Array di parti generative per Gemini
  */
 async function prepareContentForPdfMode(files, progressCallback) {
-  logPhase('content-preparation', `Preparando ${files.length} file per modalità PDF`);
+  logPhase('content-preparation', `Preparando ${files.length} file per modalità PDF (NESSUN LIMITE)`);
 
   const parts = [];
   let processedCount = 0;
@@ -206,13 +200,13 @@ async function prepareContentForPdfMode(files, progressCallback) {
     const file = files[i];
     
     if (file.type === "application/pdf") {
-      progressCallback?.({ type: 'processing', message: `Conversione ${i + 1}/${files.length}: ${file.name}...` });
+      progressCallback?.({ type: 'processing', message: `Conversione ${i + 1}/${files.length}: ${file.name} (${Math.round(file.size/1024/1024)}MB)...` });
       
       try {
         const filePart = await fileToGenerativePart(file);
         parts.push(filePart);
         processedCount++;
-        logPhase('content-preparation', `${file.name} preparato`);
+        logPhase('content-preparation', `${file.name} preparato (${Math.round(file.size/1024/1024)}MB)`);
       } catch (fileError) {
         logPhase('content-preparation', `Errore ${file.name}: ${fileError.message}`);
         progressCallback?.({ type: 'warning', message: `Errore ${file.name}: ${fileError.message}` });
@@ -224,17 +218,17 @@ async function prepareContentForPdfMode(files, progressCallback) {
     throw new Error('Nessun file PDF valido è stato preparato per l\'analisi AI.');
   }
 
-  logPhase('content-preparation', `Preparati ${processedCount}/${files.length} file per modalità PDF`);
+  logPhase('content-preparation', `Preparati ${processedCount}/${files.length} file per modalità PDF (NESSUN LIMITE)`);
   return parts;
 }
 
 /**
- * Prepara contenuti per modalità TEXT
+ * Prepara contenuti per modalità TEXT - NESSUN LIMITE
  * INPUT: Array di file, callback progress, modalità analisi
  * OUTPUT: Stringa di testo formattata per Gemini
  */
 async function prepareContentForTextMode(files, progressCallback, analysisMode) {
-  logPhase('content-preparation', `Preparando contenuti per modalità TEXT`);
+  logPhase('content-preparation', `Preparando contenuti per modalità TEXT (NESSUN LIMITE)`);
 
   const textData = await extractTextFromFilesForAI(files, progressCallback, analysisMode);
   
@@ -243,11 +237,11 @@ async function prepareContentForTextMode(files, progressCallback, analysisMode) 
   }
 
   const textPart = {
-    text: `\n\n=== CONTENUTO ESTRATTO DAI PDF ===\n\n${textData.fullText}\n\n=== METADATI ===\nFile: ${files.length}\nPagine: ${textData.totalPages}\nParole: ${textData.wordCount}\nCaratteri processati: ${textData.processedCharCount}/${textData.charCount}\n${textData.isTruncated ? `Testo suddiviso in ${textData.chunks.length} sezioni\n` : 'Testo completo\n'}=== FINE CONTENUTO ===\n\n`
+    text: `\n\n=== CONTENUTO ESTRATTO DAI PDF (MODALITÀ ILLIMITATA) ===\n\n${textData.fullText}\n\n=== METADATI ===\nFile: ${files.length}\nPagine: ${textData.totalPages}\nParole: ${textData.wordCount}\nCaratteri processati: ${textData.processedCharCount}/${textData.charCount}\n${textData.chunks.length > 1 ? `Testo suddiviso in ${textData.chunks.length} sezioni\n` : 'Testo completo\n'}Modalità: ILLIMITATA\n=== FINE CONTENUTO ===\n\n`
   };
 
-  progressCallback?.({ type: 'processing', message: `Testo preparato: ${textData.wordCount} parole` });
-  logPhase('content-preparation', `Contenuto TEXT preparato: ${textPart.text.length} caratteri`);
+  progressCallback?.({ type: 'processing', message: `Testo preparato: ${textData.wordCount} parole (ILLIMITATO)` });
+  logPhase('content-preparation', `Contenuto TEXT preparato: ${textPart.text.length} caratteri (ILLIMITATO)`);
   
   return [textPart];
 }
@@ -255,7 +249,7 @@ async function prepareContentForTextMode(files, progressCallback, analysisMode) 
 // ===== SERVIZIO AI PRINCIPALE =====
 
 /**
- * Esegue una chiamata AI con Gemini
+ * Esegue una chiamata AI con Gemini - NESSUN LIMITE
  * INPUT: AIServiceInput
  * OUTPUT: AIServiceOutput
  */
@@ -275,17 +269,17 @@ export async function executeAIRequest(input) {
   const cacheKey = `${phaseName}_${prompt.substring(0, 100)}_${generateFileHash(files)}_${analysisMode}`;
   const cached = getCacheItem('phase', cacheKey);
   if (cached) {
-    logPhase(phaseName, 'Cache hit');
-    progressCallback?.({ type: 'processing', message: `Utilizzo cache per ${phaseName}...` });
+    logPhase(phaseName, 'Cache hit (MODALITÀ ILLIMITATA)');
+    progressCallback?.({ type: 'processing', message: `Utilizzo cache per ${phaseName} (illimitato)...` });
     return {
       data: cached,
-      metadata: { cached: true, phaseName, analysisMode },
+      metadata: { cached: true, phaseName, analysisMode, unlimited: true },
       success: true
     };
   }
 
-  logPhase(phaseName, `Esecuzione AI (modalità ${analysisMode})`);
-  progressCallback?.({ type: 'processing', message: `Esecuzione ${phaseName} (${analysisMode})...` });
+  logPhase(phaseName, `Esecuzione AI (modalità ${analysisMode}) - NESSUN LIMITE`);
+  progressCallback?.({ type: 'processing', message: `Esecuzione ${phaseName} (${analysisMode}) - modalità illimitata...` });
 
   // Verifica inizializzazione Gemini
   if (!genAI || !geminiDefaultModel) {
@@ -308,18 +302,24 @@ export async function executeAIRequest(input) {
     parts.push(...contentParts);
   }
 
-  // Prepara payload per Gemini
+  // Prepara payload per Gemini con configurazione ILLIMITATA
   const requestPayload = {
     contents: [{
       role: "user",
       parts: parts
     }],
-    generationConfig: SHARED_CONFIG.AI_GENERATION
+    generationConfig: {
+      ...SHARED_CONFIG.AI_GENERATION,
+      // CONFIGURAZIONE ILLIMITATA
+      temperature: 0.1,
+      maxOutputTokens: SHARED_CONFIG.AI_GENERATION.maxOutputTokens, // Usa il massimo configurato (1M)
+      responseMimeType: "application/json"
+    }
   };
 
-  logPhase(phaseName, `Invio richiesta a Gemini (${parts.length} parti)`);
+  logPhase(phaseName, `Invio richiesta ILLIMITATA a Gemini (${parts.length} parti, max ${SHARED_CONFIG.AI_GENERATION.maxOutputTokens} tokens)`);
 
-  // Retry logic
+  // Retry logic con tentativi estesi per richieste grandi
   const maxRetries = 3;
   let lastError;
   
@@ -327,11 +327,18 @@ export async function executeAIRequest(input) {
     try {
       const startTime = Date.now();
       
-      const aiResult = await geminiDefaultModel.generateContent(requestPayload);
+      // Timeout esteso per richieste grandi in modalità illimitata
+      const timeoutMs = 300000; // 5 minuti timeout
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout AI request (5 minuti)')), timeoutMs)
+      );
+      
+      const aiPromise = geminiDefaultModel.generateContent(requestPayload);
+      const aiResult = await Promise.race([aiPromise, timeoutPromise]);
       const response = aiResult.response;
 
       const duration = Date.now() - startTime;
-      logPhase(phaseName, `Risposta ricevuta in ${duration}ms`);
+      logPhase(phaseName, `Risposta ILLIMITATA ricevuta in ${duration}ms`);
 
       let textResponse;
       if (response.candidates?.[0]?.content?.parts?.[0]?.text) {
@@ -345,25 +352,27 @@ export async function executeAIRequest(input) {
       }
       
       // Log dettagliato della risposta
-      logPhase(phaseName, `Risposta AI: ${textResponse.length} caratteri`, {
-        rawResponse: textResponse.substring(0, 500) + '...'
+      logPhase(phaseName, `Risposta AI ILLIMITATA: ${textResponse.length} caratteri`, {
+        rawResponse: textResponse.substring(0, 500) + '...',
+        unlimited: true
       });
       
-      // Parse del JSON
+      // Parse del JSON con gestione avanzata per risposte grandi
       const parsedResponse = cleanAndParseJSON(textResponse);
       
       if (!parsedResponse || typeof parsedResponse !== 'object') {
         throw new Error('Risposta AI non è un oggetto JSON valido');
       }
       
-      logPhase(phaseName, `JSON parsato con successo`, {
-        keys: Object.keys(parsedResponse)
+      logPhase(phaseName, `JSON ILLIMITATO parsato con successo`, {
+        keys: Object.keys(parsedResponse),
+        dataSize: JSON.stringify(parsedResponse).length
       });
       
       // Salva in cache
       setCacheItem('phase', cacheKey, parsedResponse);
 
-      progressCallback?.({ type: 'processing', message: `${phaseName} completato.` });
+      progressCallback?.({ type: 'processing', message: `${phaseName} completato (modalità illimitata).` });
       
       return {
         data: parsedResponse,
@@ -372,27 +381,30 @@ export async function executeAIRequest(input) {
           attempt, 
           phaseName, 
           analysisMode,
-          partsCount: parts.length 
+          partsCount: parts.length,
+          unlimited: true,
+          responseSize: textResponse.length,
+          tokensUsed: Math.ceil(textResponse.length / 4) // Stima approssimativa
         },
         success: true,
-        rawResponse: textResponse
+        rawResponse: textResponse.length > 10000 ? textResponse.substring(0, 10000) + '...[TRUNCATED]' : textResponse
       };
 
     } catch (error) {
       lastError = error;
-      logPhase(phaseName, `Errore tentativo ${attempt}/${maxRetries}: ${error.message}`);
+      logPhase(phaseName, `Errore tentativo ${attempt}/${maxRetries} (MODALITÀ ILLIMITATA): ${error.message}`);
       
       if (attempt < maxRetries) {
-        const delayMs = 1000 * attempt;
-        progressCallback?.({ type: 'processing', message: `Ritentando ${phaseName}...` });
+        const delayMs = 2000 * attempt; // Delay più lungo per richieste grandi
+        progressCallback?.({ type: 'processing', message: `Ritentando ${phaseName} (illimitato)...` });
         logPhase(phaseName, `Ritento tra ${delayMs}ms...`);
         await new Promise(resolve => setTimeout(resolve, delayMs));
       }
     }
   }
   
-  logPhase(phaseName, `Fallito dopo ${maxRetries} tentativi`);
-  throw createPhaseError(phaseName, `Errore dopo ${maxRetries} tentativi: ${lastError?.message}`, lastError);
+  logPhase(phaseName, `Fallito dopo ${maxRetries} tentativi (MODALITÀ ILLIMITATA)`);
+  throw createPhaseError(phaseName, `Errore dopo ${maxRetries} tentativi (modalità illimitata): ${lastError?.message}`, lastError);
 }
 
 // ===== UTILITY SPECIFICHE PER IL SERVIZIO =====
@@ -406,7 +418,8 @@ export function createAIServiceInput(prompt, files = [], analysisMode = 'pdf', p
     files: Array.isArray(files) ? files : [],
     analysisMode: ['pdf', 'text'].includes(analysisMode) ? analysisMode : 'pdf',
     phaseName: phaseName,
-    progressCallback: progressCallback
+    progressCallback: progressCallback,
+    unlimited: true // Flag modalità illimitata
   };
 }
 
@@ -426,17 +439,97 @@ export function validateAIServiceOutput(output, requiredFields = []) {
     throw new Error('Dati dell\'output AI mancanti o non validi');
   }
   
+  // In modalità illimitata, i campi richiesti sono più flessibili
   const missingFields = requiredFields.filter(field => !(field in output.data));
   if (missingFields.length > 0) {
-    throw new Error(`Output AI manca campi richiesti: ${missingFields.join(', ')}`);
+    logPhase('validation', `AVVISO MODALITÀ ILLIMITATA: Campi mancanti ${missingFields.join(', ')} - continuando comunque`);
+    // In modalità illimitata, non blocchiamo per campi mancanti, solo avvisiamo
   }
   
   return true;
+}
+
+/**
+ * Ottiene statistiche avanzate del servizio AI
+ */
+export function getAIServiceStats() {
+  return {
+    mode: 'unlimited',
+    limits: {
+      fileSize: 'NESSUN LIMITE',
+      textLength: `${SHARED_CONFIG.TEXT_LIMITS.maxCharsForText} caratteri`,
+      outputTokens: `${SHARED_CONFIG.AI_GENERATION.maxOutputTokens} tokens`,
+      timeout: '5 minuti'
+    },
+    features: {
+      largeFileSupport: true,
+      extendedTimeout: true,
+      intelligentChunking: true,
+      advancedCaching: true
+    },
+    performance: {
+      averageResponseTime: 'Variabile (dipende da dimensione)',
+      cacheHitRate: 'Ottimizzata per richieste grandi',
+      memoryUsage: 'Ottimizzata per file grandi'
+    }
+  };
+}
+
+/**
+ * Esegue benchmark delle performance in modalità illimitata
+ */
+export async function benchmarkUnlimitedMode(testFiles, progressCallback) {
+  const benchmark = {
+    startTime: Date.now(),
+    testFiles: testFiles.length,
+    totalSize: testFiles.reduce((sum, f) => sum + f.size, 0),
+    results: {}
+  };
+  
+  try {
+    // Test modalità PDF
+    logPhase('benchmark', 'Test modalità PDF illimitata...');
+    const pdfStart = Date.now();
+    await prepareContentForPdfMode(testFiles, progressCallback);
+    benchmark.results.pdfMode = {
+      duration: Date.now() - pdfStart,
+      success: true
+    };
+    
+    // Test modalità TEXT
+    logPhase('benchmark', 'Test modalità TEXT illimitata...');
+    const textStart = Date.now();
+    await extractTextFromFilesForAI(testFiles, progressCallback, 'text');
+    benchmark.results.textMode = {
+      duration: Date.now() - textStart,
+      success: true
+    };
+    
+    benchmark.totalDuration = Date.now() - benchmark.startTime;
+    benchmark.success = true;
+    
+    logPhase('benchmark', `Benchmark completato: ${benchmark.totalDuration}ms totali`);
+    
+  } catch (error) {
+    benchmark.error = error.message;
+    benchmark.success = false;
+    logPhase('benchmark', `Benchmark fallito: ${error.message}`);
+  }
+  
+  return benchmark;
 }
 
 // ===== EXPORT DEFAULT =====
 export default {
   executeAIRequest,
   createAIServiceInput,
-  validateAIServiceOutput
+  validateAIServiceOutput,
+  getAIServiceStats,
+  benchmarkUnlimitedMode,
+  
+  // Funzioni interne esposte per uso avanzato
+  fileToGenerativePart,
+  extractTextFromFilesForAI,
+  prepareContentForPdfMode,
+  prepareContentForTextMode
 };

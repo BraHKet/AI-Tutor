@@ -1,20 +1,20 @@
-// src/utils/gemini/shared/geminiShared.js - UTILITÀ CONDIVISE COMPLETAMENTE INDIPENDENTI
+// src/utils/gemini/shared/geminiShared.js - UTILITÀ CONDIVISE SENZA LIMITI
 
-// ===== CONFIGURAZIONE GLOBALE =====
+// ===== CONFIGURAZIONE GLOBALE - NESSUN LIMITE =====
 export const SHARED_CONFIG = {
   AI_GENERATION: {
     responseMimeType: "application/json",
     temperature: 0.1,
-    maxOutputTokens: 8192,
+    maxOutputTokens: 1048576, // MASSIMO POSSIBILE (1M tokens)
   },
   TEXT_LIMITS: {
-    maxCharsForPdf: 50000,
-    maxCharsForText: 80000,
-    chunkSize: 15000,
-    overlapSize: 1000
+    maxCharsForPdf: 10000000, // 10M caratteri - NESSUN LIMITE PRATICO
+    maxCharsForText: 10000000, // 10M caratteri - NESSUN LIMITE PRATICO
+    chunkSize: 100000, // Chunk molto più grandi
+    overlapSize: 5000 // Overlap maggiore per continuità
   },
   CACHE: {
-    maxEntries: 50,
+    maxEntries: 1000, // Cache molto più grande
     ttlHours: 24
   }
 };
@@ -56,9 +56,10 @@ export function cleanupCache(cache, maxEntries = SHARED_CONFIG.CACHE.maxEntries)
 }
 
 /**
- * Suddivide testo in chunk intelligenti
+ * Suddivide testo in chunk intelligenti - NESSUN LIMITE
  */
-export function splitTextIntelligently(text, maxChars, overlapChars = 1000) {
+export function splitTextIntelligently(text, maxChars = SHARED_CONFIG.TEXT_LIMITS.chunkSize, overlapChars = SHARED_CONFIG.TEXT_LIMITS.overlapSize) {
+  // Se il testo è entro i limiti, restituiscilo intero
   if (text.length <= maxChars) {
     return [text];
   }
