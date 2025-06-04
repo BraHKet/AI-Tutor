@@ -1,15 +1,51 @@
-// src/utils/gemini/distributionPhases.js - VERSIONE COMPLETAMENTE INDIPENDENTE
-import { executeAIPhase, CONFIG } from './geminiCore.js';
+// src/utils/gemini/modules/distributionModule.js - MODULO DISTRIBUZIONE COMPLETAMENTE INDIPENDENTE
 
-// ===== CONFIGURAZIONE LOCALE INDIPENDENTE =====
-const DISTRIBUTION_CONFIG = {
-  MAX_TOPICS_PER_DAY: CONFIG?.DISTRIBUTION?.maxTopicsPerDay || 3,
-  RESERVE_REVIEW_DAYS: CONFIG?.DISTRIBUTION?.reserveReviewDays !== false
+import { executeAIRequest, createAIServiceInput, validateAIServiceOutput } from '../services/geminiAIService.js';
+import { 
+  createDistributionPhaseInput, 
+  createDistributionPhaseOutput, 
+  validatePhaseInput,
+  logPhase,
+  createPhaseError,
+  executePhaseWithErrorHandling
+} from '../shared/geminiShared.js';
+
+// ===== CONFIGURAZIONE MODULO =====
+const MODULE_CONFIG = {
+  MAX_TOPICS_PER_DAY: 3,
+  RESERVE_REVIEW_DAYS: true
 };
 
-// ===== UNICA FASE: Distribuzione Equa degli Argomenti =====
-export async function phaseEquitableDistribution(examName, topics, totalDays, userDescription, progressCallback) {
-  console.log(`📅 DISTRIBUZIONE: ${topics.length} argomenti in ${totalDays} giorni`);
+// ===== INPUT/OUTPUT INTERFACES =====
+
+/**
+ * @typedef {Object} DistributionInput
+ * @property {string} examName - Nome dell'esame
+ * @property {Array} topics - Lista degli argomenti da distribuire
+ * @property {number} totalDays - Numero totale di giorni
+ * @property {string} userDescription - Descrizione utente (opzionale)
+ * @property {function} progressCallback - Callback per progress (opzionale)
+ */
+
+/**
+ * @typedef {Object} DistributionOutput
+ * @property {Array} dailyPlan - Piano giornaliero
+ * @property {Object} statistics - Statistiche della distribuzione
+ * @property {Object} phaseResults - Risultati delle singole fasi
+ * @property {boolean} success - Successo dell'operazione
+ */
+
+// ===== FASI DI DISTRIBUZIONE =====
+
+/**
+ * FASE 1: Distribuzione Equa degli Argomenti
+ * INPUT: examName, topics, totalDays, userDescription
+ * OUTPUT: Distribuzione giornaliera degli argomenti
+ */
+async function phaseEquitableDistribution(input) {
+  const { examName, topics, totalDays, userDescription, progressCallback } = input;
+  
+  logPhase('equitable-distribution', `${topics.length} argomenti in ${totalDays} giorni`);
   
   const topicsInfo = topics.map((topic, index) => {
     let info = `${index + 1}. ${topic.title}`;
@@ -29,7 +65,7 @@ export async function phaseEquitableDistribution(examName, topics, totalDays, us
     return info;
   }).join('\n');
 
-  const promptText = `DISTRIBUZIONE EQUA DEGLI ARGOMENTI per l'esame "${examName}" (${totalDays} giorni):
+  const prompt = `DISTRIBUZIONE EQUA DEGLI ARGOMENTI per l'esame "${examName}" (${totalDays} giorni):
 
 ARGOMENTI DA DISTRIBUIRE:
 ${topicsInfo}
@@ -44,7 +80,7 @@ REGOLE CRITICHE:
    - Numero di pagine per argomento
    - Priorità e difficoltà
    - Carico di lavoro giornaliero equilibrato
-3. Massimo ${DISTRIBUTION_CONFIG.MAX_TOPICS_PER_DAY} argomenti per giorno
+3. Massimo ${MODULE_CONFIG.MAX_TOPICS_PER_DAY} argomenti per giorno
 4. Se necessario, lasciare alcuni giorni vuoti per ripasso
 5. Priorità agli argomenti più importanti nei primi giorni
 
@@ -69,7 +105,7 @@ JSON richiesto:
         "estimatedHours": 3,
         "difficulty": "medium"
       },
-      "dayType": "study" // "study" o "review"
+      "dayType": "study"
     }
   ],
   "distributionSummary": {
@@ -80,7 +116,7 @@ JSON richiesto:
     "averageTopicsPerDay": 1.2,
     "averageHoursPerDay": 3.5
   },
-  "unassignedTopics": [], // Deve essere vuoto - tutti gli argomenti devono essere assegnati
+  "unassignedTopics": [],
   "notes": "Strategia di distribuzione utilizzata"
 }
 
@@ -89,15 +125,24 @@ IMPORTANTE:
 - Ogni titolo deve corrispondere ESATTAMENTE a uno degli argomenti nella lista
 - Tutti i ${totalDays} giorni devono essere specificati (anche se vuoti per ripasso)`;
 
-  const result = await executeAIPhase('equitable_distribution', promptText, [], [], progressCallback, 'text');
+  const aiInput = createAIServiceInput(prompt, [], 'text', 'equitable-distribution', progressCallback);
+  const result = await executeAIRequest(aiInput);
   
-  console.log(`✅ Distribuzione: ${result.dailyDistribution?.length || 0} giorni pianificati`);
-  return result;
+  validateAIServiceOutput(result, ['dailyDistribution']);
+  
+  logPhase('equitable-distribution', `Distribuzione: ${result.data.dailyDistribution?.length || 0} giorni pianificati`);
+  return result.data;
 }
 
-// ===== FASE DI VALIDAZIONE E CORREZIONE =====
-export async function phaseDistributionValidation(distributionResult, totalDays, originalTopics, progressCallback) {
-  console.log(`🔍 VALIDAZIONE DISTRIBUZIONE: ${totalDays} giorni target, ${originalTopics.length} argomenti`);
+/**
+ * FASE 2: Validazione e Correzione
+ * INPUT: distributionResult, totalDays, originalTopics
+ * OUTPUT: Distribuzione validata e corretta
+ */
+async function phaseDistributionValidation(input) {
+  const { distributionResult, totalDays, originalTopics, progressCallback } = input;
+  
+  logPhase('distribution-validation', `Validazione distribuzione: ${totalDays} giorni target, ${originalTopics.length} argomenti`);
   
   progressCallback?.({ type: 'processing', message: 'Validazione e correzione distribuzione...' });
 
@@ -120,7 +165,7 @@ export async function phaseDistributionValidation(distributionResult, totalDays,
     topics.forEach(title => assignedTopics.add(title));
   });
 
-  console.log(`📊 Assegnati: ${assignedTopics.size}/${originalTopicTitles.size} argomenti`);
+  logPhase('distribution-validation', `Assegnati: ${assignedTopics.size}/${originalTopicTitles.size} argomenti`);
 
   // Trova argomenti non assegnati
   const unassignedTopics = Array.from(originalTopicTitles).filter(title => !assignedTopics.has(title));
@@ -129,15 +174,15 @@ export async function phaseDistributionValidation(distributionResult, totalDays,
   const invalidAssignments = Array.from(assignedTopics).filter(title => !originalTopicTitles.has(title));
 
   if (unassignedTopics.length > 0) {
-    console.log(`⚠️ Non assegnati: ${unassignedTopics.length} argomenti`);
+    logPhase('distribution-validation', `Non assegnati: ${unassignedTopics.length} argomenti`);
   }
 
   if (invalidAssignments.length > 0) {
-    console.log(`❌ Assegnazioni invalide: ${invalidAssignments.length}`);
+    logPhase('distribution-validation', `Assegnazioni invalide: ${invalidAssignments.length}`);
   }
 
   // Correggi la distribuzione
-  console.log(`🔧 Correggendo distribuzione...`);
+  logPhase('distribution-validation', `Correggendo distribuzione...`);
   const correctedDailyPlan = [];
   
   // Assicura che tutti i giorni 1-totalDays siano presenti
@@ -189,12 +234,12 @@ export async function phaseDistributionValidation(distributionResult, totalDays,
 
   // Distribuisci argomenti non assegnati nei giorni con meno carico
   if (unassignedTopics.length > 0) {
-    console.log(`🔄 Ridistribuendo ${unassignedTopics.length} argomenti...`);
+    logPhase('distribution-validation', `Ridistribuendo ${unassignedTopics.length} argomenti...`);
     
     for (const topicTitle of unassignedTopics) {
       // Trova il giorno con meno argomenti
       const dayWithLeastTopics = correctedDailyPlan
-        .filter(day => day.assignedTopics.length < DISTRIBUTION_CONFIG.MAX_TOPICS_PER_DAY)
+        .filter(day => day.assignedTopics.length < MODULE_CONFIG.MAX_TOPICS_PER_DAY)
         .sort((a, b) => a.assignedTopics.length - b.assignedTopics.length)[0];
       
       if (dayWithLeastTopics) {
@@ -213,7 +258,7 @@ export async function phaseDistributionValidation(distributionResult, totalDays,
         dayWithLeastTopics.dailyWorkload.estimatedHours += originalTopic?.estimatedHours || 3;
         dayWithLeastTopics.dayType = 'study';
         
-        console.log(`✅ "${topicTitle}" -> giorno ${dayWithLeastTopics.day}`);
+        logPhase('distribution-validation', `"${topicTitle}" -> giorno ${dayWithLeastTopics.day}`);
       } else {
         // Se tutti i giorni sono pieni, aggiungi un giorno extra
         const originalTopic = originalTopics.find(t => t.title?.trim() === topicTitle);
@@ -235,7 +280,7 @@ export async function phaseDistributionValidation(distributionResult, totalDays,
         };
         
         correctedDailyPlan.push(newDay);
-        console.log(`➕ "${topicTitle}" -> nuovo giorno ${newDay.day}`);
+        logPhase('distribution-validation', `"${topicTitle}" -> nuovo giorno ${newDay.day}`);
       }
     }
   }
@@ -254,9 +299,9 @@ export async function phaseDistributionValidation(distributionResult, totalDays,
       : 0
   };
 
-  console.log(`✅ Statistiche finali: ${finalStats.totalTopicsDistributed}/${originalTopics.length} argomenti, ${finalStats.studyDays}/${finalStats.reviewDays} studio/ripasso`);
+  logPhase('distribution-validation', `Statistiche finali: ${finalStats.totalTopicsDistributed}/${originalTopics.length} argomenti, ${finalStats.studyDays}/${finalStats.reviewDays} studio/ripasso`);
   
-  const result = {
+  return {
     dailyPlan: correctedDailyPlan,
     statistics: finalStats,
     corrections: {
@@ -266,43 +311,82 @@ export async function phaseDistributionValidation(distributionResult, totalDays,
     },
     originalDistribution: distributionResult
   };
-  
-  return result;
 }
 
-// ===== ORCHESTRATORE SEMPLIFICATO =====
-export async function distributeTopicsMultiPhase(examName, totalDays, topics, userDescription = "", progressCallback) {
-  console.log(`🎯 DISTRIBUZIONE MULTI-FASE`);
-  console.log(`📚 ${examName} | 🗓️ ${totalDays} giorni | 📝 ${topics.length} argomenti`);
+// ===== ORCHESTRATORE PRINCIPALE =====
+
+/**
+ * Esegue la distribuzione completa degli argomenti
+ * INPUT: DistributionInput
+ * OUTPUT: DistributionOutput
+ */
+export async function distributeTopics(input) {
+  const { examName, topics, totalDays, userDescription = '', progressCallback } = input;
+  
+  // Validazione input
+  if (!examName || typeof examName !== 'string') {
+    throw createPhaseError('distribution', 'examName deve essere una stringa non vuota');
+  }
+  
+  if (!Array.isArray(topics) || topics.length === 0) {
+    throw createPhaseError('distribution', 'topics deve essere un array non vuoto');
+  }
+  
+  if (!totalDays || totalDays < 1 || totalDays > 365) {
+    throw createPhaseError('distribution', 'totalDays deve essere tra 1 e 365');
+  }
+  
+  logPhase('distribution', `DISTRIBUZIONE ARGOMENTI`);
+  logPhase('distribution', `📚 ${examName} | 🗓️ ${totalDays} giorni | 📝 ${topics.length} argomenti`);
   
   try {
+    // FASE 1: Distribuzione Equa
     progressCallback?.({ type: 'processing', message: 'Distribuzione equa degli argomenti...' });
-    const distributionResult = await phaseEquitableDistribution(examName, topics, totalDays, userDescription, progressCallback);
+    const distributionResult = await executePhaseWithErrorHandling(
+      'equitable-distribution',
+      phaseEquitableDistribution,
+      { examName, topics, totalDays, userDescription, progressCallback }
+    );
     
+    // FASE 2: Validazione e Correzione
     progressCallback?.({ type: 'processing', message: 'Validazione e correzione distribuzione...' });
-    const finalResult = await phaseDistributionValidation(distributionResult, totalDays, topics, progressCallback);
+    const finalResult = await executePhaseWithErrorHandling(
+      'distribution-validation',
+      phaseDistributionValidation,
+      { distributionResult, totalDays, originalTopics: topics, progressCallback }
+    );
     
-    const result = {
-      ...finalResult,
+    const output = createDistributionPhaseOutput('distribution', {
+      dailyPlan: finalResult.dailyPlan,
+      statistics: finalResult.statistics,
       phaseResults: {
         distribution: distributionResult,
         validation: finalResult
       }
-    };
+    }, {
+      totalTopics: topics.length,
+      totalDays: totalDays,
+      correctionsMade: finalResult.corrections.correctionsMade
+    });
 
-    console.log(`🎉 DISTRIBUZIONE COMPLETATA: ${result.statistics.totalDaysUsed} giorni, ${result.statistics.totalTopicsDistributed} argomenti`);
+    logPhase('distribution', `DISTRIBUZIONE COMPLETATA: ${output.data.statistics.totalDaysUsed} giorni, ${output.data.statistics.totalTopicsDistributed} argomenti`);
     progressCallback?.({ type: 'processing', message: 'Distribuzione completata!' });
-    return result;
+    
+    return output;
 
   } catch (error) {
-    console.error(`❌ ERRORE DISTRIBUZIONE:`, error);
-    throw new Error(`Errore distribuzione: ${error.message}`);
+    logPhase('distribution', `ERRORE DISTRIBUZIONE: ${error.message}`);
+    throw createPhaseError('distribution', `Errore distribuzione: ${error.message}`, error);
   }
 }
 
-// ===== FUNZIONI LEGACY (per compatibilità) =====
-export const phaseWorkloadAnalysis = async (examName, topics, totalDays, userDescription, progressCallback) => {
-  console.warn('🔄 Legacy phaseWorkloadAnalysis -> new system');
+// ===== FUNZIONI LEGACY (per compatibilità con il sistema esistente) =====
+
+/**
+ * Funzione legacy per compatibilità con phaseWorkloadAnalysis
+ */
+export async function legacyWorkloadAnalysis(examName, topics, totalDays, userDescription, progressCallback) {
+  logPhase('legacy-compatibility', 'phaseWorkloadAnalysis -> new system');
   return { 
     workloadAnalysis: topics.map(t => ({ 
       topicTitle: t.title, 
@@ -317,12 +401,14 @@ export const phaseWorkloadAnalysis = async (examName, topics, totalDays, userDes
       hoursPerDay: Math.round((topics.reduce((sum, t) => sum + (t.estimatedHours || 3), 0) / totalDays) * 10) / 10
     }
   };
-};
+}
 
-export const phaseTopicGrouping = async (examName, topics, workloadResult, totalDays, progressCallback) => {
-  console.warn('🔄 Legacy phaseTopicGrouping -> new system');
+/**
+ * Funzione legacy per compatibilità con phaseTopicGrouping
+ */
+export async function legacyTopicGrouping(examName, topics, workloadResult, totalDays, progressCallback) {
+  logPhase('legacy-compatibility', 'phaseTopicGrouping -> new system');
   
-  // Raggruppa argomenti per difficoltà per compatibilità
   const groupsByDifficulty = {
     beginner: topics.filter(t => t.difficulty === 'beginner'),
     intermediate: topics.filter(t => t.difficulty === 'intermediate'),
@@ -347,14 +433,31 @@ export const phaseTopicGrouping = async (examName, topics, workloadResult, total
     })),
     topicGroups: topicGroups
   };
-};
+}
 
-export const phaseDayDistribution = async (examName, topics, workloadResult, groupingResult, totalDays, progressCallback) => {
-  console.warn('🔄 Legacy phaseDayDistribution -> new system');
-  return await phaseEquitableDistribution(examName, topics, totalDays, '', progressCallback);
-};
+/**
+ * Funzione legacy per compatibilità con phaseDayDistribution
+ */
+export async function legacyDayDistribution(examName, topics, workloadResult, groupingResult, totalDays, progressCallback) {
+  logPhase('legacy-compatibility', 'phaseDayDistribution -> new system');
+  return await phaseEquitableDistribution({ examName, topics, totalDays, userDescription: '', progressCallback });
+}
 
-export const phaseBalancingOptimization = async (distributionResult, totalDays, originalTopics, progressCallback) => {
-  console.warn('🔄 Legacy phaseBalancingOptimization -> new system');
-  return await phaseDistributionValidation(distributionResult, totalDays, originalTopics, progressCallback);
+/**
+ * Funzione legacy per compatibilità con phaseBalancingOptimization
+ */
+export async function legacyBalancingOptimization(distributionResult, totalDays, originalTopics, progressCallback) {
+  logPhase('legacy-compatibility', 'phaseBalancingOptimization -> new system');
+  return await phaseDistributionValidation({ distributionResult, totalDays, originalTopics, progressCallback });
+}
+
+// ===== EXPORT DEFAULT =====
+export default {
+  distributeTopics,
+  MODULE_CONFIG,
+  // Legacy functions per compatibilità
+  legacyWorkloadAnalysis,
+  legacyTopicGrouping,
+  legacyDayDistribution,
+  legacyBalancingOptimization
 };

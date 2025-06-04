@@ -1,28 +1,64 @@
-// src/utils/gemini/contentAnalysisPhases.js - VERSIONE COMPLETAMENTE INDIPENDENTE
-import { executeAIPhase, CONFIG } from './geminiCore.js';
+// src/utils/gemini/modules/contentAnalysisModule.js - MODULO ANALISI CONTENUTI COMPLETAMENTE INDIPENDENTE
 
-// ===== CONFIGURAZIONE LOCALE INDIPENDENTE =====
-const CONTENT_CONFIG = {
-  MAX_TOPICS: CONFIG?.CONTENT_ANALYSIS?.maxTopicsTotal || 15,
-  MIN_TOPICS: CONFIG?.CONTENT_ANALYSIS?.minTopicsTotal || 5,
-  MIN_TOPIC_PAGES: CONFIG?.CONTENT_ANALYSIS?.minTopicPages || 5,
-  MAX_TOPIC_PAGES: CONFIG?.CONTENT_ANALYSIS?.maxTopicPages || 20,
-  IDEAL_TOPIC_PAGES: CONFIG?.CONTENT_ANALYSIS?.idealTopicPages || 12
+import { executeAIRequest, createAIServiceInput, validateAIServiceOutput } from '../services/geminiAIService.js';
+import { 
+  createContentPhaseInput, 
+  createContentPhaseOutput, 
+  validatePhaseInput,
+  logPhase,
+  createPhaseError,
+  executePhaseWithErrorHandling
+} from '../shared/geminiShared.js';
+
+// ===== CONFIGURAZIONE MODULO =====
+const MODULE_CONFIG = {
+  MAX_TOPICS: 15,
+  MIN_TOPICS: 5,
+  MIN_TOPIC_PAGES: 5,
+  MAX_TOPIC_PAGES: 20,
+  IDEAL_TOPIC_PAGES: 12
 };
 
-// ===== FASE 1: Ricerca Indice =====
-export async function phaseIndexSearch(examName, filesArray, originalFilesDriveInfo, userDescription, progressCallback, analysisMode = 'pdf') {
-  console.log(`🔍 FASE 1: Ricerca indice (${analysisMode} mode)`);
+// ===== INPUT/OUTPUT INTERFACES =====
+
+/**
+ * @typedef {Object} ContentAnalysisInput
+ * @property {string} examName - Nome dell'esame
+ * @property {Array} files - Array di file PDF
+ * @property {string} userDescription - Descrizione utente (opzionale)
+ * @property {string} analysisMode - 'pdf' o 'text'
+ * @property {function} progressCallback - Callback per progress (opzionale)
+ */
+
+/**
+ * @typedef {Object} ContentAnalysisOutput
+ * @property {Array} topics - Lista degli argomenti estratti
+ * @property {Object} statistics - Statistiche dell'analisi
+ * @property {Object} phaseResults - Risultati delle singole fasi
+ * @property {boolean} success - Successo dell'operazione
+ */
+
+// ===== FASI DI ANALISI =====
+
+/**
+ * FASE 1: Ricerca Indice
+ * INPUT: examName, files, userDescription, analysisMode
+ * OUTPUT: Informazioni sull'indice trovato
+ */
+async function phaseIndexSearch(input) {
+  const { examName, files, userDescription, analysisMode, progressCallback } = input;
   
-  const filesList = originalFilesDriveInfo
-    .map((fInfo, index) => `- PDF ${index}: ${fInfo.name}`)
+  logPhase('index-search', `Ricerca indice (${analysisMode} mode)`);
+  
+  const filesList = files
+    .map((file, index) => `- PDF ${index}: ${file.name}`)
     .join('\n');
 
   const modeNote = analysisMode === 'text' 
     ? '\n\nNOTA: Analisi basata su testo estratto. Cerca sezioni come "Indice", "Sommario", "Contenuti".'
     : '\n\nNOTA: Analisi completa. Cerca indici visivi, sommari, elenchi di capitoli.';
 
-  const promptText = `CERCA L'INDICE nei seguenti documenti PDF per l'esame "${examName}":
+  const prompt = `CERCA L'INDICE nei seguenti documenti PDF per l'esame "${examName}":
 
 ${filesList}
 
@@ -43,7 +79,7 @@ JSON richiesto:
     "filename": "nome.pdf",
     "startPage": 2,
     "endPage": 4,
-    "indexType": "detailed" // "detailed", "simple", "none"
+    "indexType": "detailed"
   },
   "indexContent": [
     {
@@ -63,28 +99,36 @@ JSON richiesto:
   "analysisMode": "${analysisMode}"
 }`;
 
-  const result = await executeAIPhase('index_search', promptText, filesArray, originalFilesDriveInfo, progressCallback, analysisMode);
+  const aiInput = createAIServiceInput(prompt, files, analysisMode, 'index-search', progressCallback);
+  const result = await executeAIRequest(aiInput);
   
-  console.log(`✅ Indice ${result.indexFound ? 'trovato' : 'non trovato'} - ${result.totalChapters || 0} capitoli`);
-  return result;
+  validateAIServiceOutput(result, ['indexFound']);
+  
+  logPhase('index-search', `Indice ${result.data.indexFound ? 'trovato' : 'non trovato'}`);
+  return result.data;
 }
 
-// ===== FASE 2: Validazione e Raffinamento Indice =====
-export async function phaseIndexValidation(examName, indexResult, filesArray, originalFilesDriveInfo, progressCallback, analysisMode = 'pdf') {
-  console.log(`🔍 FASE 2: Validazione indice (${analysisMode} mode)`);
+/**
+ * FASE 2: Validazione Indice
+ * INPUT: examName, indexResult, files, analysisMode
+ * OUTPUT: Indice validato o struttura base creata
+ */
+async function phaseIndexValidation(input) {
+  const { examName, indexResult, files, analysisMode, progressCallback } = input;
+  
+  logPhase('index-validation', `Validazione indice (${analysisMode} mode)`);
   
   const indexInfo = JSON.stringify(indexResult, null, 2);
-
   const modeNote = analysisMode === 'text' 
     ? '\n\nNOTA: Valida l\'indice basandoti sul testo estratto. Se non trovato, crea struttura base.'
     : '\n\nNOTA: Valida l\'indice con accesso completo. Se non trovato, analizza primi capitoli.';
 
-  let promptText;
+  let prompt;
 
   if (indexResult.indexFound && indexResult.indexContent && indexResult.indexContent.length > 0) {
-    console.log(`📋 Validazione indice esistente (${indexResult.indexContent.length} capitoli)`);
-    // Se l'indice è stato trovato, validalo e raffinalo
-    promptText = `VALIDA E RAFFINA L'INDICE trovato per l'esame "${examName}":
+    logPhase('index-validation', `Validazione indice esistente (${indexResult.indexContent.length} capitoli)`);
+    
+    prompt = `VALIDA E RAFFINA L'INDICE trovato per l'esame "${examName}":
 
 INDICE IDENTIFICATO:
 ${indexInfo}${modeNote}
@@ -104,14 +148,14 @@ JSON richiesto:
       "chapter": "Nome capitolo",
       "startPage": 5,
       "endPage": 25,
-      "importance": "high", // "high", "medium", "low"
-      "difficulty": "beginner", // "beginner", "intermediate", "advanced"
+      "importance": "high",
+      "difficulty": "beginner",
       "subsections": [
         {
           "title": "Sottosezione",
           "startPage": 5,
           "endPage": 10,
-          "contentType": "theory" // "theory", "exercises", "examples"
+          "contentType": "theory"
         }
       ]
     }
@@ -120,9 +164,9 @@ JSON richiesto:
   "analysisMode": "${analysisMode}"
 }`;
   } else {
-    console.log(`📋 Creazione struttura base (nessun indice)`);
-    // Se l'indice non è stato trovato, crea una struttura base
-    promptText = `CREA STRUTTURA BASE per l'esame "${examName}" (nessun indice trovato):
+    logPhase('index-validation', `Creazione struttura base (nessun indice)`);
+    
+    prompt = `CREA STRUTTURA BASE per l'esame "${examName}" (nessun indice trovato):
 
 INFORMAZIONI DISPONIBILI:
 ${indexInfo}${modeNote}
@@ -142,7 +186,7 @@ JSON richiesto:
       "chapter": "Sezione stimata",
       "startPage": 1,
       "endPage": 30,
-      "confidence": "medium", // "high", "medium", "low"
+      "confidence": "medium",
       "basedOn": "Analisi prime pagine",
       "contentType": "theory"
     }
@@ -152,24 +196,31 @@ JSON richiesto:
 }`;
   }
 
-  const result = await executeAIPhase('index_validation', promptText, filesArray, originalFilesDriveInfo, progressCallback, analysisMode);
+  const aiInput = createAIServiceInput(prompt, files, analysisMode, 'index-validation', progressCallback);
+  const result = await executeAIRequest(aiInput);
   
-  console.log(`✅ Indice ${result.indexValid ? 'validato' : 'struttura base creata'}`);
-  return result;
+  validateAIServiceOutput(result);
+  
+  logPhase('index-validation', `Indice ${result.data.indexValid ? 'validato' : 'struttura base creata'}`);
+  return result.data;
 }
 
-// ===== FASE 3: Analisi Pagina per Pagina =====
-export async function phasePageByPageAnalysis(examName, indexResult, validationResult, filesArray, originalFilesDriveInfo, progressCallback, analysisMode = 'pdf') {
-  console.log(`🔍 FASE 3: Analisi pagine (${analysisMode} mode)`);
+/**
+ * FASE 3: Analisi Pagina per Pagina
+ * INPUT: examName, indexResult, validationResult, files, analysisMode
+ * OUTPUT: Transizioni principali tra argomenti
+ */
+async function phasePageAnalysis(input) {
+  const { examName, indexResult, validationResult, files, analysisMode, progressCallback } = input;
+  
+  logPhase('page-analysis', `Analisi pagine (${analysisMode} mode)`);
   
   const hasValidIndex = validationResult.indexValid || (indexResult.indexFound && indexResult.indexContent?.length > 0);
-
   const modeNote = analysisMode === 'text' 
     ? '\n\nNOTA: Analisi testuale. Focus su contenuti descrittivi.'
     : '\n\nNOTA: Analisi completa con elementi visivi.';
 
-  // Prompt più conciso per evitare overflow di token
-  const promptText = `ANALISI PAGINE per l'esame "${examName}":
+  const prompt = `ANALISI PAGINE per l'esame "${examName}":
 
 ${hasValidIndex ? 'INDICE TROVATO - Usalo come guida per identificare transizioni tra argomenti.' : 'NESSUN INDICE - Identifica transizioni basandoti sui contenuti.'}${modeNote}
 
@@ -199,28 +250,36 @@ JSON richiesto:
   "analysisMode": "${analysisMode}"
 }`;
 
-  const result = await executeAIPhase('page_analysis', promptText, filesArray, originalFilesDriveInfo, progressCallback, analysisMode);
+  const aiInput = createAIServiceInput(prompt, files, analysisMode, 'page-analysis', progressCallback);
+  const result = await executeAIRequest(aiInput);
   
-  console.log(`✅ Trovate ${result.mainTransitions?.length || 0} transizioni principali`);
-  return result;
+  validateAIServiceOutput(result, ['mainTransitions']);
+  
+  logPhase('page-analysis', `Trovate ${result.data.mainTransitions?.length || 0} transizioni principali`);
+  return result.data;
 }
 
-// ===== FASE 4: Raggruppamento in Argomenti =====
-export async function phaseTopicGrouping(examName, pageAnalysisResult, validationResult, userDescription, progressCallback, analysisMode = 'pdf') {
-  console.log(`🔍 FASE 4: Raggruppamento argomenti`);
+/**
+ * FASE 4: Raggruppamento in Argomenti
+ * INPUT: examName, pageAnalysisResult, userDescription
+ * OUTPUT: Argomenti raggruppati
+ */
+async function phaseTopicGrouping(input) {
+  const { examName, pageAnalysisResult, userDescription, progressCallback } = input;
+  
+  logPhase('topic-grouping', `Raggruppamento argomenti`);
   
   const transitions = pageAnalysisResult.mainTransitions || [];
   
   if (transitions.length === 0) {
-    throw new Error('Nessuna transizione identificata nella fase precedente');
+    throw createPhaseError('topic-grouping', 'Nessuna transizione identificata nella fase precedente');
   }
   
-  // Crea una descrizione concisa delle transizioni per evitare overflow
   const transitionsInfo = transitions.slice(0, 20).map((t, i) => 
     `${i+1}. ${t.topicTitle} (pag.${t.startPage}-${t.endPage}) [${t.contentType}]`
   ).join('\n');
 
-  const promptText = `RAGGRUPPA IN ARGOMENTI per l'esame "${examName}":
+  const prompt = `RAGGRUPPA IN ARGOMENTI per l'esame "${examName}":
 
 SEZIONI IDENTIFICATE:
 ${transitionsInfo}
@@ -228,8 +287,8 @@ ${transitionsInfo}
 ${userDescription ? `Note: ${userDescription}` : ''}
 
 REGOLE:
-- ${CONTENT_CONFIG.MIN_TOPICS}-${CONTENT_CONFIG.MAX_TOPICS} argomenti totali
-- ${CONTENT_CONFIG.MIN_TOPIC_PAGES}-${CONTENT_CONFIG.MAX_TOPIC_PAGES} pagine per argomento
+- ${MODULE_CONFIG.MIN_TOPICS}-${MODULE_CONFIG.MAX_TOPICS} argomenti totali
+- ${MODULE_CONFIG.MIN_TOPIC_PAGES}-${MODULE_CONFIG.MAX_TOPIC_PAGES} pagine per argomento
 - Raggruppa sezioni correlate
 - Mantieni sequenza logica
 
@@ -260,20 +319,29 @@ JSON richiesto:
   }
 }`;
 
-  const result = await executeAIPhase('topic_grouping', promptText, [], [], progressCallback, 'text');
+  const aiInput = createAIServiceInput(prompt, [], 'text', 'topic-grouping', progressCallback);
+  const result = await executeAIRequest(aiInput);
   
-  console.log(`✅ Creati ${result.studyTopics?.length || 0} argomenti`);
-  return result;
+  validateAIServiceOutput(result, ['studyTopics']);
+  
+  logPhase('topic-grouping', `Creati ${result.data.studyTopics?.length || 0} argomenti`);
+  return result.data;
 }
 
-// ===== FASE 5: Validazione Finale =====
-export async function phaseTopicValidation(topicGroupingResult, originalFilesDriveInfo, progressCallback, analysisMode = 'pdf') {
-  console.log(`🔍 FASE 5: Validazione finale`);
+/**
+ * FASE 5: Validazione Finale
+ * INPUT: topicGroupingResult, files
+ * OUTPUT: Argomenti validati e corretti
+ */
+async function phaseTopicValidation(input) {
+  const { topicGroupingResult, files } = input;
+  
+  logPhase('topic-validation', `Validazione finale`);
   
   const topics = topicGroupingResult.studyTopics || [];
   
   // Validazione e correzione automatica
-  const validatedTopics = validateAndFixTopics(topics, originalFilesDriveInfo);
+  const validatedTopics = validateAndFixTopics(topics, files);
   
   const finalStats = {
     totalTopics: validatedTopics.length,
@@ -281,34 +349,35 @@ export async function phaseTopicValidation(topicGroupingResult, originalFilesDri
       return sum + (topic.pages_info?.reduce((pageSum, pInfo) => {
         return pageSum + (pInfo.end_page - pInfo.start_page + 1);
       }, 0) || 0);
-    }, 0),
-    analysisMode: analysisMode
+    }, 0)
   };
   
   finalStats.averagePagesPerTopic = finalStats.totalTopics > 0 
     ? Math.round(finalStats.totalAssignedPages / finalStats.totalTopics) 
     : 0;
 
-  console.log(`✅ Validazione completata: ${validatedTopics.length} argomenti, ${finalStats.totalAssignedPages} pagine totali`);
+  logPhase('topic-validation', `Validazione completata: ${validatedTopics.length} argomenti, ${finalStats.totalAssignedPages} pagine totali`);
   
-  const result = {
+  return {
     validatedTopics,
     statistics: finalStats,
     originalGrouping: topicGroupingResult
   };
-  
-  return result;
 }
 
-// ===== FUNZIONI DI SUPPORTO =====
-function validateAndFixTopics(topics, originalFilesDriveInfo) {
-  console.log(`🔧 Validazione ${topics.length} argomenti...`);
+// ===== UTILITY FUNCTIONS =====
+
+/**
+ * Valida e corregge gli argomenti
+ */
+function validateAndFixTopics(topics, files) {
+  logPhase('validation', `Validazione ${topics.length} argomenti...`);
   
   // Rimuovi topic senza pagine
   let validTopics = topics.filter(topic => {
     const hasPages = topic.pages_info && topic.pages_info.length > 0;
     if (!hasPages) {
-      console.log(`⚠️ Rimosso "${topic.title}" (senza pagine)`);
+      logPhase('validation', `Rimosso "${topic.title}" (senza pagine)`);
     }
     return hasPages;
   });
@@ -340,9 +409,8 @@ function validateAndFixTopics(topics, originalFilesDriveInfo) {
 
   // Correggi sovrapposizioni se presenti
   if (overlappingPages.length > 0) {
-    console.log(`⚠️ Correggendo ${overlappingPages.length} sovrapposizioni...`);
+    logPhase('validation', `Correggendo ${overlappingPages.length} sovrapposizioni...`);
     
-    // Ordina topic per priorità (quelli con meno pagine hanno precedenza)
     const sortedTopics = [...validTopics].sort((a, b) => {
       const pagesA = a.pages_info?.reduce((sum, p) => sum + (p.end_page - p.start_page + 1), 0) || 0;
       const pagesB = b.pages_info?.reduce((sum, p) => sum + (p.end_page - p.start_page + 1), 0) || 0;
@@ -395,68 +463,114 @@ function validateAndFixTopics(topics, originalFilesDriveInfo) {
       }
       
       topic.pages_info = newPagesInfo;
-      // Ricalcola totalPages
       topic.totalPages = newPagesInfo.reduce((sum, pInfo) => 
         sum + (pInfo.end_page - pInfo.start_page + 1), 0
       );
     }
     
-    console.log(`✅ Sovrapposizioni corrette`);
+    logPhase('validation', `Sovrapposizioni corrette`);
   }
 
   // Filtra topic che non hanno più pagine dopo la correzione
   validTopics = validTopics.filter(topic => {
     const hasValidPages = topic.pages_info && topic.pages_info.length > 0 && topic.totalPages > 0;
     if (!hasValidPages) {
-      console.log(`⚠️ Rimosso "${topic.title}" (nessuna pagina valida)`);
+      logPhase('validation', `Rimosso "${topic.title}" (nessuna pagina valida)`);
     }
     return hasValidPages;
   });
 
-  console.log(`✅ Validazione completata: ${validTopics.length} argomenti finali`);
+  logPhase('validation', `Validazione completata: ${validTopics.length} argomenti finali`);
   return validTopics;
 }
 
 // ===== ORCHESTRATORE PRINCIPALE =====
-export async function analyzeContentStructureMultiPhase(examName, filesArray, originalFilesDriveInfo, userDescription = "", progressCallback, analysisMode = 'pdf') {
-  console.log(`🎯 ANALISI CONTENUTI MULTI-FASE (${analysisMode.toUpperCase()})`);
-  console.log(`📚 ${examName} | 📁 ${filesArray?.length || 0} file | 📝 ${userDescription || 'Nessuna nota'}`);
+
+/**
+ * Esegue l'analisi completa dei contenuti
+ * INPUT: ContentAnalysisInput
+ * OUTPUT: ContentAnalysisOutput
+ */
+export async function analyzeContent(input) {
+  const { examName, files, userDescription = '', analysisMode = 'pdf', progressCallback } = input;
+  
+  // Validazione input
+  validatePhaseInput('content-analysis', examName, files);
+  
+  logPhase('content-analysis', `ANALISI CONTENUTI (${analysisMode.toUpperCase()})`);
+  logPhase('content-analysis', `📚 ${examName} | 📁 ${files?.length || 0} file | 📝 ${userDescription || 'Nessuna nota'}`);
   
   try {
+    // FASE 1: Ricerca Indice
     progressCallback?.({ type: 'processing', message: `Fase 1/5: Ricerca indice (${analysisMode})...` });
-    const indexResult = await phaseIndexSearch(examName, filesArray, originalFilesDriveInfo, userDescription, progressCallback, analysisMode);
+    const indexResult = await executePhaseWithErrorHandling(
+      'index-search',
+      phaseIndexSearch,
+      { examName, files, userDescription, analysisMode, progressCallback }
+    );
     
+    // FASE 2: Validazione Indice
     progressCallback?.({ type: 'processing', message: `Fase 2/5: Validazione indice (${analysisMode})...` });
-    const validationResult = await phaseIndexValidation(examName, indexResult, filesArray, originalFilesDriveInfo, progressCallback, analysisMode);
+    const validationResult = await executePhaseWithErrorHandling(
+      'index-validation',
+      phaseIndexValidation,
+      { examName, indexResult, files, analysisMode, progressCallback }
+    );
     
+    // FASE 3: Analisi Pagina per Pagina
     progressCallback?.({ type: 'processing', message: `Fase 3/5: Analisi pagina per pagina (${analysisMode})...` });
-    const pageAnalysisResult = await phasePageByPageAnalysis(examName, indexResult, validationResult, filesArray, originalFilesDriveInfo, progressCallback, analysisMode);
+    const pageAnalysisResult = await executePhaseWithErrorHandling(
+      'page-analysis',
+      phasePageAnalysis,
+      { examName, indexResult, validationResult, files, analysisMode, progressCallback }
+    );
     
+    // FASE 4: Raggruppamento Argomenti
     progressCallback?.({ type: 'processing', message: 'Fase 4/5: Raggruppamento argomenti...' });
-    const topicGroupingResult = await phaseTopicGrouping(examName, pageAnalysisResult, validationResult, userDescription, progressCallback, analysisMode);
+    const topicGroupingResult = await executePhaseWithErrorHandling(
+      'topic-grouping',
+      phaseTopicGrouping,
+      { examName, pageAnalysisResult, userDescription, progressCallback }
+    );
     
+    // FASE 5: Validazione Finale
     progressCallback?.({ type: 'processing', message: 'Fase 5/5: Validazione finale...' });
-    const finalResult = await phaseTopicValidation(topicGroupingResult, originalFilesDriveInfo, progressCallback, analysisMode);
+    const finalResult = await executePhaseWithErrorHandling(
+      'topic-validation',
+      phaseTopicValidation,
+      { topicGroupingResult, files }
+    );
     
-    const result = {
-      tableOfContents: finalResult.validatedTopics,
-      pageMapping: {}, // Non più necessario con la nuova architettura
+    const output = createContentPhaseOutput('content-analysis', {
+      topics: finalResult.validatedTopics,
+      statistics: finalResult.statistics,
       phaseResults: {
         indexSearch: indexResult,
         indexValidation: validationResult,
         pageAnalysis: pageAnalysisResult,
         topicGrouping: topicGroupingResult,
         validation: finalResult
-      },
-      statistics: finalResult.statistics
-    };
+      }
+    }, {
+      analysisMode,
+      totalFiles: files.length,
+      totalTopics: finalResult.validatedTopics.length,
+      totalPages: finalResult.statistics.totalAssignedPages
+    });
 
-    console.log(`🎉 ANALISI COMPLETATA: ${result.tableOfContents.length} argomenti, ${result.statistics.totalAssignedPages} pagine`);
+    logPhase('content-analysis', `ANALISI COMPLETATA: ${output.data.topics.length} argomenti, ${output.data.statistics.totalAssignedPages} pagine`);
     progressCallback?.({ type: 'processing', message: `Analisi completata (${analysisMode})!` });
-    return result;
+    
+    return output;
 
   } catch (error) {
-    console.error(`❌ ERRORE ANALISI (${analysisMode}):`, error);
-    throw new Error(`Errore analisi contenuti (${analysisMode}): ${error.message}`);
+    logPhase('content-analysis', `ERRORE ANALISI (${analysisMode}): ${error.message}`);
+    throw createPhaseError('content-analysis', `Errore analisi contenuti (${analysisMode}): ${error.message}`, error);
   }
 }
+
+// ===== EXPORT DEFAULT =====
+export default {
+  analyzeContent,
+  MODULE_CONFIG
+};
