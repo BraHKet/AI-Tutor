@@ -17,19 +17,34 @@ export async function performIntelligentTopicSynthesis(input) {
   const globalStructure = pageAnalysisResult.globalStructure || {};
   
   if (pageAnalysisData.length === 0) {
-    // Potrebbe essere valido se non ci sono pagine, ma lancia un warning se ci si aspettava qualcosa.
-    logPhase('intelligent-topic-synthesis', 'Nessuna analisi pagina-per-pagina disponibile per la sintesi. Procedo con output vuoto.');
+    logPhase('intelligent-topic-synthesis', 'Nessuna analisi pagina-per-pagina disponibile per la sintesi');
     return { 
       synthesizedTopics: [],
-      synthesisStatistics: { originalPages: 0, synthesizedTopics: 0, totalPagesAssigned: 0, averagePagesPerTopic: 0, coveragePercentage: "0.0", synthesisStrategy: "Nessuna pagina da sintetizzare" },
-      qualityMetrics: { coverage: "0%", coherence: "N/A", balance: "N/A", overallQuality: "0.0" },
-      synthesisMetadata: { basedOnPages: 0, processingNotes: "Nessuna pagina analizzata fornita.", qualityAssurance: "N/A" }
+      synthesisStatistics: { 
+        originalPages: 0, 
+        synthesizedTopics: 0, 
+        totalPagesAssigned: 0, 
+        averagePagesPerTopic: 0, 
+        coveragePercentage: "0.0", 
+        synthesisStrategy: "Nessuna pagina da sintetizzare" 
+      },
+      qualityMetrics: { 
+        coverage: "0%", 
+        coherence: "N/A", 
+        balance: "N/A", 
+        overallQuality: "0.0" 
+      },
+      synthesisMetadata: { 
+        basedOnPages: 0, 
+        processingNotes: "Nessuna pagina analizzata fornita.", 
+        qualityAssurance: "N/A" 
+      }
     };
   }
 
   const analysisDataJson = JSON.stringify({
     globalStructure: globalStructure,
-    pageAnalysis: pageAnalysisData.slice(0, 200), // Limita per dimensione prompt se necessario
+    pageAnalysis: pageAnalysisData.slice(0, 200),
     contentSummary: pageAnalysisResult.contentSummary
   }, null, 2);
 
@@ -49,14 +64,6 @@ PRINCIPI DI SINTESI INTELLIGENTE:
 4. **PRESERVA** i riferimenti esatti alle pagine dall'analisi
 5. **ORDINA** secondo sequenza logica di apprendimento
 6. **BILANCIA** il carico di studio per argomento
-
-REGOLE INTELLIGENTI:
-- Se un concetto appare in più pagine consecutive, crea UN argomento che le include
-- Se una pagina contiene concetti molto diversi, considera di suddividerla
-- Mantieni argomenti tra 5-30 pagine quando possibile
-- Priorità alle pagine con importance="high"
-- Considera la difficulty per la sequenza di studio
-- Collega prerequisiti identificati nell'analisi
 
 FORMATO DETTAGLIATO:
 {
@@ -135,7 +142,6 @@ IMPORTANTE:
   
   let synthesisData = result.data;
   
-  // Applica miglioramenti di qualità se ci sono topic
   if (synthesisData.synthesizedTopics && synthesisData.synthesizedTopics.length > 0) {
      synthesisData = enhanceSynthesisQuality(synthesisData, pageAnalysisResult);
   }
@@ -157,7 +163,7 @@ function enhanceSynthesisQuality(synthesisResult, pageAnalysisResult) {
     return {
       ...topic,
       enhancedMetrics: topicStats,
-      qualityScore: calculateEnhancedQualityScore(topic, topicStats, topic.totalPages), // Pass totalPages
+      qualityScore: calculateEnhancedQualityScore(topic, topicStats, topic.totalPages),
       studyRecommendations: generateStudyRecommendations(topic, topicStats)
     };
   });
@@ -248,24 +254,22 @@ function calculateDifficultyDistribution(difficultyScores) {
 }
 
 /**
- * Calcola quality score migliorato (simile a calculateTopicQualityScore originale)
+ * Calcola quality score migliorato
  */
 function calculateEnhancedQualityScore(topic, topicStats, totalPages) {
-  let score = 0.5; // Base score
+  let score = 0.5;
   if (topic.description && topic.description.length > 50) score += 0.1;
   if (topic.keyConcepts && topic.keyConcepts.length > 3) score += 0.1;
   if (topic.learningObjectives && topic.learningObjectives.length > 0) score += 0.1;
   if (totalPages >= 8 && totalPages <= 25) score += 0.2; 
   if (topic.priority === 'high') score += 0.1;
   
-  // Bonus basati su statistiche dall'analisi
   if (topicStats.averageImportance === 'high') score += 0.1;
   if (topicStats.averageConceptDensity === 'high') score += 0.05;
   if (topicStats.analysisBasedEstimation) score += 0.05;
   
   return Math.min(1.0, parseFloat(score.toFixed(2)));
 }
-
 
 function generateStudyRecommendations(topic, topicStats) {
   const recommendations = [];
