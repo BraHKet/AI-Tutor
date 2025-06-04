@@ -1,7 +1,7 @@
 // src/utils/gemini/modules/contentAnalysis/phase1_indexSearch.js
 
 import { executeAIRequest, createAIServiceInput, validateAIServiceOutput } from '../../services/geminiAIService.js';
-import { logPhase, createPhaseError } from '../../shared/geminiShared.js';
+import { createPhaseError } from '../../shared/geminiShared.js';
 
 /**
  * FASE 1: Ricerca e Analisi dell'Indice (LEGGERA)
@@ -10,8 +10,6 @@ import { logPhase, createPhaseError } from '../../shared/geminiShared.js';
  */
 export async function performInitialIndexSearch(input) {
   const { examName, files, userDescription, analysisMode, progressCallback } = input;
-  
-  logPhase('initial-index-search', `FASE 1: Ricerca indice ${files.length} file (${analysisMode})`);
   
   const filesList = files
     .map((file, index) => `${index + 1}. ${file.name} (${Math.round(file.size / 1024 / 1024)} MB)`)
@@ -87,6 +85,7 @@ IMPORTANTE:
   
   validateAIServiceOutput(result, ['globalStructure', 'indexAnalysis']);
   
-  logPhase('initial-index-search', `FASE 1 completata: Struttura identificata con ${result.data.globalStructure?.mainSections?.length || 0} sezioni`);
+  console.log('FASE 1 - OUTPUT GEMINI:', JSON.stringify(result.data, null, 2));
+  
   return result.data;
 }

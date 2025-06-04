@@ -1,7 +1,6 @@
 // src/utils/gemini/modules/contentAnalysis/phase3_topicSynthesis.js
 
 import { executeAIRequest, createAIServiceInput, validateAIServiceOutput } from '../../services/geminiAIService.js';
-import { logPhase } from '../../shared/geminiShared.js';
 
 /**
  * FASE 3: Sintesi Intelligente degli Argomenti (basata su analisi completa)
@@ -11,13 +10,10 @@ import { logPhase } from '../../shared/geminiShared.js';
 export async function performIntelligentTopicSynthesis(input) {
   const { examName, pageAnalysisResult, userDescription, progressCallback } = input;
   
-  logPhase('intelligent-topic-synthesis', `FASE 3: Sintesi da ${pageAnalysisResult.pageByPageAnalysis?.length || 0} pagine analizzate`);
-  
   const pageAnalysisData = pageAnalysisResult.pageByPageAnalysis || [];
   const globalStructure = pageAnalysisResult.globalStructure || {};
   
   if (pageAnalysisData.length === 0) {
-    logPhase('intelligent-topic-synthesis', 'Nessuna analisi pagina-per-pagina disponibile per la sintesi');
     return { 
       synthesizedTopics: [],
       synthesisStatistics: { 
@@ -140,15 +136,14 @@ IMPORTANTE:
   
   validateAIServiceOutput(result, ['synthesizedTopics']);
   
+  console.log('FASE 3 - OUTPUT GEMINI:', JSON.stringify(result.data, null, 2));
+  
   let synthesisData = result.data;
   
   if (synthesisData.synthesizedTopics && synthesisData.synthesizedTopics.length > 0) {
      synthesisData = enhanceSynthesisQuality(synthesisData, pageAnalysisResult);
   }
 
-  const synthesizedTopicsCount = synthesisData.synthesizedTopics?.length || 0;
-  logPhase('intelligent-topic-synthesis', `FASE 3 completata: ${synthesizedTopicsCount} argomenti finali`);
-  
   return synthesisData;
 }
 
@@ -156,8 +151,6 @@ IMPORTANTE:
  * Migliora la qualità del risultato della sintesi
  */
 function enhanceSynthesisQuality(synthesisResult, pageAnalysisResult) {
-  logPhase('quality-enhancement', 'Miglioramento qualità sintesi...');
-  
   const enhancedTopics = synthesisResult.synthesizedTopics.map(topic => {
     const topicStats = calculateTopicStatisticsFromAnalysis(topic, pageAnalysisResult);
     return {

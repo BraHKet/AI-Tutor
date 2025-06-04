@@ -1,7 +1,7 @@
 // src/utils/gemini/modules/contentAnalysis/phase2_pageByPageAnalysis.js
 
 import { executeAIRequest, createAIServiceInput, validateAIServiceOutput } from '../../services/geminiAIService.js';
-import { logPhase, createPhaseError } from '../../shared/geminiShared.js';
+import { createPhaseError } from '../../shared/geminiShared.js';
 
 /**
  * FASE 2: Analisi Dettagliata Completa Pagina per Pagina (PESANTE)
@@ -10,8 +10,6 @@ import { logPhase, createPhaseError } from '../../shared/geminiShared.js';
  */
 export async function performComprehensivePageByPageAnalysis(input) {
   const { examName, files, phase1Output, userDescription, analysisMode, progressCallback } = input;
-  
-  logPhase('comprehensive-page-analysis', `FASE 2: Analisi completa ${files.length} file (${analysisMode})`);
   
   // Prepara contesto dalla Fase 1
   const contextFromPhase1 = preparePhase1Context(phase1Output);
@@ -129,10 +127,11 @@ IMPORTANTE:
   
   validateAIServiceOutput(result, ['pageByPageAnalysis', 'contentSummary']);
   
+  console.log('FASE 2 - OUTPUT GEMINI:', JSON.stringify(result.data, null, 2));
+  
   // Arricchisce l'analisi con il contesto della Fase 1
   const enhancedResult = enhancePageAnalysisWithPhase1Context(result.data, phase1Output);
   
-  logPhase('comprehensive-page-analysis', `FASE 2 completata: ${enhancedResult.pageByPageAnalysis?.length || 0} pagine analizzate`);
   return enhancedResult;
 }
 
