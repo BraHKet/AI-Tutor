@@ -38,7 +38,7 @@ STRATEGIA ANALISI COMPLETA:
 1. **ANALIZZA OGNI PAGINA SINGOLARMENTE** - Non saltare nessuna pagina
 2. **IDENTIFICA CONTENUTO SPECIFICO** - Una riga di descrizione per ogni pagina
 3. **VALUTA DIFFICOLTÀ** - Livello di complessità di ogni pagina
-4. **STIMA TEMPO STUDIO** - Tempo necessario per studiare ogni pagina
+4. **STIMA TEMPO STUDIO IN MINUTI** - Tempo necessario per studiare ogni pagina
 
 JSON RICHIESTO - FORMATO SEMPLIFICATO:
 
