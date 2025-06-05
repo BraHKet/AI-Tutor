@@ -16,10 +16,10 @@ import { performFinalValidationAndOptimization } from './phase4_validation.js';
 
 export const MODULE_CONFIG = {
   SINGLE_CALL_MODE: true,
-  MEGA_PROMPT_ANALYSIS: true,
+  RANGE_CORRECTION_MODE: true,
   MIN_TOPIC_QUALITY_SCORE: 0.1,
   MAX_TOPICS_UNLIMITED: true,
-  MAX_PHASE1_RETRIES: 3 // Numero massimo di retry tra Fase 1 e 2
+  MAX_CORRECTION_RETRIES: 3 // Numero massimo di retry per correzione range
 };
 
 /**
@@ -32,17 +32,17 @@ export async function analyzeContent(input) {
   
   validatePhaseInput('content-analysis-orchestrator', examName, files);
   
-  logPhase('content-analysis-orchestrator', `AVVIO ANALISI CONTENUTI (${analysisMode.toUpperCase()})`);
+  logPhase('content-analysis-orchestrator', `AVVIO ANALISI CONTENUTI CON CORREZIONE RANGE (${analysisMode.toUpperCase()})`);
   logPhase('content-analysis-orchestrator', `📚 ${examName} | 📁 ${files?.length || 0} file | 📝 ${userDescription || 'Nessuna nota'}`);
   
   const phaseResults = {};
 
   try {
-    // CICLO RETRY: FASE 1 + FASE 2 finché la validazione non passa
+    // CICLO RETRY: FASE 1 + FASE 2 (correzione) finché i range non sono corretti
     let indexSearchResult;
-    let sectionValidationResult;
+    let rangeCorrectionResult;
     let retryCount = 0;
-    const maxRetries = MODULE_CONFIG.MAX_PHASE1_RETRIES;
+    const maxRetries = MODULE_CONFIG.MAX_CORRECTION_RETRIES;
     
     while (retryCount < maxRetries) {
       // FASE 1: Ricerca Indice e Struttura Globale
@@ -55,36 +55,37 @@ export async function analyzeContent(input) {
         { examName, files, userDescription, analysisMode, progressCallback }
       );
       
-      // FASE 2: Validazione Sezioni
-      progressCallback?.({ type: 'processing', message: `Fase 2: Validazione sezioni identificate (${analysisMode}) - Tentativo ${retryCount + 1}...` });
-      logPhase('content-analysis-orchestrator', `🔍 FASE 2 - Validazione tentativo ${retryCount + 1}/${maxRetries}`);
+      // FASE 2: Correzione Intelligente dei Range
+      progressCallback?.({ type: 'processing', message: `Fase 2: Correzione range di pagine (${analysisMode}) - Tentativo ${retryCount + 1}...` });
+      logPhase('content-analysis-orchestrator', `🔧 FASE 2 - Correzione range tentativo ${retryCount + 1}/${maxRetries}`);
       
-      sectionValidationResult = await executePhaseWithErrorHandling(
-        'phase2-section-validation',
+      rangeCorrectionResult = await executePhaseWithErrorHandling(
+        'phase2-range-correction',
         performComprehensivePageByPageAnalysis,
         { examName, files, phase1Output: indexSearchResult, userDescription, analysisMode, progressCallback }
       );
       
-      // CONTROLLO VALIDAZIONE
-      const validationSuccess = sectionValidationResult?.validationSummary?.validationSuccess;
-      const validSections = sectionValidationResult?.validationSummary?.validSections || 0;
-      const totalSections = sectionValidationResult?.validationSummary?.totalSections || 0;
+      // CONTROLLO QUALITÀ CORREZIONE
+      const correctionSuccess = rangeCorrectionResult?.correctionSummary?.correctionSuccess;
+      const correctedSections = rangeCorrectionResult?.correctionSummary?.correctedSections || 0;
+      const totalSections = rangeCorrectionResult?.correctionSummary?.totalSections || 0;
+      const majorCorrections = rangeCorrectionResult?.correctionSummary?.majorCorrections || 0;
       
-      logPhase('content-analysis-orchestrator', `📊 VALIDAZIONE: ${validSections}/${totalSections} sezioni valide, Success: ${validationSuccess}`);
+      logPhase('content-analysis-orchestrator', `📊 CORREZIONE: ${correctedSections}/${totalSections} sezioni corrette, ${majorCorrections} correzioni importanti`);
       
-      if (validationSuccess === true) {
-        logPhase('content-analysis-orchestrator', `✅ VALIDAZIONE PASSATA al tentativo ${retryCount + 1}`);
-        break; // Validazione passata, esci dal loop
+      if (correctionSuccess === true && correctedSections > 0) {
+        logPhase('content-analysis-orchestrator', `✅ CORREZIONE RANGE COMPLETATA al tentativo ${retryCount + 1}`);
+        break; // Correzione riuscita, esci dal loop
       } else {
         retryCount++;
-        logPhase('content-analysis-orchestrator', `❌ VALIDAZIONE FALLITA - Tentativo ${retryCount}/${maxRetries}`);
+        logPhase('content-analysis-orchestrator', `❌ CORREZIONE RANGE INSUFFICIENTE - Tentativo ${retryCount}/${maxRetries}`);
         
         if (retryCount >= maxRetries) {
-          logPhase('content-analysis-orchestrator', `🚨 RAGGIUNTO LIMITE RETRY - Procedo con risultati parziali`);
+          logPhase('content-analysis-orchestrator', `🚨 RAGGIUNTO LIMITE RETRY CORREZIONE - Procedo con risultati parziali`);
           // Usa l'ultimo risultato anche se non perfetto
           break;
         } else {
-          logPhase('content-analysis-orchestrator', `🔄 RETRY FASE 1+2 tra 2 secondi...`);
+          logPhase('content-analysis-orchestrator', `🔄 RETRY CORREZIONE RANGE tra 2 secondi...`);
           // Piccola pausa prima del retry
           await new Promise(resolve => setTimeout(resolve, 2000));
         }
@@ -93,22 +94,24 @@ export async function analyzeContent(input) {
     
     // Salva i risultati delle fasi 1 e 2
     phaseResults.indexSearch = indexSearchResult;
-    phaseResults.sectionValidation = sectionValidationResult;
-    phaseResults.retryInfo = {
+    phaseResults.rangeCorrection = rangeCorrectionResult;
+    phaseResults.correctionInfo = {
       totalRetries: retryCount,
-      validationPassed: sectionValidationResult?.validationSummary?.validationSuccess === true,
-      finalAttempt: retryCount + 1
+      correctionSuccessful: rangeCorrectionResult?.correctionSummary?.correctionSuccess === true,
+      finalAttempt: retryCount + 1,
+      majorCorrections: rangeCorrectionResult?.correctionSummary?.majorCorrections || 0
     };
 
-    // FASE 3: Analisi Dettagliata Sezioni
-    progressCallback?.({ type: 'processing', message: 'Fase 3: Analisi dettagliata sezioni...' });
+    // FASE 3: Analisi Dettagliata con Range Corretti
+    progressCallback?.({ type: 'processing', message: 'Fase 3: Analisi dettagliata con range corretti...' });
+    logPhase('content-analysis-orchestrator', '🔍 FASE 3 - Analisi dettagliata con range corretti');
+    
     const synthesisResult = await executePhaseWithErrorHandling(
-      'phase3-section-analysis',
+      'phase3-detailed-analysis',
       performIntelligentTopicSynthesis,
       { 
         examName, 
-        pageAnalysisResult: sectionValidationResult, 
-        phase1Output: indexSearchResult, // Passa anche la Fase 1
+        pageAnalysisResult: rangeCorrectionResult, // Usa i range corretti
         userDescription, 
         progressCallback 
       }
@@ -116,14 +119,16 @@ export async function analyzeContent(input) {
     phaseResults.synthesis = synthesisResult;
     
     // FASE 4: Validazione e Ottimizzazione Finale
-    progressCallback?.({ type: 'processing', message: 'Fase 4: Validazione e ottimizzazione finale...' });
+    progressCallback?.({ type: 'processing', message: 'Fase 4: Validazione finale degli argomenti...' });
+    logPhase('content-analysis-orchestrator', '✅ FASE 4 - Validazione finale');
+    
     const finalResult = await executePhaseWithErrorHandling(
       'phase4-final-validation',
       performFinalValidationAndOptimization,
       { 
         synthesisResult, 
         files, 
-        initialComprehensiveAnalysisResult: sectionValidationResult, 
+        initialComprehensiveAnalysisResult: rangeCorrectionResult, 
         examName, 
         progressCallback 
       }
@@ -140,22 +145,24 @@ export async function analyzeContent(input) {
       totalTopics: finalResult.validatedTopics?.length || 0,
       totalPages: finalResult.statistics?.totalPages || 0,
       qualityScore: finalResult.validationReport?.qualityScore || 0,
-      architecture: "multi-phase-with-retry",
+      architecture: "multi-phase-with-range-correction",
       indexFound: indexSearchResult.indexAnalysis?.indexFound || false,
-      sectionsValidated: sectionValidationResult.validationSummary?.validSections || 0,
+      rangesCorrected: rangeCorrectionResult.correctionSummary?.correctedSections || 0,
+      majorCorrections: rangeCorrectionResult.correctionSummary?.majorCorrections || 0,
       retryCount: retryCount,
-      validationPassed: sectionValidationResult?.validationSummary?.validationSuccess === true
+      correctionSuccessful: rangeCorrectionResult?.correctionSummary?.correctionSuccess === true
     });
 
-    logPhase('content-analysis-orchestrator', `ANALISI COMPLETATA: ${output.data.topics.length} argomenti, ${output.data.statistics.totalPages} pagine`);
-    logPhase('content-analysis-orchestrator', `RETRY INFO: ${retryCount} tentativi, Validazione: ${output.metadata.validationPassed ? 'PASSATA' : 'PARZIALE'}`);
+    logPhase('content-analysis-orchestrator', `ANALISI COMPLETATA CON CORREZIONE RANGE: ${output.data.topics.length} argomenti, ${output.data.statistics.totalPages} pagine`);
+    logPhase('content-analysis-orchestrator', `CORREZIONI: ${output.metadata.rangesCorrected} sezioni, ${output.metadata.majorCorrections} correzioni importanti`);
+    logPhase('content-analysis-orchestrator', `RETRY INFO: ${retryCount} tentativi, Correzione: ${output.metadata.correctionSuccessful ? 'RIUSCITA' : 'PARZIALE'}`);
     logPhase('content-analysis-orchestrator', `QUALITÀ FINALE: ${Math.round((finalResult.validationReport?.qualityScore || 0) * 100)}%`);
-    progressCallback?.({ type: 'success', message: `Analisi contenuti completata (${analysisMode})!` });
+    progressCallback?.({ type: 'success', message: `Analisi contenuti completata con correzione range (${analysisMode})!` });
     
     return output;
 
   } catch (error) {
-    logPhase('content-analysis-orchestrator', `ERRORE CRITICO NELL'ORCHESTRAZIONE: ${error.message}`);
+    logPhase('content-analysis-orchestrator', `ERRORE CRITICO NELL'ORCHESTRAZIONE CON CORREZIONE: ${error.message}`);
     progressCallback?.({ type: 'error', message: `Errore analisi: ${error.message}` });
     
     // Gestione fallback specifici per fase
@@ -163,54 +170,43 @@ export async function analyzeContent(input) {
         logPhase('content-analysis-orchestrator', 'Errore in Fase 1 (ricerca indice) - tentativo fallback...');
         try {
             const fallbackIndexData = generateMinimalIndexStructure(files, examName, analysisMode);
-            // Continua con la Fase 2 usando i dati di fallback
-            const sectionValidationResult = await performComprehensivePageByPageAnalysis({
+            const rangeCorrectionResult = await performComprehensivePageByPageAnalysis({
                 examName, files, phase1Output: fallbackIndexData, userDescription, analysisMode, progressCallback
             });
-            // Continua con le fasi successive...
             return createContentPhaseOutput('content-analysis-orchestrator', {
-                topics: [], // Risultato parziale
+                topics: [],
                 statistics: { totalPages: 0 },
-                phaseResults: { indexSearchFallback: fallbackIndexData, sectionValidation: sectionValidationResult },
+                phaseResults: { indexSearchFallback: fallbackIndexData, rangeCorrection: rangeCorrectionResult },
                 fallbackApplied: true,
             }, { analysisMode, totalFiles: files.length, notes: "Fallback applicato dopo errore Fase 1" });
         } catch (fallbackError) {
              logPhase('content-analysis-orchestrator', `Errore durante il fallback Fase 1: ${fallbackError.message}`);
         }
-    } else if (error.phase === 'phase2-section-validation' && phaseResults.indexSearch) {
-        logPhase('content-analysis-orchestrator', 'Errore in Fase 2 (validazione sezioni) - tentativo fallback...');
+    } else if (error.phase === 'phase2-range-correction' && phaseResults.indexSearch) {
+        logPhase('content-analysis-orchestrator', 'Errore in Fase 2 (correzione range) - tentativo fallback...');
         try {
-            const fallbackValidationData = generateMinimalValidationData(phaseResults.indexSearch);
+            const fallbackCorrectionData = generateMinimalCorrectionData(phaseResults.indexSearch);
             return createContentPhaseOutput('content-analysis-orchestrator', {
                 topics: [],
                 statistics: { totalPages: 0 },
-                phaseResults: { indexSearch: phaseResults.indexSearch, sectionValidationFallback: fallbackValidationData },
+                phaseResults: { indexSearch: phaseResults.indexSearch, rangeCorrectionFallback: fallbackCorrectionData },
                 fallbackApplied: true,
             }, { analysisMode, totalFiles: files.length, notes: "Fallback applicato dopo errore Fase 2" });
         } catch (fallbackError) {
              logPhase('content-analysis-orchestrator', `Errore durante il fallback Fase 2: ${fallbackError.message}`);
         }
-    } else if (!files || files.length === 0) {
-        logPhase('content-analysis-orchestrator', 'Nessun file fornito, generazione output minimale.');
-        const minimalData = generateCompleteMinimalAnalysis(files || [], examName, analysisMode);
-         return createContentPhaseOutput('content-analysis-orchestrator', {
-            topics: [],
-            statistics: { totalPages: 0 },
-            phaseResults: { minimalAnalysis: minimalData },
-            minimalAnalysis: true,
-        }, { analysisMode, totalFiles: 0, notes: "Analisi minimale causa assenza di file." });
     }
 
-    throw createPhaseError('content-analysis-orchestrator', `Errore durante l'orchestrazione dell'analisi: ${error.message}`, error);
+    throw createPhaseError('content-analysis-orchestrator', `Errore durante l'orchestrazione con correzione range: ${error.message}`, error);
   }
 }
 
-// ===== FUNZIONI DI FALLBACK SPECIFICHE =====
+// ===== FUNZIONI DI FALLBACK AGGIORNATE =====
 
 function generateMinimalIndexStructure(files, examName, analysisMode) {
   logPhase('fallback-index', 'Generazione struttura indice minimale...');
   const fileCount = files?.length || 0;
-  const estimatedPagesPerFile = fileCount > 0 ? 30 : 0;
+  const estimatedPagesPerFile = fileCount > 0 ? 25 : 0;
 
   return {
     globalStructure: {
@@ -221,13 +217,13 @@ function generateMinimalIndexStructure(files, examName, analysisMode) {
       hasMainIndex: false,
       indexLocation: { fileIndex: 0, startPage: 1, endPage: 1, indexType: 'none' },
       mainSections: files?.map((f, i) => ({ 
-        sectionTitle: f.name, 
+        sectionTitle: f.name.replace('.pdf', ''), 
         fileIndex: i, 
         startPage: 1, 
         endPage: estimatedPagesPerFile, 
         sectionType: 'chapter', 
         importance: 'medium', 
-        description: `File ${f.name} - sezione generica` 
+        description: `Contenuto di ${f.name}` 
       })) || []
     },
     indexAnalysis: {
@@ -240,47 +236,41 @@ function generateMinimalIndexStructure(files, examName, analysisMode) {
       analysisMode: analysisMode,
       searchStrategy: 'fallback minimale',
       confidenceLevel: 0.1,
-      recommendedNextSteps: ['Analisi dettagliata con dati minimali']
+      recommendedNextSteps: ['Correzione manuale dei range']
     }
   };
 }
 
-function generateMinimalValidationData(indexSearchResult) {
-  logPhase('fallback-validation', 'Generazione validazione minimale...');
+function generateMinimalCorrectionData(indexSearchResult) {
+  logPhase('fallback-correction', 'Generazione correzione minimale...');
   const sections = indexSearchResult.globalStructure?.mainSections || [];
   
   return {
-    sectionValidation: sections.map((section, index) => ({
+    correctedSections: sections.map((section, index) => ({
       sectionIndex: index,
-      sectionTitle: section.sectionTitle,
+      originalTitle: section.sectionTitle,
+      correctedTitle: section.sectionTitle,
       fileIndex: section.fileIndex,
-      startPage: section.startPage,
-      endPage: section.endPage,
-      isValid: true,
-      validationNotes: "Validazione automatica fallback"
+      originalRange: { start: section.startPage, end: section.endPage },
+      correctedRange: { start: section.startPage, end: Math.min(section.endPage, section.startPage + 25) },
+      correctionType: "fallback_applied",
+      correctionReason: "Correzione automatica fallback - range limitati a 25 pagine",
+      contentQuality: "unknown",
+      studyRecommendation: "Verifica manualmente il contenuto"
     })),
-    validationSummary: {
+    correctionSummary: {
       totalSections: sections.length,
-      validSections: sections.length,
-      validationSuccess: true
+      correctedSections: sections.length,
+      majorCorrections: 0,
+      minorCorrections: sections.length,
+      correctionSuccess: true
     },
     analysisMetadata: {
       analysisMode: 'fallback',
-      processingNotes: 'Validazione generata tramite fallback'
+      correctionStrategy: 'Correzione automatica minimale',
+      qualityAssessment: 'Bassa - richiede verifica manuale',
+      processingNotes: 'Generato tramite fallback per evitare errori'
     }
-  };
-}
-
-function generateCompleteMinimalAnalysis(files, examName, analysisMode) {
-  logPhase('minimal-analysis', 'Generazione analisi completa minimale...');
-  const indexData = generateMinimalIndexStructure(files, examName, analysisMode);
-  const validationData = generateMinimalValidationData(indexData);
-  
-  return {
-    indexSearch: indexData,
-    sectionValidation: validationData,
-    synthesis: { synthesizedTopics: [], synthesisStatistics: { originalSections: 0, analyzedSections: 0 } },
-    validation: { validatedTopics: [], statistics: { totalTopics: 0, totalPages: 0 } }
   };
 }
 
