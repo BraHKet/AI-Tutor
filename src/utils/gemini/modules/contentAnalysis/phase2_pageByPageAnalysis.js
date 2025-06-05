@@ -4,106 +4,91 @@ import { executeAIRequest, createAIServiceInput, validateAIServiceOutput } from 
 import { createPhaseError } from '../../shared/geminiShared.js';
 
 /**
- * FASE 2: Analisi Dettagliata Completa Pagina per Pagina (PESANTE)
+ * FASE 2: Verifica e Validazione Sezioni (SEMPLIFICATA)
  * INPUT: examName, files, phase1Output, userDescription, analysisMode, progressCallback
- * OUTPUT: Analisi semplificata di ogni singola pagina
+ * OUTPUT: Validazione della divisione delle sezioni identificate nella Fase 1
  */
 export async function performComprehensivePageByPageAnalysis(input) {
   const { examName, files, phase1Output, userDescription, analysisMode, progressCallback } = input;
   
-  // Prepara contesto dalla Fase 1
-  const contextFromPhase1 = preparePhase1Context(phase1Output);
+  // Estrai le sezioni dalla Fase 1
+  const mainSections = phase1Output?.globalStructure?.mainSections || [];
   
-  const filesList = files
-    .map((file, index) => `${index + 1}. ${file.name} (${Math.round(file.size / 1024 / 1024)} MB)`)
-    .join('\n');
+  if (mainSections.length === 0) {
+    return {
+      sectionValidation: [],
+      validationSummary: {
+        totalSections: 0,
+        validSections: 0,
+        validationSuccess: false
+      },
+      analysisMetadata: {
+        analysisMode: analysisMode,
+        processingNotes: "Nessuna sezione da validare dalla Fase 1"
+      }
+    };
+  }
+
+  const sectionsInfo = mainSections.map((section, index) => 
+    `${index + 1}. "${section.sectionTitle}" (File ${section.fileIndex}, Pagine ${section.startPage}-${section.endPage}, Tipo: ${section.sectionType})`
+  ).join('\n');
 
   const modeNote = analysisMode === 'text' 
-    ? '\n\nMODALITÀ TESTO: Analizza il contenuto testuale di ogni pagina in dettaglio.'
-    : '\n\nMODALITÀ PDF: Analizza ogni pagina includendo elementi visivi, layout, formule e grafici.';
+    ? '\n\nMODALITÀ TESTO: Verifica la coerenza delle sezioni nel contenuto testuale.'
+    : '\n\nMODALITÀ PDF: Verifica la coerenza delle sezioni includendo layout e struttura visiva.';
 
-  const prompt = `Sei un AI tutor esperto nell'analisi dettagliata pagina per pagina di materiale didattico per l'esame "${examName}".
+  const prompt = `Sei un AI tutor esperto nella validazione di strutture didattiche per l'esame "${examName}".
 
-COMPITO: Analizza DETTAGLIATAMENTE OGNI SINGOLA PAGINA del materiale.
+COMPITO: VALIDA SOLO la coerenza e correttezza delle sezioni identificate nella Fase 1.
 
-FILE DA ANALIZZARE:
-${filesList}
-
-CONTESTO DALLA FASE 1 (Struttura e Indice):
-${contextFromPhase1}
+SEZIONI DA VALIDARE:
+${sectionsInfo}
 
 ${userDescription ? `OBIETTIVI SPECIFICI: "${userDescription}"` : ''}${modeNote}
 
-STRATEGIA ANALISI COMPLETA:
-1. **ANALIZZA OGNI PAGINA SINGOLARMENTE** - Non saltare nessuna pagina
-2. **IDENTIFICA CONTENUTO SPECIFICO** - Una riga di descrizione per ogni pagina
-3. **VALUTA DIFFICOLTÀ** - Livello di complessità di ogni pagina
-4. **STIMA TEMPO STUDIO IN MINUTI** - Tempo necessario per studiare ogni pagina
+STRATEGIA DI VALIDAZIONE:
+1. **VERIFICA** che ogni sezione corrisponda effettivamente al contenuto nelle pagine indicate
+2. **CONFERMA** la coerenza dei titoli delle sezioni
+3. **VALIDA** i range di pagine specificati
+4. **NON MODIFICARE** i range di pagine - solo confermare se sono corretti
 
 JSON RICHIESTO - FORMATO SEMPLIFICATO:
 
 {
-  "pageByPageAnalysis": [
+  "sectionValidation": [
     {
+      "sectionIndex": 0,
+      "sectionTitle": "Titolo esatto dalla Fase 1",
       "fileIndex": 0,
-      "pageNumber": 1,
-      "description": "Breve descrizione del contenuto della pagina (max 100 caratteri)",
-      "difficulty": "beginner|intermediate|advanced",
-      "estimatedStudyTime": 30
+      "startPage": 1,
+      "endPage": 25,
+      "isValid": true,
+      "validationNotes": "Breve nota sulla validazione (max 50 caratteri)"
     }
   ],
+  "validationSummary": {
+    "totalSections": ${mainSections.length},
+    "validSections": 0,
+    "validationSuccess": true
+  },
   "analysisMetadata": {
     "analysisMode": "${analysisMode}",
-    "totalPagesAnalyzed": 0,
-    "processingNotes": "Note sul processo di analisi"
+    "processingNotes": "Note sul processo di validazione"
   }
 }
 
 IMPORTANTE:
-- UNA ENTRY per OGNI pagina di OGNI file
-- Descrizione breve e specifica del contenuto
-- Stima realistica del tempo di studio in minuti
-- Mantieni coerenza con la struttura identificata nella Fase 1`;
+- MANTIENI IDENTICI tutti i range di pagine dalla Fase 1
+- VALIDAZIONE SOLO - non analisi dettagliata
+- Una entry per ogni sezione identificata nella Fase 1
+- Conferma solo se le sezioni sono coerenti con il contenuto`;
 
-  const aiInput = createAIServiceInput(prompt, files, analysisMode, 'comprehensive-page-analysis', progressCallback);
+  const aiInput = createAIServiceInput(prompt, files, analysisMode, 'section-validation', progressCallback);
   const result = await executeAIRequest(aiInput);
   
-  validateAIServiceOutput(result, ['pageByPageAnalysis']);
+  validateAIServiceOutput(result, ['sectionValidation']);
   
   console.log('FASE 2 - OUTPUT GEMINI:', JSON.stringify(result.data, null, 2));
   
   return result.data;
-}
-
-/**
- * Prepara il contesto dalla Fase 1 per l'analisi della Fase 2
- */
-function preparePhase1Context(phase1Output) {
-  if (!phase1Output) return 'Nessun contesto dalla Fase 1 disponibile.';
-  
-  const globalStructure = phase1Output.globalStructure || {};
-  const sections = globalStructure.mainSections || [];
-  const indexAnalysis = phase1Output.indexAnalysis || {};
-  
-  let context = `STRUTTURA GLOBALE IDENTIFICATA:
-- Tipo materiale: ${globalStructure.materialType || 'non specificato'}
-- Organizzazione: ${globalStructure.overallOrganization || 'non specificata'}
-- Ha indice principale: ${globalStructure.hasMainIndex ? 'Sì' : 'No'}
-
-SEZIONI PRINCIPALI IDENTIFICATE:`;
-  
-  sections.forEach((section, index) => {
-    context += `\n${index + 1}. ${section.sectionTitle} (${section.sectionType})`;
-    context += `\n   - File ${section.fileIndex}, Pagine ${section.startPage}-${section.endPage}`;
-    context += `\n   - Importanza: ${section.importance}`;
-  });
-  
-  if (indexAnalysis.indexFound) {
-    context += `\n\nINDICE IDENTIFICATO:
-- Qualità: ${indexAnalysis.indexQuality}
-- Voci totali: ${indexAnalysis.totalEntries || 0}
-- Utilità: ${indexAnalysis.indexUtility}`;
-  }
-  
-  return context;
 }

@@ -33,6 +33,8 @@ REGOLE:
 - IDENTIFICA struttura principale (capitoli, sezioni)
 - NON analizzare contenuto dettagliato
 - MANTIENI analisi LEGGERA e veloce
+- OGNI SEZIONE DEVE ESSERE 15-30 PAGINE MAX per studio efficace
+- Se trovi sezioni più ampie, SUDDIVIDILE in sottosezioni logiche
 
 JSON RICHIESTO:
 

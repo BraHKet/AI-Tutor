@@ -3,72 +3,86 @@
 import { executeAIRequest, createAIServiceInput, validateAIServiceOutput } from '../../services/geminiAIService.js';
 
 /**
- * FASE 3: Sintesi Intelligente degli Argomenti (basata su analisi completa)
- * INPUT: examName, pageAnalysisResult (output Fase 2), userDescription
- * OUTPUT: Argomenti sintetizzati in formato semplificato
+ * FASE 3: Analisi Specifica delle Sezioni (basata sui range della Fase 1)
+ * INPUT: examName, pageAnalysisResult (output Fase 2), userDescription, progressCallback
+ * OUTPUT: Analisi dettagliata di ogni sezione con difficoltà, ore e descrizione
  */
 export async function performIntelligentTopicSynthesis(input) {
-  const { examName, pageAnalysisResult, userDescription, progressCallback } = input;
+  const { examName, pageAnalysisResult, userDescription, progressCallback, phase1Output } = input;
   
-  const pageAnalysisData = pageAnalysisResult.pageByPageAnalysis || [];
+  // Usa le sezioni dalla Fase 1 (non dalla Fase 2)
+  const mainSections = phase1Output?.globalStructure?.mainSections || [];
+  const validationData = pageAnalysisResult?.sectionValidation || [];
   
-  if (pageAnalysisData.length === 0) {
+  if (mainSections.length === 0) {
     return { 
       synthesizedTopics: [],
       synthesisStatistics: { 
-        originalPages: 0, 
-        synthesizedTopics: 0, 
-        totalPagesAssigned: 0
+        originalSections: 0, 
+        analyzedSections: 0
       }
     };
   }
 
-  const analysisDataJson = JSON.stringify({
-    pageAnalysis: pageAnalysisData
-  }, null, 2);
+  // Prepara le sezioni con i dati di validazione
+  const sectionsToAnalyze = mainSections.map((section, index) => {
+    const validation = validationData.find(v => v.sectionIndex === index);
+    return {
+      ...section,
+      validationNotes: validation?.validationNotes || "Non validato",
+      isValid: validation?.isValid !== false // Default true se non specificato
+    };
+  });
 
-  const prompt = `SINTESI INTELLIGENTE ARGOMENTI per l'esame "${examName}":
+  const sectionsInfo = sectionsToAnalyze.map((section, index) => 
+    `${index + 1}. "${section.sectionTitle}" (File ${section.fileIndex}, Pagine ${section.startPage}-${section.endPage}, Tipo: ${section.sectionType}, Validazione: ${section.validationNotes})`
+  ).join('\n');
 
-DATI ANALISI PAGINE:
-${analysisDataJson}
+  const prompt = `Sei un AI tutor esperto nell'analisi didattica per l'esame "${examName}".
 
-${userDescription ? `OBIETTIVI UTENTE: "${userDescription}"` : ''}
+COMPITO: Analizza in dettaglio ogni sezione identificata, assegnando difficoltà, tempo di studio e descrizione.
 
-COMPITO: Sintetizza l'analisi pagina-per-pagina in argomenti di studio coerenti e logici.
+SEZIONI DA ANALIZZARE (RANGE FISSI):
+${sectionsInfo}
 
-PRINCIPI DI SINTESI:
-1. **RAGGRUPPA** pagine correlate che appartengono allo stesso macro-argomento
-2. **MANTIENI** granularità appropriata (né troppo generici né troppo specifici)
-3. **PRESERVA** i riferimenti esatti alle pagine dall'analisi
-4. **ORDINA** secondo sequenza logica di apprendimento
+${userDescription ? `OBIETTIVI SPECIFICI: "${userDescription}"` : ''}
 
-FORMATO SEMPLIFICATO:
+STRATEGIA DI ANALISI:
+1. **LEGGI** attentamente il contenuto di ogni sezione nel range di pagine specificato
+2. **ASSEGNA** difficoltà appropriata (beginner/intermediate/advanced)
+3. **STIMA** tempo di studio realistico in ore
+4. **DESCRIVI** brevemente il contenuto (2-3 righe massimo)
+5. **MANTIENI** esattamente gli stessi range di pagine
+
+JSON RICHIESTO:
+
 {
   "synthesizedTopics": [
     {
-      "title": "Titolo del paragrafo/argomento",
-      "startPage": 5,
-      "endPage": 18,
+      "title": "Titolo sezione dalla Fase 1",
+      "description": "Breve descrizione del contenuto (max 3 righe)",
+      "startPage": 1,
+      "endPage": 25,
       "fileIndex": 0,
       "difficulty": "beginner|intermediate|advanced",
-      "estimatedHours": 4
+      "estimatedHours": 4,
+      "sectionType": "tipo dalla Fase 1"
     }
   ],
   "synthesisStatistics": {
-    "originalPages": ${pageAnalysisData.length},
-    "synthesizedTopics": 0,
-    "totalPagesAssigned": 0
+    "originalSections": ${mainSections.length},
+    "analyzedSections": 0
   }
 }
 
-IMPORTANTE: 
-- Ogni pagina deve apparire in MASSIMO un argomento
-- Titolo chiaro e descrittivo del paragrafo
-- Range di pagine continuo (da startPage a endPage)
-- Stima realistica delle ore di studio per l'intero paragrafo
-- Difficoltà basata sulla media delle pagine incluse`;
+REGOLE CRITICHE:
+- I range di pagine (startPage, endPage, fileIndex) devono rimanere IDENTICI alla Fase 1
+- Sostituisci/migliora solo la descrizione se presente
+- Tempo stimato in ore (non minuti)
+- Difficoltà basata sul contenuto effettivo della sezione
+- Una entry per ogni sezione della Fase 1`;
 
-  const aiInput = createAIServiceInput(prompt, [], 'text', 'intelligent-topic-synthesis', progressCallback);
+  const aiInput = createAIServiceInput(prompt, [], 'text', 'section-analysis', progressCallback);
   const result = await executeAIRequest(aiInput);
   
   validateAIServiceOutput(result, ['synthesizedTopics']);

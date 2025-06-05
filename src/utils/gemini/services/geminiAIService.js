@@ -1,4 +1,4 @@
-// src/utils/gemini/services/geminiAIService.js - SERVIZIO AI SENZA LIMITI
+// src/utils/gemini/services/geminiAIService.js - SERVIZIO AI CON FORMATO PAGINATO
 
 import { genAI, model as geminiDefaultModel } from '../../geminiSetup.js';
 import { extractTextFromFiles } from '../../pdfProcessor.js';
@@ -47,7 +47,7 @@ async function fileToGenerativePart(file) {
     return cached;
   }
 
-  logPhase('file-conversion', `Convertendo ${file.name} in base64 (NESSUN LIMITE)...`);
+  logPhase('file-conversion', `Convertendo ${file.name} in base64...`);
   
   if (!file || !(file instanceof File)) {
     throw new Error(`Invalid file object for ${file?.name || 'unknown'}`);
@@ -56,19 +56,15 @@ async function fileToGenerativePart(file) {
   if (file.type !== 'application/pdf') {
     throw new Error(`File ${file.name} is not a PDF`);
   }
-  
-  // RIMOSSO LIMITE DI DIMENSIONE - ora accetta file di qualsiasi dimensione
-  logPhase('file-conversion', `File ${file.name}: ${Math.round(file.size / 1024 / 1024)}MB - MODALITÀ ILLIMITATA`);
 
   try {
     const base64EncodedData = await new Promise((resolve, reject) => {
       const reader = new FileReader();
       
-      // Timeout esteso per file grandi
       const timeout = setTimeout(() => {
         reader.abort();
-        reject(new Error(`Timeout reading file ${file.name} (esteso per file grandi)`));
-      }, 300000); // 5 minuti timeout per file grandi
+        reject(new Error(`Timeout reading file ${file.name}`));
+      }, 300000); // 5 minuti timeout
       
       reader.onloadend = () => {
         clearTimeout(timeout);
@@ -100,7 +96,7 @@ async function fileToGenerativePart(file) {
     };
 
     setCacheItem('pdf', fileKey, generativePart);
-    logPhase('file-conversion', `${file.name} convertito con successo (${Math.round(base64EncodedData.length / 1024)}KB base64)`);
+    logPhase('file-conversion', `${file.name} convertito con successo`);
     return generativePart;
     
   } catch (error) {
@@ -109,71 +105,62 @@ async function fileToGenerativePart(file) {
 }
 
 /**
- * Estrae testo dai file PDF - NESSUN LIMITE
+ * Estrae testo dai file PDF in formato PAGINATO - NUOVO FORMATO
  * INPUT: Array di file, callback progress, modalità analisi
- * OUTPUT: Oggetto con testo estratto e metadati
+ * OUTPUT: Oggetto con testo estratto in formato "PAG. X: [contenuto]"
  */
 async function extractTextFromFilesForAI(files, progressCallback, analysisMode = 'text') {
-  const fileHash = generateFileHash(files) + `_text_${analysisMode}`;
+  const fileHash = generateFileHash(files) + `_paginated_${analysisMode}`;
   
   const cached = getCacheItem('text', fileHash);
   if (cached) {
-    progressCallback?.({ type: 'processing', message: 'Riutilizzo testo già estratto (ILLIMITATO)...' });
+    progressCallback?.({ type: 'processing', message: 'Riutilizzo testo paginato già estratto...' });
     return cached;
   }
 
-  logPhase('text-extraction', `Estraendo testo da ${files.length} file (modalità ${analysisMode}) - NESSUN LIMITE`);
-  progressCallback?.({ type: 'processing', message: 'Estrazione testo completa dai PDF (nessun limite)...' });
+  logPhase('text-extraction', `Estraendo testo PAGINATO da ${files.length} file (modalità ${analysisMode})`);
+  progressCallback?.({ type: 'processing', message: 'Estrazione testo con numerazione pagine...' });
 
   try {
     const { fullText, pagedTextData } = await extractTextFromFiles(files, (message) => {
       progressCallback?.({ type: 'processing', message });
     });
 
-    if (!fullText || fullText.trim().length === 0) {
-      throw new Error('Nessun testo estratto dai PDF. Verifica che i file contengano testo selezionabile.');
+    if (!pagedTextData || pagedTextData.length === 0) {
+      throw new Error('Nessun dato pagina estratto dai PDF. Verifica che i file contengano testo selezionabile.');
     }
 
-    const cleanText = fullText.trim();
-    const wordCount = cleanText.split(/\s+/).length;
-    const charCount = cleanText.length;
+    // NUOVO: Formato paginato per ogni pagina
+    const paginatedText = pagedTextData
+      .filter(page => page.text && page.text.trim().length > 0) // Solo pagine con contenuto
+      .map((page, index) => {
+        const pageNum = page.pageNumber || (index + 1);
+        const cleanText = page.text.trim();
+        return `PAG. ${pageNum}: [${cleanText}]`;
+      })
+      .join('\n\n');
 
-    // NESSUN LIMITE SUL TESTO - utilizza tutto
-    let processedText = cleanText;
-    let chunks = [];
-    let isTruncated = false;
+    const wordCount = fullText.split(/\s+/).length;
+    const charCount = paginatedText.length;
 
-    // Solo se il testo è VERAMENTE enorme, suddividi intelligentemente
-    if (charCount > SHARED_CONFIG.TEXT_LIMITS.maxCharsForText) {
-      logPhase('text-extraction', `Testo molto grande (${charCount} caratteri), suddivido intelligentemente`);
-      
-      chunks = splitTextIntelligently(cleanText, SHARED_CONFIG.TEXT_LIMITS.chunkSize, SHARED_CONFIG.TEXT_LIMITS.overlapSize);
-      
-      // Usa TUTTI i chunk, non limitare
-      processedText = chunks.join('\n\n--- SEZIONE SUCCESSIVA ---\n\n');
-      
-      logPhase('text-extraction', `Testo suddiviso in ${chunks.length} sezioni, utilizzate TUTTE`);
-    }
+    logPhase('text-extraction', `Formato paginato: ${pagedTextData.length} pagine elaborate`);
 
     const result = {
-      fullText: processedText,
-      originalFullText: cleanText,
-      pagedTextData,
+      fullText: paginatedText, // NUOVO: testo in formato paginato
+      originalFullText: fullText, // Mantieni originale per compatibilità
+      pagedTextData: pagedTextData,
       totalPages: pagedTextData.length,
       wordCount: wordCount,
       charCount: charCount,
-      processedCharCount: processedText.length,
-      chunks: chunks.length > 1 ? chunks : [],
-      isTruncated: isTruncated,
+      processedCharCount: paginatedText.length,
+      isPaginated: true, // Flag per indicare formato paginato
       analysisMode: analysisMode,
-      unlimited: true // Flag per indicare modalità illimitata
+      paginationFormat: "PAG. X: [contenuto]"
     };
 
     setCacheItem('text', fileHash, result);
 
-    const message = chunks.length > 1 
-      ? `Testo processato: ${result.processedCharCount} caratteri (${chunks.length} sezioni) - MODALITÀ ILLIMITATA`
-      : `Testo estratto: ${wordCount} parole, ${pagedTextData.length} pagine - MODALITÀ ILLIMITATA`;
+    const message = `Testo paginato estratto: ${pagedTextData.length} pagine, formato "PAG. X: [contenuto]"`;
     
     progressCallback?.({ type: 'processing', message });
     logPhase('text-extraction', message);
@@ -181,7 +168,7 @@ async function extractTextFromFilesForAI(files, progressCallback, analysisMode =
     return result;
 
   } catch (error) {
-    throw createPhaseError('text-extraction', `Errore estrazione testo: ${error.message}`, error);
+    throw createPhaseError('text-extraction', `Errore estrazione testo paginato: ${error.message}`, error);
   }
 }
 
@@ -191,7 +178,7 @@ async function extractTextFromFilesForAI(files, progressCallback, analysisMode =
  * OUTPUT: Array di parti generative per Gemini
  */
 async function prepareContentForPdfMode(files, progressCallback) {
-  logPhase('content-preparation', `Preparando ${files.length} file per modalità PDF (NESSUN LIMITE)`);
+  logPhase('content-preparation', `Preparando ${files.length} file per modalità PDF`);
 
   const parts = [];
   let processedCount = 0;
@@ -200,13 +187,13 @@ async function prepareContentForPdfMode(files, progressCallback) {
     const file = files[i];
     
     if (file.type === "application/pdf") {
-      progressCallback?.({ type: 'processing', message: `Conversione ${i + 1}/${files.length}: ${file.name} (${Math.round(file.size/1024/1024)}MB)...` });
+      progressCallback?.({ type: 'processing', message: `Conversione ${i + 1}/${files.length}: ${file.name}...` });
       
       try {
         const filePart = await fileToGenerativePart(file);
         parts.push(filePart);
         processedCount++;
-        logPhase('content-preparation', `${file.name} preparato (${Math.round(file.size/1024/1024)}MB)`);
+        logPhase('content-preparation', `${file.name} preparato`);
       } catch (fileError) {
         logPhase('content-preparation', `Errore ${file.name}: ${fileError.message}`);
         progressCallback?.({ type: 'warning', message: `Errore ${file.name}: ${fileError.message}` });
@@ -218,17 +205,17 @@ async function prepareContentForPdfMode(files, progressCallback) {
     throw new Error('Nessun file PDF valido è stato preparato per l\'analisi AI.');
   }
 
-  logPhase('content-preparation', `Preparati ${processedCount}/${files.length} file per modalità PDF (NESSUN LIMITE)`);
+  logPhase('content-preparation', `Preparati ${processedCount}/${files.length} file per modalità PDF`);
   return parts;
 }
 
 /**
- * Prepara contenuti per modalità TEXT - NESSUN LIMITE
+ * Prepara contenuti per modalità TEXT - CON FORMATO PAGINATO
  * INPUT: Array di file, callback progress, modalità analisi
- * OUTPUT: Stringa di testo formattata per Gemini
+ * OUTPUT: Stringa di testo PAGINATA formattata per Gemini
  */
 async function prepareContentForTextMode(files, progressCallback, analysisMode) {
-  logPhase('content-preparation', `Preparando contenuti per modalità TEXT (NESSUN LIMITE)`);
+  logPhase('content-preparation', `Preparando contenuti per modalità TEXT PAGINATA`);
 
   const textData = await extractTextFromFilesForAI(files, progressCallback, analysisMode);
   
@@ -237,11 +224,11 @@ async function prepareContentForTextMode(files, progressCallback, analysisMode) 
   }
 
   const textPart = {
-    text: `\n\n=== CONTENUTO ESTRATTO DAI PDF (MODALITÀ ILLIMITATA) ===\n\n${textData.fullText}\n\n=== METADATI ===\nFile: ${files.length}\nPagine: ${textData.totalPages}\nParole: ${textData.wordCount}\nCaratteri processati: ${textData.processedCharCount}/${textData.charCount}\n${textData.chunks.length > 1 ? `Testo suddiviso in ${textData.chunks.length} sezioni\n` : 'Testo completo\n'}Modalità: ILLIMITATA\n=== FINE CONTENUTO ===\n\n`
+    text: `\n\n=== CONTENUTO ESTRATTO DAI PDF (FORMATO PAGINATO) ===\n\n${textData.fullText}\n\n=== METADATI ===\nFile: ${files.length}\nPagine totali: ${textData.totalPages}\nFormato: ${textData.paginationFormat}\nModalità: TEXT PAGINATA\n=== FINE CONTENUTO ===\n\n`
   };
 
-  progressCallback?.({ type: 'processing', message: `Testo preparato: ${textData.wordCount} parole (ILLIMITATO)` });
-  logPhase('content-preparation', `Contenuto TEXT preparato: ${textPart.text.length} caratteri (ILLIMITATO)`);
+  progressCallback?.({ type: 'processing', message: `Testo paginato preparato: ${textData.totalPages} pagine` });
+  logPhase('content-preparation', `Contenuto TEXT PAGINATO preparato: ${textData.totalPages} pagine`);
   
   return [textPart];
 }
@@ -249,7 +236,7 @@ async function prepareContentForTextMode(files, progressCallback, analysisMode) 
 // ===== SERVIZIO AI PRINCIPALE =====
 
 /**
- * Esegue una chiamata AI con Gemini - NESSUN LIMITE
+ * Esegue una chiamata AI con Gemini - CON SUPPORTO FORMATO PAGINATO
  * INPUT: AIServiceInput
  * OUTPUT: AIServiceOutput
  */
@@ -266,20 +253,20 @@ export async function executeAIRequest(input) {
   }
 
   // Controlla cache
-  const cacheKey = `${phaseName}_${prompt.substring(0, 100)}_${generateFileHash(files)}_${analysisMode}`;
+  const cacheKey = `${phaseName}_${prompt.substring(0, 100)}_${generateFileHash(files)}_${analysisMode}_paginated`;
   const cached = getCacheItem('phase', cacheKey);
   if (cached) {
-    logPhase(phaseName, 'Cache hit (MODALITÀ ILLIMITATA)');
-    progressCallback?.({ type: 'processing', message: `Utilizzo cache per ${phaseName} (illimitato)...` });
+    logPhase(phaseName, 'Cache hit (FORMATO PAGINATO)');
+    progressCallback?.({ type: 'processing', message: `Utilizzo cache per ${phaseName} (paginato)...` });
     return {
       data: cached,
-      metadata: { cached: true, phaseName, analysisMode, unlimited: true },
+      metadata: { cached: true, phaseName, analysisMode, paginated: true },
       success: true
     };
   }
 
-  logPhase(phaseName, `Esecuzione AI (modalità ${analysisMode}) - NESSUN LIMITE`);
-  progressCallback?.({ type: 'processing', message: `Esecuzione ${phaseName} (${analysisMode}) - modalità illimitata...` });
+  logPhase(phaseName, `Esecuzione AI (modalità ${analysisMode} PAGINATA)`);
+  progressCallback?.({ type: 'processing', message: `Esecuzione ${phaseName} (${analysisMode} paginato)...` });
 
   // Verifica inizializzazione Gemini
   if (!genAI || !geminiDefaultModel) {
@@ -302,7 +289,7 @@ export async function executeAIRequest(input) {
     parts.push(...contentParts);
   }
 
-  // Prepara payload per Gemini con configurazione ILLIMITATA
+  // Prepara payload per Gemini
   const requestPayload = {
     contents: [{
       role: "user",
@@ -310,16 +297,15 @@ export async function executeAIRequest(input) {
     }],
     generationConfig: {
       ...SHARED_CONFIG.AI_GENERATION,
-      // CONFIGURAZIONE ILLIMITATA
       temperature: 0.1,
-      maxOutputTokens: SHARED_CONFIG.AI_GENERATION.maxOutputTokens, // Usa il massimo configurato (1M)
+      maxOutputTokens: SHARED_CONFIG.AI_GENERATION.maxOutputTokens,
       responseMimeType: "application/json"
     }
   };
 
-  logPhase(phaseName, `Invio richiesta ILLIMITATA a Gemini (${parts.length} parti, max ${SHARED_CONFIG.AI_GENERATION.maxOutputTokens} tokens)`);
+  logPhase(phaseName, `Invio richiesta PAGINATA a Gemini (${parts.length} parti)`);
 
-  // Retry logic con tentativi estesi per richieste grandi
+  // Retry logic
   const maxRetries = 3;
   let lastError;
   
@@ -327,7 +313,6 @@ export async function executeAIRequest(input) {
     try {
       const startTime = Date.now();
       
-      // Timeout esteso per richieste grandi in modalità illimitata
       const timeoutMs = 300000; // 5 minuti timeout
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Timeout AI request (5 minuti)')), timeoutMs)
@@ -338,7 +323,7 @@ export async function executeAIRequest(input) {
       const response = aiResult.response;
 
       const duration = Date.now() - startTime;
-      logPhase(phaseName, `Risposta ILLIMITATA ricevuta in ${duration}ms`);
+      logPhase(phaseName, `Risposta PAGINATA ricevuta in ${duration}ms`);
 
       let textResponse;
       if (response.candidates?.[0]?.content?.parts?.[0]?.text) {
@@ -351,28 +336,21 @@ export async function executeAIRequest(input) {
         throw new Error('Risposta vuota dall\'AI');
       }
       
-      // Log dettagliato della risposta
-      logPhase(phaseName, `Risposta AI ILLIMITATA: ${textResponse.length} caratteri`, {
-        rawResponse: textResponse.substring(0, 500) + '...',
-        unlimited: true
-      });
+      logPhase(phaseName, `Risposta AI PAGINATA: ${textResponse.length} caratteri`);
       
-      // Parse del JSON con gestione avanzata per risposte grandi
+      // Parse del JSON
       const parsedResponse = cleanAndParseJSON(textResponse);
       
       if (!parsedResponse || typeof parsedResponse !== 'object') {
         throw new Error('Risposta AI non è un oggetto JSON valido');
       }
       
-      logPhase(phaseName, `JSON ILLIMITATO parsato con successo`, {
-        keys: Object.keys(parsedResponse),
-        dataSize: JSON.stringify(parsedResponse).length
-      });
+      logPhase(phaseName, `JSON PAGINATO parsato con successo`);
       
       // Salva in cache
       setCacheItem('phase', cacheKey, parsedResponse);
 
-      progressCallback?.({ type: 'processing', message: `${phaseName} completato (modalità illimitata).` });
+      progressCallback?.({ type: 'processing', message: `${phaseName} completato (formato paginato).` });
       
       return {
         data: parsedResponse,
@@ -382,9 +360,8 @@ export async function executeAIRequest(input) {
           phaseName, 
           analysisMode,
           partsCount: parts.length,
-          unlimited: true,
-          responseSize: textResponse.length,
-          tokensUsed: Math.ceil(textResponse.length / 4) // Stima approssimativa
+          paginated: true,
+          responseSize: textResponse.length
         },
         success: true,
         rawResponse: textResponse.length > 10000 ? textResponse.substring(0, 10000) + '...[TRUNCATED]' : textResponse
@@ -392,19 +369,19 @@ export async function executeAIRequest(input) {
 
     } catch (error) {
       lastError = error;
-      logPhase(phaseName, `Errore tentativo ${attempt}/${maxRetries} (MODALITÀ ILLIMITATA): ${error.message}`);
+      logPhase(phaseName, `Errore tentativo ${attempt}/${maxRetries} (PAGINATO): ${error.message}`);
       
       if (attempt < maxRetries) {
-        const delayMs = 2000 * attempt; // Delay più lungo per richieste grandi
-        progressCallback?.({ type: 'processing', message: `Ritentando ${phaseName} (illimitato)...` });
+        const delayMs = 2000 * attempt;
+        progressCallback?.({ type: 'processing', message: `Ritentando ${phaseName} (paginato)...` });
         logPhase(phaseName, `Ritento tra ${delayMs}ms...`);
         await new Promise(resolve => setTimeout(resolve, delayMs));
       }
     }
   }
   
-  logPhase(phaseName, `Fallito dopo ${maxRetries} tentativi (MODALITÀ ILLIMITATA)`);
-  throw createPhaseError(phaseName, `Errore dopo ${maxRetries} tentativi (modalità illimitata): ${lastError?.message}`, lastError);
+  logPhase(phaseName, `Fallito dopo ${maxRetries} tentativi (FORMATO PAGINATO)`);
+  throw createPhaseError(phaseName, `Errore dopo ${maxRetries} tentativi (formato paginato): ${lastError?.message}`, lastError);
 }
 
 // ===== UTILITY SPECIFICHE PER IL SERVIZIO =====
@@ -419,7 +396,7 @@ export function createAIServiceInput(prompt, files = [], analysisMode = 'pdf', p
     analysisMode: ['pdf', 'text'].includes(analysisMode) ? analysisMode : 'pdf',
     phaseName: phaseName,
     progressCallback: progressCallback,
-    unlimited: true // Flag modalità illimitata
+    paginated: true // Flag per indicare supporto formato paginato
   };
 }
 
@@ -439,84 +416,12 @@ export function validateAIServiceOutput(output, requiredFields = []) {
     throw new Error('Dati dell\'output AI mancanti o non validi');
   }
   
-  // In modalità illimitata, i campi richiesti sono più flessibili
   const missingFields = requiredFields.filter(field => !(field in output.data));
   if (missingFields.length > 0) {
-    logPhase('validation', `AVVISO MODALITÀ ILLIMITATA: Campi mancanti ${missingFields.join(', ')} - continuando comunque`);
-    // In modalità illimitata, non blocchiamo per campi mancanti, solo avvisiamo
+    logPhase('validation', `AVVISO FORMATO PAGINATO: Campi mancanti ${missingFields.join(', ')} - continuando comunque`);
   }
   
   return true;
-}
-
-/**
- * Ottiene statistiche avanzate del servizio AI
- */
-export function getAIServiceStats() {
-  return {
-    mode: 'unlimited',
-    limits: {
-      fileSize: 'NESSUN LIMITE',
-      textLength: `${SHARED_CONFIG.TEXT_LIMITS.maxCharsForText} caratteri`,
-      outputTokens: `${SHARED_CONFIG.AI_GENERATION.maxOutputTokens} tokens`,
-      timeout: '5 minuti'
-    },
-    features: {
-      largeFileSupport: true,
-      extendedTimeout: true,
-      intelligentChunking: true,
-      advancedCaching: true
-    },
-    performance: {
-      averageResponseTime: 'Variabile (dipende da dimensione)',
-      cacheHitRate: 'Ottimizzata per richieste grandi',
-      memoryUsage: 'Ottimizzata per file grandi'
-    }
-  };
-}
-
-/**
- * Esegue benchmark delle performance in modalità illimitata
- */
-export async function benchmarkUnlimitedMode(testFiles, progressCallback) {
-  const benchmark = {
-    startTime: Date.now(),
-    testFiles: testFiles.length,
-    totalSize: testFiles.reduce((sum, f) => sum + f.size, 0),
-    results: {}
-  };
-  
-  try {
-    // Test modalità PDF
-    logPhase('benchmark', 'Test modalità PDF illimitata...');
-    const pdfStart = Date.now();
-    await prepareContentForPdfMode(testFiles, progressCallback);
-    benchmark.results.pdfMode = {
-      duration: Date.now() - pdfStart,
-      success: true
-    };
-    
-    // Test modalità TEXT
-    logPhase('benchmark', 'Test modalità TEXT illimitata...');
-    const textStart = Date.now();
-    await extractTextFromFilesForAI(testFiles, progressCallback, 'text');
-    benchmark.results.textMode = {
-      duration: Date.now() - textStart,
-      success: true
-    };
-    
-    benchmark.totalDuration = Date.now() - benchmark.startTime;
-    benchmark.success = true;
-    
-    logPhase('benchmark', `Benchmark completato: ${benchmark.totalDuration}ms totali`);
-    
-  } catch (error) {
-    benchmark.error = error.message;
-    benchmark.success = false;
-    logPhase('benchmark', `Benchmark fallito: ${error.message}`);
-  }
-  
-  return benchmark;
 }
 
 // ===== EXPORT DEFAULT =====
@@ -524,8 +429,6 @@ export default {
   executeAIRequest,
   createAIServiceInput,
   validateAIServiceOutput,
-  getAIServiceStats,
-  benchmarkUnlimitedMode,
   
   // Funzioni interne esposte per uso avanzato
   fileToGenerativePart,

@@ -18,7 +18,8 @@ export const MODULE_CONFIG = {
   SINGLE_CALL_MODE: true,
   MEGA_PROMPT_ANALYSIS: true,
   MIN_TOPIC_QUALITY_SCORE: 0.1,
-  MAX_TOPICS_UNLIMITED: true 
+  MAX_TOPICS_UNLIMITED: true,
+  MAX_PHASE1_RETRIES: 3 // Numero massimo di retry tra Fase 1 e 2
 };
 
 /**
@@ -37,30 +38,80 @@ export async function analyzeContent(input) {
   const phaseResults = {};
 
   try {
-    // FASE 1: Ricerca Indice e Struttura Globale (LEGGERA)
-    progressCallback?.({ type: 'processing', message: `Fase 1: Ricerca indice e struttura (${analysisMode})...` });
-    const indexSearchResult = await executePhaseWithErrorHandling(
-      'phase1-index-search',
-      performInitialIndexSearch,
-      { examName, files, userDescription, analysisMode, progressCallback }
-    );
-    phaseResults.indexSearch = indexSearchResult;
+    // CICLO RETRY: FASE 1 + FASE 2 finché la validazione non passa
+    let indexSearchResult;
+    let sectionValidationResult;
+    let retryCount = 0;
+    const maxRetries = MODULE_CONFIG.MAX_PHASE1_RETRIES;
     
-    // FASE 2: Analisi Completa Pagina per Pagina (PESANTE)
-    progressCallback?.({ type: 'processing', message: `Fase 2: Analisi dettagliata pagina per pagina (${analysisMode})...` });
-    const comprehensiveAnalysisResult = await executePhaseWithErrorHandling(
-      'phase2-comprehensive-analysis',
-      performComprehensivePageByPageAnalysis,
-      { examName, files, phase1Output: indexSearchResult, userDescription, analysisMode, progressCallback }
-    );
-    phaseResults.comprehensiveAnalysis = comprehensiveAnalysisResult;
+    while (retryCount < maxRetries) {
+      // FASE 1: Ricerca Indice e Struttura Globale
+      progressCallback?.({ type: 'processing', message: `Fase 1: Ricerca indice e struttura (${analysisMode}) - Tentativo ${retryCount + 1}...` });
+      logPhase('content-analysis-orchestrator', `🔄 FASE 1 - Tentativo ${retryCount + 1}/${maxRetries}`);
+      
+      indexSearchResult = await executePhaseWithErrorHandling(
+        'phase1-index-search',
+        performInitialIndexSearch,
+        { examName, files, userDescription, analysisMode, progressCallback }
+      );
+      
+      // FASE 2: Validazione Sezioni
+      progressCallback?.({ type: 'processing', message: `Fase 2: Validazione sezioni identificate (${analysisMode}) - Tentativo ${retryCount + 1}...` });
+      logPhase('content-analysis-orchestrator', `🔍 FASE 2 - Validazione tentativo ${retryCount + 1}/${maxRetries}`);
+      
+      sectionValidationResult = await executePhaseWithErrorHandling(
+        'phase2-section-validation',
+        performComprehensivePageByPageAnalysis,
+        { examName, files, phase1Output: indexSearchResult, userDescription, analysisMode, progressCallback }
+      );
+      
+      // CONTROLLO VALIDAZIONE
+      const validationSuccess = sectionValidationResult?.validationSummary?.validationSuccess;
+      const validSections = sectionValidationResult?.validationSummary?.validSections || 0;
+      const totalSections = sectionValidationResult?.validationSummary?.totalSections || 0;
+      
+      logPhase('content-analysis-orchestrator', `📊 VALIDAZIONE: ${validSections}/${totalSections} sezioni valide, Success: ${validationSuccess}`);
+      
+      if (validationSuccess === true) {
+        logPhase('content-analysis-orchestrator', `✅ VALIDAZIONE PASSATA al tentativo ${retryCount + 1}`);
+        break; // Validazione passata, esci dal loop
+      } else {
+        retryCount++;
+        logPhase('content-analysis-orchestrator', `❌ VALIDAZIONE FALLITA - Tentativo ${retryCount}/${maxRetries}`);
+        
+        if (retryCount >= maxRetries) {
+          logPhase('content-analysis-orchestrator', `🚨 RAGGIUNTO LIMITE RETRY - Procedo con risultati parziali`);
+          // Usa l'ultimo risultato anche se non perfetto
+          break;
+        } else {
+          logPhase('content-analysis-orchestrator', `🔄 RETRY FASE 1+2 tra 2 secondi...`);
+          // Piccola pausa prima del retry
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      }
+    }
+    
+    // Salva i risultati delle fasi 1 e 2
+    phaseResults.indexSearch = indexSearchResult;
+    phaseResults.sectionValidation = sectionValidationResult;
+    phaseResults.retryInfo = {
+      totalRetries: retryCount,
+      validationPassed: sectionValidationResult?.validationSummary?.validationSuccess === true,
+      finalAttempt: retryCount + 1
+    };
 
-    // FASE 3: Sintesi Intelligente Argomenti
-    progressCallback?.({ type: 'processing', message: 'Fase 3: Sintesi intelligente argomenti...' });
+    // FASE 3: Analisi Dettagliata Sezioni
+    progressCallback?.({ type: 'processing', message: 'Fase 3: Analisi dettagliata sezioni...' });
     const synthesisResult = await executePhaseWithErrorHandling(
-      'phase3-topic-synthesis',
+      'phase3-section-analysis',
       performIntelligentTopicSynthesis,
-      { examName, pageAnalysisResult: comprehensiveAnalysisResult, userDescription, progressCallback }
+      { 
+        examName, 
+        pageAnalysisResult: sectionValidationResult, 
+        phase1Output: indexSearchResult, // Passa anche la Fase 1
+        userDescription, 
+        progressCallback 
+      }
     );
     phaseResults.synthesis = synthesisResult;
     
@@ -72,7 +123,7 @@ export async function analyzeContent(input) {
       { 
         synthesisResult, 
         files, 
-        initialComprehensiveAnalysisResult: comprehensiveAnalysisResult, 
+        initialComprehensiveAnalysisResult: sectionValidationResult, 
         examName, 
         progressCallback 
       }
@@ -89,12 +140,15 @@ export async function analyzeContent(input) {
       totalTopics: finalResult.validatedTopics?.length || 0,
       totalPages: finalResult.statistics?.totalPages || 0,
       qualityScore: finalResult.validationReport?.qualityScore || 0,
-      architecture: "multi-phase",
+      architecture: "multi-phase-with-retry",
       indexFound: indexSearchResult.indexAnalysis?.indexFound || false,
-      pagesAnalyzedInDetailedScan: comprehensiveAnalysisResult.pageByPageAnalysis?.length || 0
+      sectionsValidated: sectionValidationResult.validationSummary?.validSections || 0,
+      retryCount: retryCount,
+      validationPassed: sectionValidationResult?.validationSummary?.validationSuccess === true
     });
 
     logPhase('content-analysis-orchestrator', `ANALISI COMPLETATA: ${output.data.topics.length} argomenti, ${output.data.statistics.totalPages} pagine`);
+    logPhase('content-analysis-orchestrator', `RETRY INFO: ${retryCount} tentativi, Validazione: ${output.metadata.validationPassed ? 'PASSATA' : 'PARZIALE'}`);
     logPhase('content-analysis-orchestrator', `QUALITÀ FINALE: ${Math.round((finalResult.validationReport?.qualityScore || 0) * 100)}%`);
     progressCallback?.({ type: 'success', message: `Analisi contenuti completata (${analysisMode})!` });
     
@@ -110,27 +164,27 @@ export async function analyzeContent(input) {
         try {
             const fallbackIndexData = generateMinimalIndexStructure(files, examName, analysisMode);
             // Continua con la Fase 2 usando i dati di fallback
-            const comprehensiveAnalysisResult = await performComprehensivePageByPageAnalysis({
+            const sectionValidationResult = await performComprehensivePageByPageAnalysis({
                 examName, files, phase1Output: fallbackIndexData, userDescription, analysisMode, progressCallback
             });
             // Continua con le fasi successive...
             return createContentPhaseOutput('content-analysis-orchestrator', {
                 topics: [], // Risultato parziale
                 statistics: { totalPages: 0 },
-                phaseResults: { indexSearchFallback: fallbackIndexData, comprehensiveAnalysis: comprehensiveAnalysisResult },
+                phaseResults: { indexSearchFallback: fallbackIndexData, sectionValidation: sectionValidationResult },
                 fallbackApplied: true,
             }, { analysisMode, totalFiles: files.length, notes: "Fallback applicato dopo errore Fase 1" });
         } catch (fallbackError) {
              logPhase('content-analysis-orchestrator', `Errore durante il fallback Fase 1: ${fallbackError.message}`);
         }
-    } else if (error.phase === 'phase2-comprehensive-analysis' && phaseResults.indexSearch) {
-        logPhase('content-analysis-orchestrator', 'Errore in Fase 2 (analisi completa) - tentativo fallback...');
+    } else if (error.phase === 'phase2-section-validation' && phaseResults.indexSearch) {
+        logPhase('content-analysis-orchestrator', 'Errore in Fase 2 (validazione sezioni) - tentativo fallback...');
         try {
-            const fallbackPageData = generateMinimalPageAnalysis(phaseResults.indexSearch, files);
+            const fallbackValidationData = generateMinimalValidationData(phaseResults.indexSearch);
             return createContentPhaseOutput('content-analysis-orchestrator', {
                 topics: [],
-                statistics: { totalPages: fallbackPageData.pageByPageAnalysis?.length || 0 },
-                phaseResults: { indexSearch: phaseResults.indexSearch, comprehensiveAnalysisFallback: fallbackPageData },
+                statistics: { totalPages: 0 },
+                phaseResults: { indexSearch: phaseResults.indexSearch, sectionValidationFallback: fallbackValidationData },
                 fallbackApplied: true,
             }, { analysisMode, totalFiles: files.length, notes: "Fallback applicato dopo errore Fase 2" });
         } catch (fallbackError) {
@@ -191,53 +245,28 @@ function generateMinimalIndexStructure(files, examName, analysisMode) {
   };
 }
 
-function generateMinimalPageAnalysis(indexSearchResult, files) {
-  logPhase('fallback-pages', 'Generazione analisi pagine minimale...');
+function generateMinimalValidationData(indexSearchResult) {
+  logPhase('fallback-validation', 'Generazione validazione minimale...');
   const sections = indexSearchResult.globalStructure?.mainSections || [];
-  const mockPages = [];
   
-  sections.forEach(section => {
-    for (let pageNum = section.startPage; pageNum <= Math.min(section.endPage, section.startPage + 10); pageNum++) {
-      mockPages.push({
-        fileIndex: section.fileIndex,
-        fileName: files[section.fileIndex]?.name || 'unknown.pdf',
-        pageNumber: pageNum,
-        pageTitle: `Pagina ${pageNum} - ${section.sectionTitle}`,
-        sectionContext: section.sectionTitle,
-        contentType: 'mixed',
-        mainTopics: [{
-          topicName: `Argomento p.${pageNum}`,
-          description: 'Contenuto generico',
-          importance: 'medium',
-          keyPoints: ['Concetto base'],
-          conceptType: 'definition'
-        }],
-        difficulty: 'intermediate',
-        estimatedStudyTime: 15,
-        contentElements: { hasFormulas: false, hasExercises: false, hasImages: false, hasTables: false, textDensity: 'medium' },
-        keyTerms: [],
-        prerequisites: [],
-        learningObjectives: [`Apprendere contenuto pagina ${pageNum}`],
-        studyNotes: 'Studio standard',
-        qualityIndicators: { contentClarity: 'fair', conceptDensity: 'medium', examRelevance: 'useful' }
-      });
-    }
-  });
-
   return {
-    pageByPageAnalysis: mockPages,
-    contentSummary: {
-      totalPagesAnalyzed: mockPages.length,
-      contentDistribution: { theory: mockPages.length, examples: 0, exercises: 0, mixed: 0 },
-      difficultyBreakdown: { beginner: 0, intermediate: mockPages.length, advanced: 0 },
-      specialElements: { formulaPages: 0, exercisePages: 0, imagePages: 0, tablePages: 0 },
-      estimatedTotalStudyTime: mockPages.length * 15
+    sectionValidation: sections.map((section, index) => ({
+      sectionIndex: index,
+      sectionTitle: section.sectionTitle,
+      fileIndex: section.fileIndex,
+      startPage: section.startPage,
+      endPage: section.endPage,
+      isValid: true,
+      validationNotes: "Validazione automatica fallback"
+    })),
+    validationSummary: {
+      totalSections: sections.length,
+      validSections: sections.length,
+      validationSuccess: true
     },
     analysisMetadata: {
       analysisMode: 'fallback',
-      completeness: 0.3,
-      confidence: 0.3,
-      processingNotes: 'Analisi pagine generata tramite fallback'
+      processingNotes: 'Validazione generata tramite fallback'
     }
   };
 }
@@ -245,12 +274,12 @@ function generateMinimalPageAnalysis(indexSearchResult, files) {
 function generateCompleteMinimalAnalysis(files, examName, analysisMode) {
   logPhase('minimal-analysis', 'Generazione analisi completa minimale...');
   const indexData = generateMinimalIndexStructure(files, examName, analysisMode);
-  const pageData = generateMinimalPageAnalysis(indexData, files);
+  const validationData = generateMinimalValidationData(indexData);
   
   return {
     indexSearch: indexData,
-    comprehensiveAnalysis: pageData,
-    synthesis: { synthesizedTopics: [], synthesisStatistics: { originalPages: 0, synthesizedTopics: 0 } },
+    sectionValidation: validationData,
+    synthesis: { synthesizedTopics: [], synthesisStatistics: { originalSections: 0, analyzedSections: 0 } },
     validation: { validatedTopics: [], statistics: { totalTopics: 0, totalPages: 0 } }
   };
 }
