@@ -1,4 +1,4 @@
-// src/utils/gemini/modules/distributionModule.js - MODULO DISTRIBUZIONE SENZA LIMITI
+// src/utils/gemini/modules/distributionModule.js - MODULO DISTRIBUZIONE SEMPLIFICATO
 
 import { executeAIRequest, createAIServiceInput, validateAIServiceOutput } from '../services/geminiAIService.js';
 import { 
@@ -10,7 +10,7 @@ import {
   executePhaseWithErrorHandling
 } from '../shared/geminiShared.js';
 
-// ===== CONFIGURAZIONE MODULO - NESSUN LIMITE =====
+// ===== CONFIGURAZIONE MODULO =====
 const MODULE_CONFIG = {
   UNLIMITED: true, // Nessun limite attivo
   MAX_TOPICS_PER_DAY: 1000, // Praticamente illimitato
@@ -344,43 +344,6 @@ async function phaseAdvancedValidationAndOptimization(input) {
         }
         
         logPhase('advanced-validation', `✅ "${topicTitle}" → Giorno ${optimalDay.day} (carico ottimizzato)`);
-      } else {
-        // Se tutti i giorni sono troppo carichi, crea un giorno extra
-        const extraDay = {
-          day: optimizedDailyPlan.length + 1,
-          dayStrategy: `Giorno extra: Focus su ${topicTitle}`,
-          assignedTopics: [{
-            title: topicTitle,
-            studyFocus: `Studio intensivo di ${topicTitle}`,
-            estimatedHours: originalTopic?.estimatedHours || calculateOptimalHours(originalTopic),
-            priority: originalTopic?.priority || 'medium',
-            studyMethod: determineStudyMethod(originalTopic),
-            difficultyHandling: getOptimalDifficultyStrategy(originalTopic),
-            connectionNotes: findTopicConnections(originalTopic, originalTopics),
-            originalData: {
-              totalPages: originalTopic?.totalPages || 0,
-              difficulty: originalTopic?.difficulty || 'intermediate',
-              keyConcepts: originalTopic?.keyConcepts || [],
-              hasExercises: originalTopic?.hasExercises || false,
-              hasFormulas: originalTopic?.hasFormulas || false
-            }
-          }],
-          dailyWorkload: {
-            totalTopics: 1,
-            totalPages: originalTopic?.totalPages || 10,
-            totalHours: originalTopic?.estimatedHours || calculateOptimalHours(originalTopic),
-            difficultyLevel: originalTopic?.difficulty || 'intermediate',
-            cognitiveLoad: 'medium',
-            studyIntensity: 'intensive'
-          },
-          dayType: 'intensive',
-          studyTips: generateStudyTips([originalTopic]),
-          preparationNotes: `Preparazione specifica per ${topicTitle}`,
-          qualityMetrics: { type: 'extra', value: 0.9 }
-        };
-        
-        optimizedDailyPlan.push(extraDay);
-        logPhase('advanced-validation', `➕ "${topicTitle}" → Nuovo giorno ${extraDay.day} (intensivo)`);
       }
     }
   }
@@ -910,24 +873,6 @@ function generateOptimizationRecommendations(dailyPlan) {
     recommendations.push('Considera di bilanciare meglio il carico tra i giorni');
   }
   
-  // Sequenza di difficoltà
-  const studyDays = dailyPlan.filter(day => day.assignedTopics.length > 0);
-  let hasOptimalProgression = true;
-  
-  for (let i = 1; i < studyDays.length; i++) {
-    const prevDayDifficulty = studyDays[i-1].dailyWorkload?.difficultyLevel;
-    const currentDayDifficulty = studyDays[i].dailyWorkload?.difficultyLevel;
-    
-    if (prevDayDifficulty === 'beginner' && currentDayDifficulty === 'advanced') {
-      hasOptimalProgression = false;
-      break;
-    }
-  }
-  
-  if (!hasOptimalProgression) {
-    recommendations.push('La progressione di difficoltà potrebbe essere troppo rapida');
-  }
-  
   if (recommendations.length === 0) {
     recommendations.push('Distribuzione ottimale - nessun aggiustamento necessario');
   }
@@ -944,75 +889,8 @@ function optimizeStudyFlow(dailyPlan) {
   // Crea copia per ottimizzazioni
   const optimizedPlan = JSON.parse(JSON.stringify(dailyPlan));
   
-  // 1. Verifica e ottimizza sequenza di prerequisiti
-  optimizePrerequisiteSequence(optimizedPlan);
-  
-  // 2. Bilancia carico cognitivo tra giorni consecutivi
-  balanceCognitiveLoad(optimizedPlan);
-  
-  // 3. Ottimizza transizioni tra argomenti
-  optimizeTopicTransitions(optimizedPlan);
-  
-  logPhase('study-flow-optimization', 'Ottimizzazione flusso completata');
-  return optimizedPlan;
-}
-
-/**
- * Ottimizza sequenza prerequisiti
- */
-function optimizePrerequisiteSequence(plan) {
-  const studyDays = plan.filter(day => day.assignedTopics.length > 0);
-  
-  // Verifica che argomenti foundational vengano prima
-  const foundationalTopics = [];
-  const advancedTopics = [];
-  
-  studyDays.forEach(day => {
-    day.assignedTopics.forEach(topic => {
-      if (topic.originalData?.difficulty === 'beginner') {
-        foundationalTopics.push({ topic, day: day.day });
-      } else if (topic.originalData?.difficulty === 'advanced') {
-        advancedTopics.push({ topic, day: day.day });
-      }
-    });
-  });
-  
-  // Se argomenti foundational vengono dopo advanced, segnala
-  const latestFoundational = Math.max(...foundationalTopics.map(ft => ft.day), 0);
-  const earliestAdvanced = Math.min(...advancedTopics.map(at => at.day), Infinity);
-  
-  if (latestFoundational > earliestAdvanced) {
-    logPhase('study-flow-optimization', `Sequenza prerequisiti non ottimale detectata (foundational al giorno ${latestFoundational}, advanced al giorno ${earliestAdvanced})`);
-    // In un'implementazione completa, qui si potrebbero riordinare automaticamente
-  }
-}
-
-/**
- * Bilancia carico cognitivo
- */
-function balanceCognitiveLoad(plan) {
-  for (let i = 1; i < plan.length; i++) {
-    const prevDay = plan[i-1];
-    const currentDay = plan[i];
-    
-    const prevLoad = prevDay.dailyWorkload?.cognitiveLoad;
-    const currentLoad = currentDay.dailyWorkload?.cognitiveLoad;
-    
-    // Se due giorni consecutivi sono entrambi "high", suggerisci un buffer
-    if (prevLoad === 'high' && currentLoad === 'high') {
-      // Aggiorna note di preparazione per suggerire pause extra
-      if (currentDay.preparationNotes) {
-        currentDay.preparationNotes += ' IMPORTANTE: Giorno consecutivo ad alto carico - pianifica pause extra.';
-      }
-    }
-  }
-}
-
-/**
- * Ottimizza transizioni tra argomenti
- */
-function optimizeTopicTransitions(plan) {
-  plan.forEach(day => {
+  // Ottimizza transizioni tra argomenti
+  optimizedPlan.forEach(day => {
     if (day.assignedTopics.length > 1) {
       // Riordina argomenti del giorno per transizioni più fluide
       day.assignedTopics.sort((a, b) => {
@@ -1045,6 +923,9 @@ function optimizeTopicTransitions(plan) {
       }
     }
   });
+  
+  logPhase('study-flow-optimization', 'Ottimizzazione flusso completata');
+  return optimizedPlan;
 }
 
 // ===== ORCHESTRATORE PRINCIPALE =====
@@ -1119,201 +1000,8 @@ export async function distributeTopics(input) {
   }
 }
 
-// ===== FUNZIONI LEGACY (per compatibilità con il sistema esistente) =====
-
-/**
- * Funzione legacy per compatibilità con phaseWorkloadAnalysis
- */
-export async function legacyWorkloadAnalysis(examName, topics, totalDays, userDescription, progressCallback) {
-  logPhase('legacy-compatibility', 'phaseWorkloadAnalysis -> new unlimited system');
-  return { 
-    workloadAnalysis: topics.map(t => ({ 
-      topicTitle: t.title, 
-      complexity: calculateTopicComplexity(t), 
-      estimatedHours: t.estimatedHours || calculateOptimalHours(t),
-      difficulty: t.difficulty || 'intermediate',
-      examImportance: t.priority === 'high' ? 5 : t.priority === 'low' ? 2 : 3
-    })),
-    overallWorkload: {
-      totalEstimatedHours: topics.reduce((sum, t) => sum + (t.estimatedHours || calculateOptimalHours(t)), 0),
-      averageComplexity: calculateAverageComplexity(topics),
-      hoursPerDay: Math.round((topics.reduce((sum, t) => sum + (t.estimatedHours || calculateOptimalHours(t)), 0) / totalDays) * 10) / 10,
-      recommendedStudyIntensity: determineRecommendedIntensity(topics, totalDays)
-    }
-  };
-}
-
-/**
- * Calcola complessità di un argomento
- */
-function calculateTopicComplexity(topic) {
-  let complexity = 3; // Base
-  
-  if (topic.difficulty === 'advanced') complexity += 2;
-  if (topic.difficulty === 'beginner') complexity -= 1;
-  if (topic.hasFormulas) complexity += 1;
-  if (topic.hasExercises) complexity += 1;
-  if (topic.keyConcepts && topic.keyConcepts.length > 5) complexity += 1;
-  if (topic.totalPages && topic.totalPages > 20) complexity += 1;
-  
-  return Math.max(1, Math.min(5, complexity));
-}
-
-/**
- * Calcola complessità media
- */
-function calculateAverageComplexity(topics) {
-  if (topics.length === 0) return 3.0;
-  
-  const totalComplexity = topics.reduce((sum, topic) => sum + calculateTopicComplexity(topic), 0);
-  return Math.round((totalComplexity / topics.length) * 10) / 10;
-}
-
-/**
- * Determina intensità raccomandata
- */
-function determineRecommendedIntensity(topics, totalDays) {
-  const totalHours = topics.reduce((sum, t) => sum + (t.estimatedHours || calculateOptimalHours(t)), 0);
-  const hoursPerDay = totalHours / totalDays;
-  
-  if (hoursPerDay > 7) return 'intensive';
-  if (hoursPerDay > 5) return 'moderate';
-  return 'light';
-}
-
-/**
- * Funzione legacy per compatibilità con phaseTopicGrouping
- */
-export async function legacyTopicGrouping(examName, topics, workloadResult, totalDays, progressCallback) {
-  logPhase('legacy-compatibility', 'phaseTopicGrouping -> new unlimited system');
-  
-  // Raggruppa per affinità invece che per difficoltà
-  const topicGroups = createIntelligentTopicGroups(topics);
-  
-  return { 
-    studySequence: topics.map((topic, index) => ({
-      topicTitle: topic.title,
-      position: index + 1,
-      reasoning: `Posizione ${index + 1} basata su analisi avanzata: priorità, prerequisiti, e sequenza ottimale`
-    })),
-    topicGroups: topicGroups
-  };
-}
-
-/**
- * Crea gruppi di argomenti intelligenti
- */
-function createIntelligentTopicGroups(topics) {
-  const groups = [];
-  const processedTopics = new Set();
-  
-  topics.forEach(topic => {
-    if (processedTopics.has(topic.title)) return;
-    
-    // Trova argomenti correlati
-    const relatedTopics = findRelatedTopics(topic, topics);
-    const groupTopics = [topic, ...relatedTopics.filter(t => !processedTopics.has(t.title))];
-    
-    if (groupTopics.length > 1) {
-      groups.push({
-        groupName: `Gruppo ${topic.title.split(' ')[0]} e correlati`,
-        topics: groupTopics.map(t => t.title),
-        canBeStudiedTogether: true,
-        totalComplexity: groupTopics.reduce((sum, t) => sum + calculateTopicComplexity(t), 0),
-        estimatedTime: groupTopics.reduce((sum, t) => sum + (t.estimatedHours || calculateOptimalHours(t)), 0),
-        studyStrategy: generateGroupStudyStrategy(groupTopics)
-      });
-      
-      groupTopics.forEach(t => processedTopics.add(t.title));
-    } else {
-      groups.push({
-        groupName: `${topic.title} (Studio Individuale)`,
-        topics: [topic.title],
-        canBeStudiedTogether: false,
-        totalComplexity: calculateTopicComplexity(topic),
-        estimatedTime: topic.estimatedHours || calculateOptimalHours(topic),
-        studyStrategy: `Studio intensivo focalizzato su ${topic.title}`
-      });
-      
-      processedTopics.add(topic.title);
-    }
-  });
-  
-  return groups;
-}
-
-/**
- * Trova argomenti correlati
- */
-function findRelatedTopics(mainTopic, allTopics) {
-  const related = [];
-  const mainConcepts = new Set(mainTopic.keyConcepts || []);
-  
-  allTopics.forEach(otherTopic => {
-    if (otherTopic.title === mainTopic.title) return;
-    
-    const otherConcepts = new Set(otherTopic.keyConcepts || []);
-    const intersection = new Set([...mainConcepts].filter(x => otherConcepts.has(x)));
-    
-    // Se condividono più del 25% dei concetti, sono correlati
-    const totalConcepts = new Set([...mainConcepts, ...otherConcepts]).size;
-    if (intersection.size > 0 && (intersection.size / totalConcepts) > 0.25) {
-      related.push(otherTopic);
-    }
-  });
-  
-  return related.slice(0, 3); // Massimo 3 argomenti correlati per gruppo
-}
-
-/**
- * Genera strategia di studio per gruppo
- */
-function generateGroupStudyStrategy(groupTopics) {
-  if (groupTopics.length === 1) {
-    return `Studio intensivo di ${groupTopics[0].title}`;
-  }
-  
-  const hasAdvanced = groupTopics.some(t => t.difficulty === 'advanced');
-  const hasPractice = groupTopics.some(t => t.hasExercises);
-  
-  let strategy = `Studio integrato di ${groupTopics.length} argomenti correlati. `;
-  
-  if (hasAdvanced) {
-    strategy += 'Inizia con i concetti più complessi. ';
-  }
-  
-  if (hasPractice) {
-    strategy += 'Alterna studio teorico e pratico. ';
-  }
-  
-  strategy += 'Evidenzia collegamenti e sinergie tra gli argomenti.';
-  
-  return strategy;
-}
-
-/**
- * Funzione legacy per compatibilità con phaseDayDistribution
- */
-export async function legacyDayDistribution(examName, topics, workloadResult, groupingResult, totalDays, progressCallback) {
-  logPhase('legacy-compatibility', 'phaseDayDistribution -> new unlimited system');
-  return await phaseIntelligentUnlimitedDistribution({ examName, topics, totalDays, userDescription: '', progressCallback });
-}
-
-/**
- * Funzione legacy per compatibilità con phaseBalancingOptimization
- */
-export async function legacyBalancingOptimization(distributionResult, totalDays, originalTopics, progressCallback) {
-  logPhase('legacy-compatibility', 'phaseBalancingOptimization -> new unlimited system');
-  return await phaseAdvancedValidationAndOptimization({ distributionResult, totalDays, originalTopics, progressCallback });
-}
-
 // ===== EXPORT DEFAULT =====
 export default {
   distributeTopics,
-  MODULE_CONFIG,
-  // Legacy functions per compatibilità
-  legacyWorkloadAnalysis,
-  legacyTopicGrouping,
-  legacyDayDistribution,
-  legacyBalancingOptimization
+  MODULE_CONFIG
 };

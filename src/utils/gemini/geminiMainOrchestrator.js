@@ -1,4 +1,4 @@
-// src/utils/gemini/geminiMainOrchestrator.js - ORCHESTRATORE PRINCIPALE COMPLETAMENTE MODULARE
+// src/utils/gemini/geminiMainOrchestrator.js - ORCHESTRATORE PRINCIPALE SEMPLIFICATO
 
 import { analyzeContent } from './modules/contentAnalysis/contentAnalysisOrchestrator.js';
 import { distributeTopics } from './modules/distributionModule.js';
@@ -142,7 +142,7 @@ export async function generateCompleteStudyPlanLocal(
         distribution: distributionResult.data.phaseResults,
         metadata: {
           version: '2.0',
-          architecture: 'modular',
+          architecture: 'modular-simplified',
           timestamp: Date.now(),
           cacheStats: getCacheStats()
         }
@@ -166,48 +166,7 @@ export async function generateCompleteStudyPlanLocal(
   }
 }
 
-// ===== FUNZIONI LEGACY PER COMPATIBILITÀ =====
-
-/**
- * Funzione legacy per compatibilità totale con il sistema esistente
- * DEPRECATA - usa generateCompleteStudyPlanLocal
- */
-export async function generateCompleteStudyPlan(
-  examName, 
-  totalDays, 
-  files, 
-  originalFilesDriveInfo, 
-  userDescription = "", 
-  progressCallback = null
-) {
-  logPhase('legacy-compatibility', '⚠️ USANDO FUNZIONE LEGACY generateCompleteStudyPlan');
-  logPhase('legacy-compatibility', '💡 Consiglio: usa generateCompleteStudyPlanLocal');
-  
-  try {
-    // Usa la nuova funzione ottimizzata
-    const result = await generateCompleteStudyPlanLocal(
-      examName,
-      totalDays,
-      files,
-      userDescription,
-      progressCallback,
-      'pdf' // Modalità PDF per compatibilità
-    );
-    
-    // Adatta l'output al formato legacy
-    return {
-      index: result.index,
-      distribution: result.distribution,
-      pageMapping: result.pageMapping,
-      originalFilesInfo: originalFilesDriveInfo, // Usa i dati originali se forniti
-      multiPhaseResults: result.multiPhaseResults
-    };
-
-  } catch (error) {
-    logPhase('legacy-compatibility', `❌ LEGACY FALLITA: ${error.message}`);
-    throw createPhaseError('legacy-orchestrator', `Errore AI: ${error.message}`, error);
-  }
-}
+// ===== ACCESSO DIRETTO AI MODULI =====
 
 /**
  * Accesso diretto al modulo di analisi contenuti
@@ -308,8 +267,8 @@ export function createStudyPlanInput(examName, totalDays, files, userDescription
  */
 export function getSystemInfo() {
   return {
-    version: '2.0',
-    architecture: 'modular',
+    version: '2.0-simplified',
+    architecture: 'modular-simplified',
     modules: {
       contentAnalysis: 'contentAnalysisModule',
       distribution: 'distributionModule',
@@ -320,8 +279,7 @@ export function getSystemInfo() {
       analysisMode: ['pdf', 'text'],
       caching: true,
       validation: true,
-      errorHandling: true,
-      legacyCompatibility: true
+      errorHandling: true
     },
     cacheStats: getCacheStats(),
     timestamp: Date.now()
@@ -339,51 +297,6 @@ export function cleanupSystem() {
     timestamp: Date.now()
   };
 }
-
-// ===== COMPATIBILITY LAYER =====
-
-/**
- * Layer di compatibilità per le funzioni legacy del sistema esistente
- */
-export const LegacyCompatibility = {
-  // Analisi contenuti legacy
-  generateContentIndex: async (examName, filesArray, originalFilesDriveInfo, userDescription = "") => {
-    logPhase('legacy-compatibility', '⚠️ LEGACY: generateContentIndex -> analyzeContentStructureMultiPhase');
-    const result = await analyzeContentStructureMultiPhase(examName, filesArray, originalFilesDriveInfo, userDescription, null, 'pdf');
-    return {
-      tableOfContents: result.tableOfContents,
-      pageMapping: result.pageMapping
-    };
-  },
-  
-  // Distribuzione legacy
-  distributeTopicsToDays: async (examName, totalDays, topics, userDescription = "") => {
-    logPhase('legacy-compatibility', '⚠️ LEGACY: distributeTopicsToDays -> distributeTopicsMultiPhase');
-    const result = await distributeTopicsMultiPhase(examName, totalDays, topics, userDescription);
-    return {
-      dailyPlan: result.dailyPlan
-    };
-  },
-  
-  // Analisi struttura legacy
-  analyzeContentStructure: async (examName, filesArray, originalFilesDriveInfo, userDescription = "", progressCallback) => {
-    logPhase('legacy-compatibility', '⚠️ LEGACY: analyzeContentStructure -> analyzeContentStructureMultiPhase');
-    const result = await analyzeContentStructureMultiPhase(examName, filesArray, originalFilesDriveInfo, userDescription, progressCallback, 'pdf');
-    return {
-      tableOfContents: result.tableOfContents,
-      pageMapping: result.pageMapping
-    };
-  },
-  
-  // Distribuzione ottimizzata legacy
-  distributeTopicsOptimized: async (examName, totalDays, topics, userDescription = "", progressCallback) => {
-    logPhase('legacy-compatibility', '⚠️ LEGACY: distributeTopicsOptimized -> distributeTopicsMultiPhase');
-    const result = await distributeTopicsMultiPhase(examName, totalDays, topics, userDescription, progressCallback);
-    return {
-      dailyPlan: result.dailyPlan
-    };
-  }
-};
 
 // ===== UTILITÀ AVANZATE =====
 
@@ -471,8 +384,7 @@ export const GeminiUtils = {
 
 // ===== EXPORT DEFAULT =====
 export default {
-  // Funzioni principali
-  generateCompleteStudyPlan, // Legacy (DEPRECATA)
+  // Funzione principale
   generateCompleteStudyPlanLocal, // NUOVA FUNZIONE PRINCIPALE ⭐
   
   // Accesso diretto ai moduli
@@ -484,20 +396,18 @@ export default {
   getSystemInfo,
   cleanupSystem,
   
-  // Compatibilità legacy
-  LegacyCompatibility,
+  // Utilità
   GeminiUtils,
   
-  // Re-export delle funzioni legacy per compatibilità totale
-  generateContentIndex: LegacyCompatibility.generateContentIndex,
-  distributeTopicsToDays: LegacyCompatibility.distributeTopicsToDays,
-  analyzeContentStructure: LegacyCompatibility.analyzeContentStructure,
-  distributeTopicsOptimized: LegacyCompatibility.distributeTopicsOptimized
+  // Accesso ai moduli (per uso avanzato)
+  modules: {
+    orchestrator: 'GeminiMainOrchestrator'
+  }
 };
 
 // ===== LOGGING SISTEMA =====
-logPhase('system-init', `🎯 GEMINI MAIN ORCHESTRATOR v2.0 CARICATO`);
+logPhase('system-init', `🎯 GEMINI MAIN ORCHESTRATOR v2.0 SEMPLIFICATO CARICATO`);
 logPhase('system-init', `🚀 FUNZIONE PRINCIPALE: generateCompleteStudyPlanLocal()`);
-logPhase('system-init', `📊 ARCHITETTURA: Modulare indipendente - 4 moduli principali`);
+logPhase('system-init', `📊 ARCHITETTURA: Modulare semplificata - 4 moduli principali`);
 logPhase('system-init', `🔧 MODALITÀ: PDF (completa), TEXT (veloce)`);
-logPhase('system-init', `✅ COMPATIBILITÀ: 100% con sistema esistente`);
+logPhase('system-init', `✅ SISTEMA SEMPLIFICATO: Rimosso layer di compatibilità legacy`);

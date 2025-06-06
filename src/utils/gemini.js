@@ -1,15 +1,13 @@
-// src/utils/gemini.js - ENTRY POINT AGGIORNATO PER ARCHITETTURA MODULARE v2.0
+// src/utils/gemini.js - ENTRY POINT SEMPLIFICATO v2.0
 
 // ===== IMPORT DAL NUOVO ORCHESTRATORE MODULARE =====
 import GeminiMainOrchestrator, {
-  generateCompleteStudyPlan,
-  generateCompleteStudyPlanLocal, // ⭐ NUOVA FUNZIONE PRINCIPALE
+  generateCompleteStudyPlanLocal, // ⭐ FUNZIONE PRINCIPALE
   analyzeContentStructureMultiPhase,
   distributeTopicsMultiPhase,
   createStudyPlanInput,
   getSystemInfo,
   cleanupSystem,
-  LegacyCompatibility,
   GeminiUtils
 } from './gemini/geminiMainOrchestrator.js';
 
@@ -21,23 +19,12 @@ import { SHARED_CONFIG } from './gemini/shared/geminiShared.js';
 // FUNZIONE PRINCIPALE OTTIMIZZATA ⭐
 export { generateCompleteStudyPlanLocal };
 
-// Funzione legacy (mantenuta per compatibilità)
-export { generateCompleteStudyPlan };
-
 // Accesso diretto ai moduli
 export { analyzeContentStructureMultiPhase, distributeTopicsMultiPhase };
 
-// ===== EXPORT LEGACY (Compatibilità 100%) =====
-
-// Funzioni originali del sistema esistente
-export const generateContentIndex = LegacyCompatibility.generateContentIndex;
-export const distributeTopicsToDays = LegacyCompatibility.distributeTopicsToDays;
-export const analyzeContentStructure = LegacyCompatibility.analyzeContentStructure;
-export const distributeTopicsOptimized = LegacyCompatibility.distributeTopicsOptimized;
-
 // ===== NUOVE FUNZIONI MULTI-FASE (Accesso diretto) =====
 
-// Versioni più avanzate delle funzioni legacy
+// Versioni più avanzate delle funzioni
 export const analyzeContentMultiPhase = async (examName, filesArray, originalFilesDriveInfo, userDescription = "", progressCallback = null, analysisMode = 'pdf') => {
   console.log(`🔧 Direct module access: analyzeContentMultiPhase (${analysisMode})`);
   return await analyzeContentStructureMultiPhase(examName, filesArray, originalFilesDriveInfo, userDescription, progressCallback, analysisMode);
@@ -48,7 +35,7 @@ export const distributeTopicsMultiPhaseAdvanced = async (examName, totalDays, to
   return await distributeTopicsMultiPhase(examName, totalDays, topics, userDescription, progressCallback);
 };
 
-// ===== UTILITY E CONFIGURAZIONE =====
+// ===== UTILITÀ E CONFIGURAZIONE =====
 
 // Configurazione (accesso read-only)
 export const CONFIG = { ...SHARED_CONFIG };
@@ -108,13 +95,11 @@ export function runGeminiDiagnostics() {
   
   console.log('\n📋 FUNZIONI DISPONIBILI:');
   console.log('  🚀 generateCompleteStudyPlanLocal() - PRINCIPALE (v2.0)');
-  console.log('  🔄 generateCompleteStudyPlan() - Legacy');
   console.log('  🔧 analyzeContentMultiPhase() - Analisi diretta');
   console.log('  🔧 distributeTopicsMultiPhase() - Distribuzione diretta');
   console.log('  ⚙️ GeminiUtils.* - Utilità complete');
   
-  console.log('\n✅ COMPATIBILITÀ:');
-  console.log('  📦 100% backward compatible');
+  console.log('\n✅ FUNZIONALITÀ:');
   console.log('  🏗️ Architettura modulare indipendente');
   console.log('  🔧 Supporto modalità PDF e TEXT');
   console.log('  💾 Cache intelligente multi-livello');
@@ -160,75 +145,11 @@ export async function testGeminiSystem(testFiles = null) {
   }
 }
 
-// ===== LAYER COMPATIBILITÀ COMPLETA =====
-
-// Assicura che tutte le funzioni legacy siano disponibili
-export { LegacyCompatibility };
-
-// Funzioni per la gestione delle fasi individuali (legacy)
-export const phaseIndexSearch = () => {
-  console.warn('⚠️ phaseIndexSearch è ora parte del contentAnalysisModule');
-  throw new Error('Funzione deprecata: usa analyzeContentMultiPhase');
-};
-
-export const phaseIndexValidation = () => {
-  console.warn('⚠️ phaseIndexValidation è ora parte del contentAnalysisModule');
-  throw new Error('Funzione deprecata: usa analyzeContentMultiPhase');
-};
-
-export const phasePageByPageAnalysis = () => {
-  console.warn('⚠️ phasePageByPageAnalysis è ora parte del contentAnalysisModule');
-  throw new Error('Funzione deprecata: usa analyzeContentMultiPhase');
-};
-
-export const phaseTopicGrouping = () => {
-  console.warn('⚠️ phaseTopicGrouping è ora parte del contentAnalysisModule');
-  throw new Error('Funzione deprecata: usa analyzeContentMultiPhase');
-};
-
-export const phaseTopicValidation = () => {
-  console.warn('⚠️ phaseTopicValidation è ora parte del contentAnalysisModule');
-  throw new Error('Funzione deprecata: usa analyzeContentMultiPhase');
-};
-
-export const phaseEquitableDistribution = () => {
-  console.warn('⚠️ phaseEquitableDistribution è ora parte del distributionModule');
-  throw new Error('Funzione deprecata: usa distributeTopicsMultiPhase');
-};
-
-export const phaseDistributionValidation = () => {
-  console.warn('⚠️ phaseDistributionValidation è ora parte del distributionModule');
-  throw new Error('Funzione deprecata: usa distributeTopicsMultiPhase');
-};
-
-// Funzioni core (ora parte del geminiAIService)
-export const fileToGenerativePart = () => {
-  console.warn('⚠️ fileToGenerativePart è ora parte del geminiAIService');
-  throw new Error('Funzione deprecata: usa il nuovo sistema modulare');
-};
-
-export const prepareFilesForAI = () => {
-  console.warn('⚠️ prepareFilesForAI è ora parte del geminiAIService');
-  throw new Error('Funzione deprecata: usa il nuovo sistema modulare');
-};
-
-export const executeAIPhase = () => {
-  console.warn('⚠️ executeAIPhase è ora parte del geminiAIService');
-  throw new Error('Funzione deprecata: usa il nuovo sistema modulare');
-};
-
 // ===== EXPORT DEFAULT =====
 
 export default {
   // ⭐ FUNZIONE PRINCIPALE RACCOMANDATA
   generateCompleteStudyPlanLocal,
-  
-  // Legacy (mantenute per compatibilità)
-  generateCompleteStudyPlan,
-  generateContentIndex,
-  distributeTopicsToDays,
-  analyzeContentStructure,
-  distributeTopicsOptimized,
   
   // Nuove funzioni avanzate
   analyzeContentMultiPhase,
@@ -253,9 +174,6 @@ export default {
   runGeminiDiagnostics,
   testGeminiSystem,
   
-  // Compatibilità
-  LegacyCompatibility,
-  
   // Accesso ai moduli (per uso avanzato)
   modules: {
     orchestrator: GeminiMainOrchestrator
@@ -264,17 +182,16 @@ export default {
 
 // ===== INIZIALIZZAZIONE SISTEMA =====
 
-console.log(`🎯 GEMINI AI SYSTEM v2.0 CARICATO`);
-console.log(`🚀 ARCHITETTURA: Modulare indipendente (4 moduli)`);
-console.log(`🔧 FUNZIONE PRINCIPALE: generateCompleteStudyPlanLocal()`);
-console.log(`📊 MODALITÀ: PDF (precisa), TEXT (veloce)`);
-console.log(`✅ COMPATIBILITÀ: 100% backward compatible`);
+console.log(`🎯 GEMINI AI SYSTEM v2.0 CARICATO (SEMPLIFICATO)`);
+console.log(`🚀 FUNZIONE PRINCIPALE: generateCompleteStudyPlanLocal()`);
+console.log(`📊 ARCHITETTURA: Modulare indipendente (4 moduli)`);
+console.log(`🔧 MODALITÀ: PDF (precisa), TEXT (veloce)`);
 console.log(`💡 Esegui runGeminiDiagnostics() per informazioni complete`);
 
 // ===== INFORMAZIONI ARCHITETTURA =====
 
 /**
- * ARCHITETTURA GEMINI AI v2.0 - MODULARE INDIPENDENTE
+ * ARCHITETTURA GEMINI AI v2.0 - MODULARE SEMPLIFICATA
  * 
  * STRUTTURA:
  * 
@@ -296,11 +213,10 @@ console.log(`💡 Esegui runGeminiDiagnostics() per informazioni complete`);
  * - ✅ Funzioni condivise centralizzate
  * - ✅ Cache multi-livello intelligente
  * - ✅ Gestione errori robusta
- * - ✅ Compatibilità 100% con codice esistente
  * 
  * WORKFLOW:
  * 1. CreateProject → generateCompleteStudyPlanLocal()
- * 2. Orchestrator → contentAnalysisModule → 5 fasi
+ * 2. Orchestrator → contentAnalysisModule → 4 fasi
  * 3. Orchestrator → distributionModule → 2 fasi
  * 4. Return → formato compatibile per PlanReviewModal
  * 
@@ -309,5 +225,4 @@ console.log(`💡 Esegui runGeminiDiagnostics() per informazioni complete`);
  * 🔧 Manutenibilità: Moduli indipendenti facili da modificare
  * 🛡️ Robustezza: Validazione e gestione errori completa
  * 🔄 Flessibilità: Possibilità di usare singoli moduli
- * ✅ Compatibilità: Funziona con tutto il codice esistente
  */
