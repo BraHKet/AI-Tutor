@@ -646,3 +646,73 @@
     padding: 1.25rem;
   }
 }
+
+
+/* src/components/styles/HomePage.css */
+
+/* (TUTTI I TUOI STILI PRECEDENTI RIMANGONO QUI SOPRA) */
+/* Esempio: .home-page-container, .hero-section, etc. */
+
+/* ===== VISTA PER UTENTE NON AUTENTICATO ===== */
+.unauthenticated-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  flex-grow: 1;
+  padding: 2rem;
+  height: 100%;
+}
+
+.unauthenticated-content {
+  max-width: 550px;
+  background: white;
+  padding: 2.5rem 3rem;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 8px 25px -8px rgba(0, 0, 0, 0.08);
+}
+
+.unauthenticated-icon {
+  color: #8b5cf6;
+  margin-bottom: 1rem;
+}
+
+.unauthenticated-content h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 0.75rem 0;
+}
+
+.unauthenticated-content p {
+  font-size: 1rem;
+  color: #64748b;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+
+.login-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.8rem 1.75rem;
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.25);
+}
+
+.login-cta-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.35);
+}
+
+/* (LE MEDIA QUERIES ESISTENTI RIMANGONO QUI SOTTO) */

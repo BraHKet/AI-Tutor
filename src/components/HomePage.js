@@ -1,10 +1,14 @@
-// src/components/HomePage.js - Versione Minimal e Moderna
+// src/components/HomePage.js
+
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import useGoogleAuth from '../hooks/useGoogleAuth';
 import NavBar from './NavBar';
+
 import { 
+  LogIn,
   BookOpen, 
   Calendar, 
   CheckCircle, 
@@ -29,14 +33,17 @@ import './styles/HomePage.css';
 
 const HomePage = () => {
   const { user } = useGoogleAuth();
-  
+  const navigate = useNavigate();
+
   // Stato per feedback
   const [feedbackRating, setFeedbackRating] = useState(null);
   const [feedbackText, setFeedbackText] = useState('');
   const [feedbackSent, setFeedbackSent] = useState(false);
   const [feedbackSending, setFeedbackSending] = useState(false);
 
-  // Statistiche base semplici
+  // Stato per caricamento e statistiche
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [basicStats, setBasicStats] = useState({
     totalProjects: 0,
     completedTopics: 0,
@@ -44,9 +51,14 @@ const HomePage = () => {
   });
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
 
     const fetchBasicStats = async () => {
+      setIsLoading(true);
+      setError(null);
       try {
         const projectsRef = collection(db, "projects");
         const q = query(projectsRef, where("userId", "==", user.uid));
@@ -81,6 +93,9 @@ const HomePage = () => {
         
       } catch (error) {
         console.error("Error fetching stats:", error);
+        setError("Impossibile caricare le statistiche. Riprova più tardi.");
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -119,6 +134,52 @@ const HomePage = () => {
       setFeedbackSending(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="home-page-container">
+        <NavBar />
+        <div className="home-content">
+          
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="home-page-container">
+        <NavBar />
+        <div className="home-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+          <div>
+            <h2>Oops! Qualcosa è andato storto.</h2>
+            <p style={{ color: '#64748b' }}>{error}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="home-page-container">
+        <NavBar />
+        <div className="home-content">
+          <div className="unauthenticated-view">
+            <div className="unauthenticated-content">
+              <Brain size={48} className="unauthenticated-icon" />
+              <h1>Benvenuto in AI Tutor</h1>
+              <p>Il modo più intelligente per trasformare i tuoi documenti in piani di studio personalizzati. Accedi per iniziare.</p>
+              <button className="login-cta-btn" onClick={() => navigate('/')}>
+                <LogIn size={20} />
+                <span>Accedi per iniziare</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="home-page-container">
@@ -169,8 +230,7 @@ const HomePage = () => {
                 Come valuti la tua esperienza con AI Tutor?
               </p>
               
-              <div className="feedback-rating">
-                <div className="rating-buttons">
+              <div className="rating-buttons">
                   <button 
                     className={`rating-btn ${feedbackRating === 1 ? 'active negative' : ''}`}
                     onClick={() => handleFeedbackRating(1)}
@@ -210,7 +270,6 @@ const HomePage = () => {
                     <Star size={24} />
                     <span>Eccellente</span>
                   </button>
-                </div>
               </div>
               
               {feedbackRating && (
@@ -260,10 +319,6 @@ const HomePage = () => {
               <p>Inizia con <strong>un solo PDF</strong> del tuo materiale di studio. L'AI analizzerà il contenuto per identificare automaticamente gli argomenti.</p>
             </div>
 
-            <div className="step-arrow">
-              <ArrowRight size={20} />
-            </div>
-
             <div className="step-card">
               <div className="step-number">2</div>
               <div className="step-icon">
@@ -273,10 +328,6 @@ const HomePage = () => {
               <p>L'intelligenza artificiale divide automaticamente il materiale in argomenti e li distribuisce nei giorni di studio disponibili.</p>
             </div>
 
-            <div className="step-arrow">
-              <ArrowRight size={20} />
-            </div>
-
             <div className="step-card">
               <div className="step-number">3</div>
               <div className="step-icon">
@@ -284,10 +335,6 @@ const HomePage = () => {
               </div>
               <h3>Personalizza</h3>
               <p><strong>Verifica e seleziona</strong> le parti specifiche del PDF per ogni argomento. Riorganizza gli argomenti nei giorni come preferisci.</p>
-            </div>
-
-            <div className="step-arrow">
-              <ArrowRight size={20} />
             </div>
 
             <div className="step-card">
