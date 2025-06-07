@@ -13,9 +13,18 @@ import './styles/StudySession.css';
 import SimpleLoading from './SimpleLoading';
 import { googleDriveService } from '../utils/googleDriveService';
 
-// Configurazione PDF.js worker
+// Configurazione PDF.js worker - fix per l'errore "browser is not defined"
 if (typeof window !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
+  // Fix per l'errore browser is not defined
+  if (typeof global === 'undefined') {
+    window.global = window;
+  }
+  
+  // Imposta il worker per PDF.js
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
+  
+  // Disabilita completamente il supporto per i WebWorkers se causano problemi
+  pdfjsLib.GlobalWorkerOptions.workerPort = null;
 }
 
 const StudySession = () => {
@@ -90,12 +99,16 @@ const StudySession = () => {
       
       console.log('Caricamento PDF - ArrayBuffer size:', pdfArrayBuffer.byteLength);
       
-      // Carica il documento PDF con ArrayBuffer
+      // Carica il documento PDF con ArrayBuffer e configurazione ottimizzata
       const loadingTask = pdfjsLib.getDocument({
         data: pdfArrayBuffer,
-        cMapUrl: 'https://unpkg.com/pdfjs-dist@3.11.174/cmaps/',
-        cMapPacked: true,
-        standardFontDataUrl: 'https://unpkg.com/pdfjs-dist@3.11.174/standard_fonts/',
+        // Rimuovi le configurazioni che potrebbero causare problemi
+        // cMapUrl: 'https://unpkg.com/pdfjs-dist@3.11.174/cmaps/',
+        // cMapPacked: true,
+        // standardFontDataUrl: 'https://unpkg.com/pdfjs-dist@3.11.174/standard_fonts/',
+        useWorkerFetch: false,
+        isEvalSupported: false,
+        useSystemFonts: true,
       });
 
       const pdf = await loadingTask.promise;
@@ -123,31 +136,45 @@ const StudySession = () => {
       const canvas = canvasRef.current;
       const context = canvas.getContext('2d');
 
-      // Calcola le dimensioni con scala e rotazione
-      let viewport = page.getViewport({ scale, rotation });
+      // MIGLIORAMENTO RISOLUZIONE: Usa device pixel ratio per alta qualità
+      const devicePixelRatio = window.devicePixelRatio || 1;
+      const backingStoreRatio = context.webkitBackingStorePixelRatio ||
+                               context.mozBackingStorePixelRatio ||
+                               context.msBackingStorePixelRatio ||
+                               context.oBackingStorePixelRatio ||
+                               context.backingStorePixelRatio || 1;
       
-      // Imposta le dimensioni del canvas
+      // Calcola il ratio per rendering ad alta risoluzione
+      const pixelRatio = Math.max(devicePixelRatio / backingStoreRatio, 2); // Minimo 2x per qualità
+
+      // Calcola le dimensioni con scala e rotazione
+      let viewport = page.getViewport({ scale: scale * pixelRatio, rotation });
+      
+      // Imposta le dimensioni del canvas (dimensioni reali per rendering)
       canvas.height = viewport.height;
       canvas.width = viewport.width;
       
-      // Imposta lo stile CSS per la risoluzione corretta
-      canvas.style.width = viewport.width + 'px';
-      canvas.style.height = viewport.height + 'px';
+      // Imposta lo stile CSS (dimensioni visibili)
+      canvas.style.width = (viewport.width / pixelRatio) + 'px';
+      canvas.style.height = (viewport.height / pixelRatio) + 'px';
+
+      // IMPORTANTE: Scala il contesto per compensare il pixel ratio
+      context.scale(pixelRatio, pixelRatio);
 
       // Pulisci il canvas
-      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.clearRect(0, 0, canvas.width / pixelRatio, canvas.height / pixelRatio);
 
-      // Parametri di rendering
+      // Parametri di rendering con viewport scalato
       const renderContext = {
         canvasContext: context,
-        viewport: viewport
+        viewport: page.getViewport({ scale, rotation }) // Usa scala originale per il viewport
       };
 
       // Renderizza la pagina
       const renderTask = page.render(renderContext);
       await renderTask.promise;
       
-      console.log(`Pagina ${currentPage} renderizzata con scala ${scale}`);
+      console.log(`Pagina ${currentPage} renderizzata con scala ${scale} e pixel ratio ${pixelRatio}`);
       
     } catch (error) {
       console.error('Errore nel rendering della pagina:', error);
@@ -524,7 +551,8 @@ const StudySession = () => {
                   display: 'block',
                   margin: '0 auto',
                   cursor: activeTool === 'highlighter' ? 'crosshair' : 
-                          activeTool === 'note' ? 'copy' : 'default'
+                          activeTool === 'note' ? 'copy' : 'default',
+                  imageRendering: 'crisp-edges' // CSS per migliorare la nitidezza
                 }}
               />
               
