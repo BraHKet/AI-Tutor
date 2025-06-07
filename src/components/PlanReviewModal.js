@@ -11,6 +11,7 @@ import { saveProjectWithPlan } from '../utils/firebase';
 import { googleDriveService } from '../utils/googleDriveService';
 import useGoogleAuth from '../hooks/useGoogleAuth';
 import { v4 as uuidv4 } from 'uuid';
+import LoadingOverlay from './LoadingOverlay';
 
 const PlanReviewModal = ({
     provisionalPlanData,
@@ -26,6 +27,12 @@ const PlanReviewModal = ({
     const navigate = useNavigate();
     const location = useLocation();
     const { user } = useGoogleAuth();
+
+    // Per loading component
+    const [loadingPhase, setLoadingPhase] = useState('processing');
+    const [loadingProgress, setLoadingProgress] = useState(null);
+    const [currentStep, setCurrentStep] = useState(null);
+    const [totalSteps, setTotalSteps] = useState(null);
 
     // Usa i dati dalla location se forniti
     const locationState = location.state || {};
@@ -350,6 +357,10 @@ const PlanReviewModal = ({
         setLocalFinalizationMessage('Inizializzazione servizio Google Drive...');
         setLocalFinalizationError('');
         setUploadProgress({});
+        setLoadingPhase('authenticating');
+        setLoadingProgress(10);
+        setCurrentStep(null);
+        setTotalSteps(null);
         
         if (!user) {
             setLocalFinalizationError("Utente non autenticato. Impossibile salvare il progetto.");
@@ -369,8 +380,11 @@ const PlanReviewModal = ({
         
         // INIZIALIZZA DRIVE SERVICE
         try {
-            setLocalFinalizationMessage('Inizializzazione Google Drive...');
+            setLocalFinalizationMessage('Autenticazione Google Drive...');
+            setLoadingPhase('authenticating');
+            setLoadingProgress(20);
             await googleDriveService.ensureAuthenticated();
+            setLoadingProgress(30);
         } catch (error) {
             console.error("PlanReviewModal/handleChunksOnlySave: Failed to initialize Google Drive service", error);
             setLocalFinalizationError(`Errore inizializzazione Google Drive: ${error.message}`);
@@ -418,7 +432,10 @@ const PlanReviewModal = ({
             let chunksProcessedCount = 0;
             
             setLocalFinalizationMessage(`Creazione e caricamento di ${totalChunksToCreate} chunks...`);
-            
+            setLoadingPhase('chunks');
+            setTotalSteps(totalChunksToCreate);
+            setCurrentStep(0);
+            setLoadingProgress(35);
             // 🎯 CREA E CARICA SOLO I CHUNKS NECESSARI
             for (const dayPlan of finalDistribution) {
                 const dayNumber = dayPlan.day;
@@ -500,6 +517,9 @@ const PlanReviewModal = ({
                                 const chunkFileName = `${originalFile.name.replace(/\.pdf$/i, '')}_${safeTitlePart}_p${firstPage}-${lastPage}.pdf`;
                                 
                                 chunksProcessedCount++;
+                                setCurrentStep(chunksProcessedCount);
+                                const progress = 35 + ((chunksProcessedCount / totalChunksToCreate) * 55);
+                                setLoadingProgress(progress);
                                 try {
                                     const progressMsg = `Chunk ${chunksProcessedCount}/${totalChunksToCreate}: ${chunkFileName.substring(0,35)}...`;
                                     setLocalFinalizationMessage(progressMsg);
@@ -592,6 +612,8 @@ const PlanReviewModal = ({
 
             // Salvataggio su Firestore
             setLocalFinalizationMessage('Salvataggio finale del piano su Firebase...');
+            setLoadingPhase('saving');
+            setLoadingProgress(95);
             console.log("PlanReviewModal/handleChunksOnlySave: Saving chunks-only plan to Firestore...");
             const finalProjectId = await saveProjectWithPlan(projectCoreData, topicsDataForFirestore);
             console.log("PlanReviewModal/handleChunksOnlySave: Chunks-only plan saved! Project ID:", finalProjectId);
@@ -647,6 +669,21 @@ const PlanReviewModal = ({
 
     return (
         <>
+        <LoadingOverlay 
+            isVisible={effectiveIsFinalizing}
+            message={effectiveFinalizationMessage || 'Elaborazione in corso...'}
+            phase={loadingPhase}
+            progress={loadingProgress}
+            currentStep={currentStep}
+            totalSteps={totalSteps}
+            details={
+                loadingPhase === 'chunks' ? 
+                "Creazione e caricamento dei frammenti PDF selezionati..." :
+                loadingPhase === 'saving' ?
+                "Salvataggio del piano di studio..." :
+                "Autenticazione con Google Drive..."
+            }
+        />
             <div className="plan-review-screen">
                 <div className="plan-review-header">
                     <h1>Revisione Piano di Studio</h1>

@@ -1,10 +1,11 @@
-// src/components/CreateProject.jsx - VERSIONE SEMPLIFICATA (SOLO TESTO)
+// src/components/CreateProject.jsx - VERSIONE SEMPLIFICATA (SOLO TESTO) CON LOADING OVERLAY
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import useGoogleAuth from '../hooks/useGoogleAuth';
 import { generateCompleteStudyPlanLocal } from '../utils/gemini';
 import { FilePlus, Upload, X, Calendar, BookOpen, Info, AlertCircle, Loader, BrainCircuit, Clock } from 'lucide-react';
 import NavBar from './NavBar';
+import LoadingOverlay from './LoadingOverlay';
 import './styles/CreateProject.css';
 
 const CreateProject = () => {
@@ -16,6 +17,7 @@ const CreateProject = () => {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
+  const [loadingPhase, setLoadingPhase] = useState('processing');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   
@@ -29,6 +31,7 @@ const CreateProject = () => {
     setFiles([]);
     setLoading(false);
     setLoadingMessage('');
+    setLoadingPhase('processing');
     setError('');
     setSuccess('');
   }, []);
@@ -90,6 +93,13 @@ const CreateProject = () => {
     console.log("Progress Update:", update);
     if (update.type === 'processing') {
       setLoadingMessage(update.message);
+      setLoadingPhase('analyzing');
+    } else if (update.type === 'extracting') {
+      setLoadingMessage('Estrazione testo dai PDF...');
+      setLoadingPhase('processing');
+    } else if (update.type === 'ai_analysis') {
+      setLoadingMessage('Analisi AI in corso...');
+      setLoadingPhase('analyzing');
     } else if (update.type === 'error') {
       console.error("Progress Callback Error:", update.message);
     } else if (update.type === 'warning') {
@@ -126,6 +136,7 @@ const CreateProject = () => {
     setSuccess(''); 
     setLoading(true); 
     setLoadingMessage('Verifica dati...');
+    setLoadingPhase('processing');
 
     if (!user) { 
       setError('Utente non autenticato.'); 
@@ -146,6 +157,7 @@ const CreateProject = () => {
     try {
       // ANALISI AI LOCALE con modalità testo
       setLoadingMessage('Analisi AI dei PDF (modalità testo veloce)...');
+      setLoadingPhase('analyzing');
       
       const planData = await generateCompleteStudyPlanLocal(
         formData.examName,
@@ -195,6 +207,15 @@ const CreateProject = () => {
   return (
     <>
       <NavBar />
+      
+      {/* NUOVO: Loading Overlay che copre tutto quando loading=true */}
+      <LoadingOverlay 
+        isVisible={loading}
+        message={loadingMessage || 'Analisi in corso...'}
+        phase={loadingPhase}
+        details="L'AI sta analizzando i contenuti dei tuoi PDF per creare un piano di studio personalizzato."
+      />
+      
       <div className="create-project-wrapper">
         <div className="create-project-container">
           <div className="create-project-header">
@@ -208,12 +229,6 @@ const CreateProject = () => {
                 </div>
             )}
            {success && !loading && ( <div className="message success-message"> <Info size={20} /> <span>{success}</span> </div> )}
-           {loading && (
-               <div className="message info-message">
-                   <Loader size={20} className="spin-icon" />
-                   <span>{loadingMessage || 'Attendere...'}</span>
-               </div>
-           )}
 
           <form className="create-project-form" onSubmit={handleSubmit}>
               <fieldset disabled={loading} style={{ border: 'none', padding: 0, margin: 0 }}>
@@ -231,32 +246,30 @@ const CreateProject = () => {
                               <label htmlFor="examName"><span className="label-text">Nome Esame</span><span className="required-mark">*</span></label>
                               <div className="input-wrapper">
                                   <BookOpen size={20} className="input-icon" />
-                                  <input type="text" id="examName" name="examName" value={formData.examName} onChange={handleChange} placeholder="Es. Metodi Matematici della Fisica" required />
+                                  <input type="text" id="examName" name="examName" value={formData.examName} onChange={handleChange} placeholder="Es. Metodi Matematici per l'Ingegneria" required />
                               </div>
                           </div>
                           <div className="form-group">
-                              <label htmlFor="totalDays"><span className="label-text">Giorni Preparazione</span><span className="required-mark">*</span></label>
+                              <label htmlFor="totalDays"><span className="label-text">Giorni Totali</span><span className="required-mark">*</span></label>
                               <div className="input-wrapper">
                                   <Calendar size={20} className="input-icon" />
-                                  <input type="number" id="totalDays" name="totalDays" value={formData.totalDays} onChange={handleChange} min="1" max="90" required />
+                                  <input type="number" id="totalDays" name="totalDays" value={formData.totalDays} onChange={handleChange} min="1" max="30" required />
                               </div>
-                              <p className="field-hint">Giorni totali (studio + ripasso).</p>
                           </div>
                       </div>
 
                       <div className="form-section">
-                          <h2 className="section-title">Materiale Studio</h2>
-                          
-                          <div className="form-group">
-                              <label><span className="label-text">File PDF</span><span className="required-mark">*</span></label>
-                              <div className="file-upload-area">
-                                  <div className="file-upload-container">
-                                      <label className="file-upload-btn" htmlFor="fileInput"><Upload size={20} /><span>Carica PDF</span></label>
-                                      <input type="file" id="fileInput" onChange={handleFileChange} multiple accept=".pdf" className="hidden-file-input" />
-                                  </div>
-                                  <p className="file-upload-info">
-                                      Carica libri, dispense, appunti.<br />
-                                      <small>Max 100MB/file. Estrazione testo veloce.</small>
+                          <h2 className="section-title">Caricamento File</h2>
+                          <div className="file-upload-area">
+                              <input type="file" id="fileInput" multiple accept=".pdf" onChange={handleFileChange} style={{ display: 'none' }} disabled={loading} />
+                              <label htmlFor="fileInput" className={`file-upload-button ${loading ? 'disabled' : ''}`}>
+                                  <FilePlus size={20} />
+                                  <span>Seleziona PDF</span>
+                              </label>
+                              <div className="file-upload-info">
+                                  <p>
+                                      <strong>Modalità Testo Veloce</strong>
+                                      <small>Estrazione testo veloce.</small>
                                   </p>
                               </div>
                               {files.length > 0 && (
@@ -289,7 +302,7 @@ const CreateProject = () => {
                   </div>
 
                    <div className="form-actions">
-                     <button type="button" className="cancel-btn" onClick={handleCancel} > Annulla </button>
+                     <button type="button" className="cancel-btn" onClick={handleCancel} disabled={loading}> Annulla </button>
                      <button type="submit" className="submit-btn" disabled={files.length === 0 || loading}>
                        {loading ?
                           (<> <Loader size={16} className="spin-icon" /> Analisi Testo... </> ) :
