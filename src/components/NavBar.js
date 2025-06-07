@@ -37,7 +37,6 @@ const NavBar = () => {
     { path: '/homepage', icon: <Home size={24} />, label: 'Home' },
     { path: '/create-project', icon: <BookOpen size={24} />, label: 'Crea Progetto' },
     { path: '/projects', icon: <List size={24} />, label: 'Riepilogo Progetti' },
-    { path: '/profile', icon: <User size={24} />, label: 'Profilo' },
   ];
 
   return (

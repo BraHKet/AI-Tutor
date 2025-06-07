@@ -1,4 +1,4 @@
-// src/components/HomePage.js
+// src/components/HomePage.js - Versione Minimal e Moderna
 import React, { useState, useEffect } from 'react';
 import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../utils/firebase';
@@ -7,69 +7,60 @@ import NavBar from './NavBar';
 import { 
   BookOpen, 
   Calendar, 
-  Clock, 
-  Award, 
   CheckCircle, 
-  BarChart2, 
   Smile, 
   Meh, 
   Frown, 
   ThumbsUp,
   Send,
-  MessageSquare
+  MessageSquare,
+  Star,
+  FileText,
+  Target,
+  Zap,
+  Brain,
+  Users,
+  ArrowRight,
+  Lightbulb,
+  Play,
+  Download
 } from 'lucide-react';
 import './styles/HomePage.css';
 
 const HomePage = () => {
   const { user } = useGoogleAuth();
-  const [stats, setStats] = useState({
-    totalProjects: 0,
-    completedTopics: 0,
-    totalTopics: 0,
-    averageProgressPercent: 0,
-    daysStudied: 0,
-    oldestProjectDate: null,
-    topicProgressByDay: {}
-  });
-  const [loading, setLoading] = useState(true);
+  
+  // Stato per feedback
   const [feedbackRating, setFeedbackRating] = useState(null);
   const [feedbackText, setFeedbackText] = useState('');
   const [feedbackSent, setFeedbackSent] = useState(false);
   const [feedbackSending, setFeedbackSending] = useState(false);
 
-  useEffect(() => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
+  // Statistiche base semplici
+  const [basicStats, setBasicStats] = useState({
+    totalProjects: 0,
+    completedTopics: 0,
+    totalTopics: 0
+  });
 
-    const fetchUserStats = async () => {
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchBasicStats = async () => {
       try {
-        setLoading(true);
-        // Query per ottenere tutti i progetti dell'utente
         const projectsRef = collection(db, "projects");
         const q = query(projectsRef, where("userId", "==", user.uid));
         const querySnapshot = await getDocs(q);
         
         const projects = querySnapshot.docs.map(doc => ({
           id: doc.id,
-          ...doc.data(),
-          createdAt: doc.data().createdAt?.toDate?.() || new Date()
+          ...doc.data()
         }));
 
-        // Inizializza le statistiche
         let totalTopics = 0;
         let completedTopics = 0;
-        let oldestDate = new Date();
-        const topicProgressByDay = {};
         
-        // Per ogni progetto, carica gli argomenti associati
         for (const project of projects) {
-          if (project.createdAt < oldestDate) {
-            oldestDate = project.createdAt;
-          }
-
-          // Carica gli argomenti del progetto
           const topicsRef = collection(db, "projects", project.id, "topics");
           const topicsSnapshot = await getDocs(topicsRef);
           
@@ -79,56 +70,21 @@ const HomePage = () => {
           }));
           
           totalTopics += topics.length;
-          
-          // Conta gli argomenti completati
-          const completed = topics.filter(topic => topic.isCompleted).length;
-          completedTopics += completed;
-          
-          // Raggruppa gli argomenti per giorno
-          topics.forEach(topic => {
-            const day = topic.assignedDay;
-            if (!topicProgressByDay[day]) {
-              topicProgressByDay[day] = {
-                total: 0,
-                completed: 0
-              };
-            }
-            
-            topicProgressByDay[day].total += 1;
-            if (topic.isCompleted) {
-              topicProgressByDay[day].completed += 1;
-            }
-          });
+          completedTopics += topics.filter(topic => topic.isCompleted).length;
         }
 
-        // Calcola la percentuale media di completamento
-        const averageProgressPercent = totalTopics > 0 
-          ? Math.round((completedTopics / totalTopics) * 100) 
-          : 0;
-        
-        // Calcola il numero di giorni studiati (giorni con almeno un argomento completato)
-        const daysStudied = Object.values(topicProgressByDay)
-          .filter(day => day.completed > 0)
-          .length;
-
-        setStats({
+        setBasicStats({
           totalProjects: projects.length,
           completedTopics,
-          totalTopics,
-          averageProgressPercent,
-          daysStudied,
-          oldestProjectDate: oldestDate !== new Date() ? oldestDate : null,
-          topicProgressByDay
+          totalTopics
         });
         
-        setLoading(false);
       } catch (error) {
-        console.error("Error fetching user stats:", error);
-        setLoading(false);
+        console.error("Error fetching stats:", error);
       }
     };
 
-    fetchUserStats();
+    fetchBasicStats();
   }, [user]);
 
   const handleFeedbackRating = (rating) => {
@@ -141,7 +97,6 @@ const HomePage = () => {
     try {
       setFeedbackSending(true);
       
-      // Aggiungi il feedback alla collezione "feedback" in Firestore
       await addDoc(collection(db, "feedback"), {
         userId: user?.uid || "anonymous",
         userEmail: user?.email || "anonymous",
@@ -154,7 +109,6 @@ const HomePage = () => {
       setFeedbackSending(false);
       setFeedbackText('');
       
-      // Resetta il feedback dopo 5 secondi
       setTimeout(() => {
         setFeedbackSent(false);
         setFeedbackRating(null);
@@ -166,54 +120,70 @@ const HomePage = () => {
     }
   };
 
-  const daysSinceFirstProject = () => {
-    if (!stats.oldestProjectDate) return 0;
-    
-    const now = new Date();
-    const diffTime = Math.abs(now - stats.oldestProjectDate);
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  };
-
   return (
     <div className="home-page-container">
       <NavBar />
       
       <div className="home-content">
-        {/* Sezione di feedback in alto */}
+        {/* Hero Section */}
+        <section className="hero-section">
+          <div className="hero-content">
+            <h1>Ciao {user?.displayName?.split(' ')[0] || 'Studente'}!</h1>
+            <p className="hero-subtitle">Trasforma i tuoi PDF in piani di studio intelligenti</p>
+            
+            {basicStats.totalProjects > 0 && (
+              <div className="quick-stats">
+                <div className="stat-item">
+                  <BookOpen size={16} />
+                  <span>{basicStats.totalProjects} Piani</span>
+                </div>
+                <div className="stat-item">
+                  <CheckCircle size={16} />
+                  <span>{basicStats.completedTopics}/{basicStats.totalTopics} Completati</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Feedback Section */}
         <section className="feedback-section">
-          <h2 className="section-title">
-            <MessageSquare size={22} />
-            <span>Il tuo Feedback</span>
-          </h2>
+          <div className="feedback-header">
+            <MessageSquare size={20} />
+            <h2>Il tuo Feedback</h2>
+          </div>
           
           {feedbackSent ? (
             <div className="feedback-success">
-              <CheckCircle size={32} />
-              <h3>Grazie per il tuo feedback!</h3>
-              <p>Il tuo contributo è importante per migliorare la piattaforma.</p>
+              <div className="success-icon">
+                <CheckCircle size={32} />
+              </div>
+              <div className="success-content">
+                <h3>Grazie per il feedback!</h3>
+                <p>Il tuo contributo ci aiuta a migliorare l'esperienza di studio.</p>
+              </div>
             </div>
           ) : (
             <div className="feedback-form">
-              <div className="feedback-intro">
-                <p>Ciao <strong>{user?.displayName || 'Studente'}</strong>! La tua opinione è preziosa! Aiutaci a migliorare AI Tutor con il tuo feedback.</p>
-              </div>
+              <p className="feedback-intro">
+                Come valuti la tua esperienza con AI Tutor?
+              </p>
               
               <div className="feedback-rating">
-                <h3>Come valuti la tua esperienza?</h3>
                 <div className="rating-buttons">
                   <button 
                     className={`rating-btn ${feedbackRating === 1 ? 'active negative' : ''}`}
                     onClick={() => handleFeedbackRating(1)}
                   >
-                    <Frown size={28} />
-                    <span>Non soddisfatto</span>
+                    <Frown size={24} />
+                    <span>Insoddisfacente</span>
                   </button>
                   
                   <button 
                     className={`rating-btn ${feedbackRating === 2 ? 'active neutral' : ''}`}
                     onClick={() => handleFeedbackRating(2)}
                   >
-                    <Meh size={28} />
+                    <Meh size={24} />
                     <span>Nella media</span>
                   </button>
                   
@@ -221,135 +191,187 @@ const HomePage = () => {
                     className={`rating-btn ${feedbackRating === 3 ? 'active good' : ''}`}
                     onClick={() => handleFeedbackRating(3)}
                   >
-                    <ThumbsUp size={28} />
-                    <span>Abbastanza buono</span>
+                    <ThumbsUp size={24} />
+                    <span>Buono</span>
                   </button>
                   
                   <button 
                     className={`rating-btn ${feedbackRating === 4 ? 'active positive' : ''}`}
                     onClick={() => handleFeedbackRating(4)}
                   >
-                    <Smile size={28} />
-                    <span>Molto soddisfatto</span>
+                    <Smile size={24} />
+                    <span>Ottimo</span>
+                  </button>
+
+                  <button 
+                    className={`rating-btn ${feedbackRating === 5 ? 'active excellent' : ''}`}
+                    onClick={() => handleFeedbackRating(5)}
+                  >
+                    <Star size={24} />
+                    <span>Eccellente</span>
                   </button>
                 </div>
               </div>
               
-              <div className="feedback-comment">
-                <h3>Dettagli (opzionale)</h3>
-                <textarea 
-                  placeholder="Condividi i tuoi suggerimenti o commenti per aiutarci a migliorare..."
-                  value={feedbackText}
-                  onChange={(e) => setFeedbackText(e.target.value)}
-                  rows="4"
-                ></textarea>
-                
-                <button 
-                  className="submit-feedback-btn" 
-                  onClick={submitFeedback}
-                  disabled={feedbackRating === null || feedbackSending}
-                >
-                  {feedbackSending ? (
-                    <span className="sending-indicator">Invio in corso...</span>
-                  ) : (
-                    <>
-                      <Send size={16} />
-                      <span>Invia Feedback</span>
-                    </>
-                  )}
-                </button>
-              </div>
+              {feedbackRating && (
+                <div className="feedback-comment">
+                  <textarea 
+                    placeholder="Condividi i tuoi suggerimenti (opzionale)..."
+                    value={feedbackText}
+                    onChange={(e) => setFeedbackText(e.target.value)}
+                    rows="3"
+                  ></textarea>
+                  
+                  <button 
+                    className="submit-feedback-btn" 
+                    onClick={submitFeedback}
+                    disabled={feedbackSending}
+                  >
+                    {feedbackSending ? (
+                      <span className="sending-indicator">Invio...</span>
+                    ) : (
+                      <>
+                        <Send size={16} />
+                        <span>Invia Feedback</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </section>
         
-        {/* Statistiche sotto */}
-        <section className="stats-section">
-          <h2 className="section-title">
-            <BarChart2 size={22} />
-            <span>Le tue Statistiche</span>
-          </h2>
-          
-          <div className="stats-cards">
-            <div className="stat-card">
-              <div className="stat-icon">
-                <BookOpen size={24} />
+        {/* Come Funziona Section */}
+        <section className="how-it-works-section">
+          <div className="section-header">
+            <Brain size={24} />
+            <h2>Come Funziona AI Tutor</h2>
+            <p>Un sistema intelligente per ottimizzare il tuo studio</p>
+          </div>
+
+          <div className="workflow-steps">
+            <div className="step-card">
+              <div className="step-number">1</div>
+              <div className="step-icon">
+                <FileText size={24} />
               </div>
-              <div className="stat-content">
-                <h3>Progetti</h3>
-                <p className="stat-value">{stats.totalProjects}</p>
-                <p className="stat-desc">Progetti di studio creati</p>
-              </div>
+              <h3>Carica PDF</h3>
+              <p>Inizia con <strong>un solo PDF</strong> del tuo materiale di studio. L'AI analizzerà il contenuto per identificare automaticamente gli argomenti.</p>
             </div>
-            
-            <div className="stat-card">
-              <div className="stat-icon">
-                <CheckCircle size={24} />
-              </div>
-              <div className="stat-content">
-                <h3>Argomenti Completati</h3>
-                <p className="stat-value">{stats.completedTopics} <span className="stat-total">/ {stats.totalTopics}</span></p>
-                <div className="progress-bar">
-                  <div 
-                    className="progress-fill" 
-                    style={{ width: `${stats.averageProgressPercent}%` }}
-                  ></div>
-                </div>
-              </div>
+
+            <div className="step-arrow">
+              <ArrowRight size={20} />
             </div>
-            
-            <div className="stat-card">
-              <div className="stat-icon">
-                <Calendar size={24} />
+
+            <div className="step-card">
+              <div className="step-number">2</div>
+              <div className="step-icon">
+                <Brain size={24} />
               </div>
-              <div className="stat-content">
-                <h3>Giorni di Studio</h3>
-                <p className="stat-value">{stats.daysStudied}</p>
-                <p className="stat-desc">Giorni con argomenti completati</p>
-              </div>
+              <h3>Analisi AI</h3>
+              <p>L'intelligenza artificiale divide automaticamente il materiale in argomenti e li distribuisce nei giorni di studio disponibili.</p>
             </div>
-            
-            <div className="stat-card">
-              <div className="stat-icon">
-                <Clock size={24} />
+
+            <div className="step-arrow">
+              <ArrowRight size={20} />
+            </div>
+
+            <div className="step-card">
+              <div className="step-number">3</div>
+              <div className="step-icon">
+                <Target size={24} />
               </div>
-              <div className="stat-content">
-                <h3>Tempo Totale</h3>
-                <p className="stat-value">{daysSinceFirstProject()}</p>
-                <p className="stat-desc">Giorni dal primo progetto</p>
+              <h3>Personalizza</h3>
+              <p><strong>Verifica e seleziona</strong> le parti specifiche del PDF per ogni argomento. Riorganizza gli argomenti nei giorni come preferisci.</p>
+            </div>
+
+            <div className="step-arrow">
+              <ArrowRight size={20} />
+            </div>
+
+            <div className="step-card">
+              <div className="step-number">4</div>
+              <div className="step-icon">
+                <Play size={24} />
               </div>
+              <h3>Studia</h3>
+              <p>Accedi alle sezioni PDF per ogni giorno, sottolinea, stampa, aggiungi approfondimenti e interagisci con l'AI per chiarimenti.</p>
             </div>
           </div>
+        </section>
+
+        {/* Funzionalità Section */}
+        <section className="features-section">
+          <h2>Cosa Puoi Fare</h2>
           
-          {stats.totalProjects > 0 && (
-            <div className="progress-visualization">
-              <h3 className="progress-title">Progressi per Giorno</h3>
-              <div className="day-progress-grid">
-                {Object.entries(stats.topicProgressByDay)
-                  .sort(([dayA], [dayB]) => parseInt(dayA) - parseInt(dayB))
-                  .map(([day, progress]) => {
-                    const progressPercent = progress.total > 0 
-                      ? Math.round((progress.completed / progress.total) * 100) 
-                      : 0;
-                    
-                    return (
-                      <div key={`day-${day}`} className="day-progress-card">
-                        <div className="day-header">
-                          <span>Giorno {day}</span>
-                          <span className="day-completion">{progress.completed}/{progress.total}</span>
-                        </div>
-                        <div className="day-progress-bar">
-                          <div 
-                            className="day-progress-fill" 
-                            style={{ width: `${progressPercent}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    );
-                  })}
+          <div className="features-grid">
+            <div className="feature-card">
+              <div className="feature-icon study">
+                <BookOpen size={24} />
               </div>
+              <h3>Studio Mirato</h3>
+              <p>Accedi solo alle pagine specifiche per ogni argomento, senza distrazioni dal resto del materiale.</p>
             </div>
-          )}
+
+            <div className="feature-card">
+              <div className="feature-icon organize">
+                <Calendar size={24} />
+              </div>
+              <h3>Organizzazione Flessibile</h3>
+              <p>Sposta gli argomenti tra i giorni e riorganizza il piano secondo le tue esigenze e scadenze.</p>
+            </div>
+
+            <div className="feature-card">
+              <div className="feature-icon interact">
+                <MessageSquare size={24} />
+              </div>
+              <h3>AI Interattiva</h3>
+              <p>Chiedi chiarimenti all'AI, fatti interrogare sugli argomenti e ricevi feedback personalizzato.</p>
+            </div>
+
+            <div className="feature-card">
+              <div className="feature-icon tools">
+                <Zap size={24} />
+              </div>
+              <h3>Strumenti Avanzati</h3>
+              <p>Sottolinea, stampa, aggiungi note e approfondimenti direttamente sui materiali di studio.</p>
+            </div>
+          </div>
+        </section>
+
+        {/* Suggerimenti Section */}
+        <section className="tips-section">
+          <div className="tips-header">
+            <Lightbulb size={20} />
+            <h2>Suggerimenti per il Successo</h2>
+          </div>
+          
+          <div className="tips-grid">
+            <div className="tip-card primary">
+              <div className="tip-icon">
+                <FileText size={20} />
+              </div>
+              <h4>Inizia con un PDF</h4>
+              <p>Per risultati ottimali, carica <strong>un singolo PDF ben strutturato</strong> anziché multipli file frammentati.</p>
+            </div>
+
+            <div className="tip-card secondary">
+              <div className="tip-icon">
+                <CheckCircle size={20} />
+              </div>
+              <h4>Verifica le Selezioni</h4>
+              <p><strong>Controlla sempre</strong> le pagine selezionate per ogni argomento prima di confermare il piano di studio.</p>
+            </div>
+
+            <div className="tip-card accent">
+              <div className="tip-icon">
+                <Target size={20} />
+              </div>
+              <h4>Personalizza i Giorni</h4>
+              <p>Adatta la distribuzione degli argomenti ai tuoi impegni e alla difficoltà del materiale.</p>
+            </div>
+          </div>
         </section>
       </div>
     </div>

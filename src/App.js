@@ -22,7 +22,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
 
         {/* Routes protette */}
-        <Route path="/" element={<HomePage />} />
+        <Route path="/homepage" element={<HomePage />} />
         <Route path="/create-project" element={<CreateProject />} />
         
         {/* Rotta per il riepilogo progetti */}
