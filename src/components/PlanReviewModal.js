@@ -370,7 +370,7 @@ const PlanReviewModal = ({
         // INIZIALIZZA DRIVE SERVICE
         try {
             setLocalFinalizationMessage('Inizializzazione Google Drive...');
-            await googleDriveService.initialize();
+            await googleDriveService.ensureAuthenticated();
         } catch (error) {
             console.error("PlanReviewModal/handleChunksOnlySave: Failed to initialize Google Drive service", error);
             setLocalFinalizationError(`Errore inizializzazione Google Drive: ${error.message}`);
