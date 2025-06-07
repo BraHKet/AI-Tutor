@@ -1,11 +1,11 @@
-// src/components/ProjectsSummary.js - Versione Minimalista
+// src/components/ProjectsSummary.js - Con eliminazione e UI migliorata
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
-import { db } from '../utils/firebase';
+import { db, deleteProject } from '../utils/firebase';
 import { 
   Calendar, BookOpen, Loader, AlertCircle, 
-  Clock, ChevronRight, Search, PlusCircle 
+  Clock, ChevronRight, Search, PlusCircle, X
 } from 'lucide-react';
 import useGoogleAuth from '../hooks/useGoogleAuth';
 import NavBar from './NavBar';
@@ -18,6 +18,8 @@ const ProjectsSummary = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [deletingProjectId, setDeletingProjectId] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(null);
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -69,6 +71,37 @@ const ProjectsSummary = () => {
     );
   });
 
+  const handleDeleteProject = async (projectId) => {
+    if (!projectId || deletingProjectId) return;
+    
+    setDeletingProjectId(projectId);
+    setShowDeleteModal(null);
+    
+    try {
+      await deleteProject(projectId);
+      
+      // Rimuovi il progetto dalla lista locale
+      setProjects(prevProjects => 
+        prevProjects.filter(project => project.id !== projectId)
+      );
+      
+      console.log(`Project ${projectId} deleted successfully`);
+    } catch (error) {
+      console.error("Error deleting project:", error);
+      setError("Errore nell'eliminazione del progetto: " + error.message);
+    } finally {
+      setDeletingProjectId(null);
+    }
+  };
+
+  const openDeleteModal = (projectId, projectTitle) => {
+    setShowDeleteModal({ id: projectId, title: projectTitle });
+  };
+
+  const closeDeleteModal = () => {
+    setShowDeleteModal(null);
+  };
+
   const goToStudyPlan = (projectId) => {
     navigate(`/projects/${projectId}/plan`);
   };
@@ -114,15 +147,18 @@ const ProjectsSummary = () => {
           </div>
         </div>
 
+        {error && (
+          <div className="error-banner">
+            <AlertCircle size={16} />
+            <span>{error}</span>
+            <button onClick={() => setError(null)} className="dismiss-error">×</button>
+          </div>
+        )}
+
         {loading ? (
           <div className="loading-container">
             <Loader size={32} className="spin-icon" />
             <span>Caricamento...</span>
-          </div>
-        ) : error ? (
-          <div className="error-container">
-            <AlertCircle size={24} />
-            <span>{error}</span>
           </div>
         ) : filteredProjects.length === 0 ? (
           <div className="empty-projects">
@@ -144,41 +180,94 @@ const ProjectsSummary = () => {
               <div 
                 key={project.id} 
                 className="project-card"
-                onClick={() => goToStudyPlan(project.id)}
               >
-                <div className="project-header">
-                  <BookOpen size={18} />
-                  <h3 className="project-title">{project.title}</h3>
-                </div>
-                
-                <div className="project-content">
-                  <div className="project-detail">
-                    <span className="detail-label">Esame:</span>
-                    <span className="detail-value">{project.examName}</span>
+                <button 
+                  className="delete-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openDeleteModal(project.id, project.title);
+                  }}
+                  disabled={deletingProjectId === project.id}
+                  title="Elimina progetto"
+                >
+                  {deletingProjectId === project.id ? (
+                    <Loader size={16} className="spin-icon" />
+                  ) : (
+                    <X size={16} />
+                  )}
+                </button>
+
+                <div 
+                  className="project-clickable"
+                  onClick={() => goToStudyPlan(project.id)}
+                >
+                  <div className="project-header">
+                    <BookOpen size={18} />
+                    <h3 className="project-title">{project.title}</h3>
                   </div>
                   
-                  <div className="project-detail">
-                    <Calendar size={14} />
-                    <span className="detail-label">Giorni:</span>
-                    <span className="detail-value">{project.totalDays}</span>
+                  <div className="project-content">
+                    <div className="project-detail">
+                      <span className="detail-label">Esame:</span>
+                      <span className="detail-value">{project.examName}</span>
+                    </div>
+                    
+                    <div className="project-detail">
+                      <Calendar size={14} />
+                      <span className="detail-label">Giorni:</span>
+                      <span className="detail-value">{project.totalDays}</span>
+                    </div>
+                    
+                    <div className="project-detail">
+                      <Clock size={14} />
+                      <span className="detail-label">Creato:</span>
+                      <span className="detail-value">{formatDate(project.createdAt)}</span>
+                    </div>
                   </div>
                   
-                  <div className="project-detail">
-                    <Clock size={14} />
-                    <span className="detail-label">Creato:</span>
-                    <span className="detail-value">{formatDate(project.createdAt)}</span>
+                  <div className="project-footer">
+                    <span>Apri Piano</span>
+                    <ChevronRight size={16} />
                   </div>
-                </div>
-                
-                <div className="project-footer">
-                  <span>Apri Piano</span>
-                  <ChevronRight size={16} />
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Modal di conferma eliminazione */}
+      {showDeleteModal && (
+        <div className="delete-modal-overlay" onClick={closeDeleteModal}>
+          <div className="delete-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Elimina Piano</h3>
+            <p>Sei sicuro di voler eliminare "<strong>{showDeleteModal.title}</strong>"?</p>
+            <p className="warning-text">Questa azione non può essere annullata.</p>
+            <div className="modal-actions">
+              <button 
+                className="cancel-btn"
+                onClick={closeDeleteModal}
+              >
+                Annulla
+              </button>
+              <button 
+                className="delete-btn-modal"
+                onClick={() => handleDeleteProject(showDeleteModal.id)}
+                disabled={deletingProjectId === showDeleteModal.id}
+              >
+                {deletingProjectId === showDeleteModal.id ? (
+                  <>
+                    <Loader size={16} className="spin-icon" />
+                    Eliminazione...
+                  </>
+                ) : (
+                  'Elimina'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
