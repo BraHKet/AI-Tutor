@@ -1,27 +1,27 @@
-/* src/components/styles/ProjectsSummary.css - Updated Dark Theme */
+/* src/components/styles/ProjectsSummary.css - Versione Minimalista */
 
 .projects-summary-container {
-  width: calc(100% - 200px); /* Sottrarre la larghezza della navbar */
+  width: calc(100% - 200px);
   max-width: 1500px;
-  margin: 0 0 0 200px; /* Sposta a destra per la navbar */
+  margin: 0 0 0 200px;
   padding: 30px;
-  background-color: #f8f9fa; /* Sfondo leggermente più chiaro */
+  background-color: #f8f9fa;
   min-height: calc(100vh - 60px);
   display: flex;
   flex-direction: column;
   color: #333;
-  position: relative; /* Per posizionare correttamente i contenuti */
-  overflow-x: hidden; /* Impedisce lo scroll orizzontale */
+  position: relative;
+  overflow-x: hidden;
 }
 
-/* Header sezione progetti */
+/* Header sezione progetti - Minimalista */
 .projects-section {
   flex: 1;
   display: flex;
   flex-direction: column;
-  position: relative; /* Per posizionare correttamente i contenuti */
-  overflow-y: auto; /* Permette lo scroll verticale del contenuto */
-  overflow-x: hidden; /* Impedisce lo scroll orizzontale */
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .projects-header {
@@ -36,7 +36,7 @@
   position: sticky;
   top: 0;
   background-color: #f8f9fa;
-  z-index: 10; /* Assicura che rimanga sopra gli altri elementi durante lo scroll */
+  z-index: 10;
   padding-top: 10px;
 }
 
@@ -54,9 +54,10 @@
   align-items: center;
   position: sticky;
   top: 0;
-  z-index: 11; /* Sopra l'header */
+  z-index: 11;
 }
 
+/* Ricerca minimalista */
 .search-container {
   display: flex;
   align-items: center;
@@ -93,6 +94,7 @@
   color: #9e9e9e;
 }
 
+/* Bottone nuovo piano minimalista */
 .create-project-button {
   display: flex;
   align-items: center;
@@ -106,7 +108,7 @@
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
-  z-index: 12; /* Assicura che rimanga in cima */
+  z-index: 12;
   box-shadow: 0 4px 6px rgba(26, 26, 46, 0.25);
 }
 
@@ -115,7 +117,7 @@
   box-shadow: 0 6px 10px rgba(26, 26, 46, 0.3);
 }
 
-/* Griglia progetti */
+/* Griglia progetti minimalista */
 .projects-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -134,7 +136,7 @@
   flex-direction: column;
   color: white;
   border: 1px solid rgba(255, 255, 255, 0.05);
-  position: relative; /* Per corretto posizionamento */
+  position: relative;
 }
 
 .project-card:hover {
@@ -142,6 +144,7 @@
   box-shadow: 0 12px 25px rgba(0, 0, 0, 0.3);
 }
 
+/* Header progetto minimalista */
 .project-header {
   padding: 15px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -165,12 +168,13 @@
   white-space: nowrap;
 }
 
+/* Contenuto progetto minimalista - solo info essenziali */
 .project-content {
   padding: 15px;
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .project-detail {
@@ -187,45 +191,39 @@
 .detail-label {
   color: rgba(255, 255, 255, 0.7);
   font-weight: 500;
-  margin-right: 5px;
 }
 
 .detail-value {
   color: white;
+  font-weight: 500;
 }
 
+/* Rimuovi descrizioni per approccio minimalista */
 .project-description {
-  margin-top: 10px;
-  font-size: 0.9em;
-  color: rgba(255, 255, 255, 0.7);
-  border-top: 1px dashed rgba(255, 255, 255, 0.1);
-  padding-top: 10px;
+  display: none;
 }
 
-.project-description p {
-  margin: 0;
-  line-height: 1.5;
-}
-
+/* Footer progetto minimalista */
 .project-footer {
   padding: 12px 15px;
   background: rgba(255, 255, 255, 0.05);
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   color: #8a65ff;
   font-weight: 500;
   font-size: 0.9em;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
-  position: relative; /* Per posizionamento corretto */
-  z-index: 1; /* Sopra la card ma sotto l'header */
+  position: relative;
+  z-index: 1;
+  gap: 8px;
 }
 
 .project-footer svg {
   color: #8a65ff;
 }
 
-/* Stati di caricamento ed errori */
+/* Stati di caricamento minimalisti */
 .loading-container, .error-container, .empty-projects {
   display: flex;
   flex-direction: column;
@@ -235,7 +233,7 @@
   text-align: center;
   gap: 15px;
   margin: 40px 0;
-  position: relative; /* Posizionamento corretto */
+  position: relative;
   border-radius: 16px;
   background-color: white;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
@@ -271,6 +269,7 @@
   max-width: 400px;
 }
 
+/* Bottone start minimalista */
 .start-button {
   margin-top: 20px;
   display: flex;
@@ -285,7 +284,7 @@
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
-  z-index: 10; /* Rimane sopra altri elementi */
+  z-index: 10;
   box-shadow: 0 4px 6px rgba(26, 26, 46, 0.25);
 }
 
@@ -294,6 +293,7 @@
   box-shadow: 0 6px 10px rgba(26, 26, 46, 0.3);
 }
 
+/* Animazioni minimaliste */
 .spin-icon {
   animation: spin 1s linear infinite;
 }
@@ -303,7 +303,7 @@
   to { transform: rotate(360deg); }
 }
 
-/* Effetto gradiente shift simile a CreateProject */
+/* Effetto gradient minimalista */
 .create-project-button::after, .start-button::after {
   content: '';
   position: absolute;
@@ -322,13 +322,13 @@
   left: 100%;
 }
 
-/* Responsive */
+/* Responsive minimalista */
 @media (max-width: 768px) {
   .projects-summary-container {
     width: 100%;
     margin-left: 0;
     padding: 20px;
-    padding-bottom: 80px; /* Spazio per la navbar mobile */
+    padding-bottom: 80px;
   }
 
   .projects-header {

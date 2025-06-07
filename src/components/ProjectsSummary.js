@@ -1,4 +1,4 @@
-// src/components/ProjectsSummary.js
+// src/components/ProjectsSummary.js - Versione Minimalista
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
@@ -31,21 +31,19 @@ const ProjectsSummary = () => {
         setLoading(true);
         setError(null);
 
-        // Crea una query per ottenere i progetti dell'utente corrente
         const projectsRef = collection(db, "projects");
         const q = query(
           projectsRef,
           where("userId", "==", user.uid),
-          orderBy("createdAt", "desc") // Mostra i più recenti prima
+          orderBy("createdAt", "desc")
         );
 
         const querySnapshot = await getDocs(q);
         
-        // Trasforma i documenti in un array di oggetti
         const projectsData = querySnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
-          createdAt: doc.data().createdAt?.toDate?.() || new Date() // Gestisce i timestamp
+          createdAt: doc.data().createdAt?.toDate?.() || new Date()
         }));
 
         console.log("Projects fetched:", projectsData.length);
@@ -63,7 +61,6 @@ const ProjectsSummary = () => {
     }
   }, [user]);
 
-  // Filtra i progetti in base al termine di ricerca
   const filteredProjects = projects.filter(project => {
     return (
       project.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -72,17 +69,14 @@ const ProjectsSummary = () => {
     );
   });
 
-  // Naviga al visualizzatore del piano di studio
   const goToStudyPlan = (projectId) => {
     navigate(`/projects/${projectId}/plan`);
   };
 
-  // Naviga alla creazione di un nuovo progetto
   const goToCreateProject = () => {
     navigate('/create-project');
   };
 
-  // Formatta la data in modo più leggibile
   const formatDate = (date) => {
     if (!date) return 'Data sconosciuta';
     
@@ -99,14 +93,14 @@ const ProjectsSummary = () => {
       
       <div className="projects-section">
         <div className="projects-header">
-          <h1>Riepilogo Progetti</h1>
+          <h1>I tuoi piani</h1>
           
           <div className="projects-actions">
             <div className="search-container">
               <Search size={16} className="search-icon" />
               <input
                 type="text"
-                placeholder="Cerca nei tuoi progetti..."
+                placeholder="Cerca..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="search-input"
@@ -123,7 +117,7 @@ const ProjectsSummary = () => {
         {loading ? (
           <div className="loading-container">
             <Loader size={32} className="spin-icon" />
-            <span>Caricamento progetti...</span>
+            <span>Caricamento...</span>
           </div>
         ) : error ? (
           <div className="error-container">
@@ -133,15 +127,15 @@ const ProjectsSummary = () => {
         ) : filteredProjects.length === 0 ? (
           <div className="empty-projects">
             <BookOpen size={48} strokeWidth={1} />
-            <h3>Nessun progetto trovato</h3>
+            <h3>Nessun piano trovato</h3>
             {searchTerm ? (
-              <p>Nessun risultato per "{searchTerm}". Prova con un altro termine.</p>
+              <p>Nessun risultato per "{searchTerm}".</p>
             ) : (
               <p>Inizia creando il tuo primo piano di studio!</p>
             )}
             <button className="start-button" onClick={goToCreateProject}>
               <PlusCircle size={16} />
-              <span>Crea Piano di Studio</span>
+              <span>Crea Piano</span>
             </button>
           </div>
         ) : (
@@ -171,18 +165,9 @@ const ProjectsSummary = () => {
                   
                   <div className="project-detail">
                     <Clock size={14} />
-                    <span className="detail-label">Creato il:</span>
+                    <span className="detail-label">Creato:</span>
                     <span className="detail-value">{formatDate(project.createdAt)}</span>
                   </div>
-                  
-                  {project.description && (
-                    <div className="project-description">
-                      <p>{project.description.length > 100 
-                          ? project.description.substring(0, 100) + '...' 
-                          : project.description}
-                      </p>
-                    </div>
-                  )}
                 </div>
                 
                 <div className="project-footer">

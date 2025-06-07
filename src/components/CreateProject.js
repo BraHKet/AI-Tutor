@@ -1,4 +1,4 @@
-// src/components/CreateProject.jsx - VERSIONE SEMPLIFICATA (SOLO TESTO) CON LOADING OVERLAY
+// src/components/CreateProject.jsx - VERSIONE MINIMALISTA
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import useGoogleAuth from '../hooks/useGoogleAuth';
@@ -61,7 +61,7 @@ const CreateProject = () => {
 
     const validFiles = [];
     const errors = [];
-    const MAX_FILE_SIZE_MB = 100; // Limite maggiore per modalità testo
+    const MAX_FILE_SIZE_MB = 100;
 
     newFiles.forEach(file => {
       if (file.type !== 'application/pdf') {
@@ -107,30 +107,9 @@ const CreateProject = () => {
     }
   }, []);
 
-  // Calcolo stime tempi per modalità testo
-  const getTimeEstimate = () => {
-    if (files.length === 0) return { min: 0, max: 0 };
-    
-    const totalSizeMB = files.reduce((sum, file) => sum + (file.size / (1024 * 1024)), 0);
-    const fileCount = files.length;
-    
-    // Modalità testo: veloce, dipende dalle pagine
-    const estimatedPages = Math.ceil(totalSizeMB * 20); // ~20 pagine per MB
-    const timePerPage = 0.5; // 0.5 secondi per pagina per estrazione testo
-    const baseTime = 15; // 15 secondi base per analisi AI
-    const total = Math.ceil((estimatedPages * timePerPage + baseTime) / fileCount);
-    
-    return {
-      min: Math.max(20, total * 0.8),
-      max: Math.max(45, total * 1.5)
-    };
-  };
-
-  const timeEstimate = getTimeEstimate();
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('CreateProject: Form submitted for LOCAL ANALYSIS (TEXT mode)');
+    console.log('CreateProject: Form submitted for LOCAL ANALYSIS');
 
     setError(''); 
     setSuccess(''); 
@@ -155,20 +134,18 @@ const CreateProject = () => {
     }
 
     try {
-      // ANALISI AI LOCALE con modalità testo
-      setLoadingMessage('Analisi AI dei PDF (modalità testo veloce)...');
+      setLoadingMessage('Analisi AI dei PDF in corso...');
       setLoadingPhase('analyzing');
       
       const planData = await generateCompleteStudyPlanLocal(
         formData.examName,
         formData.totalDays,
-        files, // File objects diretti
-        '', // Nessuna descrizione utente
+        files,
+        '',
         progressCallback,
-        'text' // SEMPRE modalità testo
+        'text'
       );
 
-      // SUCCESSO: naviga alla pagina di revisione
       console.log('CreateProject: Local analysis completed. Opening review modal.');
       
       setLoading(false);
@@ -183,9 +160,9 @@ const CreateProject = () => {
             title: formData.title,
             examName: formData.examName,
             totalDays: formData.totalDays,
-            description: '' // Nessuna descrizione
+            description: ''
           },
-          analysisMode: 'text' // Sempre testo
+          analysisMode: 'text'
         }
       });
 
@@ -208,7 +185,6 @@ const CreateProject = () => {
     <>
       <NavBar />
       
-      {/* NUOVO: Loading Overlay che copre tutto quando loading=true */}
       <LoadingOverlay 
         isVisible={loading}
         message={loadingMessage || 'Analisi in corso...'}
@@ -219,98 +195,170 @@ const CreateProject = () => {
       <div className="create-project-wrapper">
         <div className="create-project-container">
           <div className="create-project-header">
-            <h1 className="page-title">Genera Piano di Studio</h1>
-            <p className="page-subtitle">Carica i PDF del tuo materiale di studio. L'AI analizzerà rapidamente i contenuti testuali.</p>
+            <h1 className="page-title">Crea un nuovo piano di studio</h1>
           </div>
 
-           {error && (
-                <div className="message error-message">
-                    <AlertCircle size={20} /> <span>{error}</span>
-                </div>
-            )}
-           {success && !loading && ( <div className="message success-message"> <Info size={20} /> <span>{success}</span> </div> )}
+          {error && (
+            <div className="message error-message">
+              <AlertCircle size={20} /> <span>{error}</span>
+            </div>
+          )}
+          {success && !loading && (
+            <div className="message success-message">
+              <Info size={20} /> <span>{success}</span>
+            </div>
+          )}
 
           <form className="create-project-form" onSubmit={handleSubmit}>
-              <fieldset disabled={loading} style={{ border: 'none', padding: 0, margin: 0 }}>
-                  <div className="form-grid">
-                      <div className="form-section">
-                          <h2 className="section-title">Informazioni Base</h2>
-                          <div className="form-group">
-                              <label htmlFor="title"><span className="label-text">Titolo Progetto</span><span className="required-mark">*</span></label>
-                              <div className="input-wrapper">
-                                  <BookOpen size={20} className="input-icon" />
-                                  <input type="text" id="title" name="title" value={formData.title} onChange={handleChange} placeholder="Es. Prep. Metodi Matematici" required />
-                              </div>
-                          </div>
-                          <div className="form-group">
-                              <label htmlFor="examName"><span className="label-text">Nome Esame</span><span className="required-mark">*</span></label>
-                              <div className="input-wrapper">
-                                  <BookOpen size={20} className="input-icon" />
-                                  <input type="text" id="examName" name="examName" value={formData.examName} onChange={handleChange} placeholder="Es. Metodi Matematici per l'Ingegneria" required />
-                              </div>
-                          </div>
-                          <div className="form-group">
-                              <label htmlFor="totalDays"><span className="label-text">Giorni Totali</span><span className="required-mark">*</span></label>
-                              <div className="input-wrapper">
-                                  <Calendar size={20} className="input-icon" />
-                                  <input type="number" id="totalDays" name="totalDays" value={formData.totalDays} onChange={handleChange} min="1" max="30" required />
-                              </div>
-                          </div>
-                      </div>
-
-                      <div className="form-section">
-                          <h2 className="section-title">Caricamento File</h2>
-                          <div className="file-upload-area">
-                              <input type="file" id="fileInput" multiple accept=".pdf" onChange={handleFileChange} style={{ display: 'none' }} disabled={loading} />
-                              <label htmlFor="fileInput" className={`file-upload-button ${loading ? 'disabled' : ''}`}>
-                                  <FilePlus size={20} />
-                                  <span>Seleziona PDF</span>
-                              </label>
-                              <div className="file-upload-info">
-                                  <p>
-                                      <strong>Modalità Testo Veloce</strong>
-                                      <small>Estrazione testo veloce.</small>
-                                  </p>
-                              </div>
-                              {files.length > 0 && (
-                                  <div className="file-list">
-                                      <h3>File Selezionati ({files.length}):</h3>
-                                      <ul>
-                                          {files.map((file, index) => (
-                                              <li key={`${file.name}-${index}`} className="file-item">
-                                                  <FilePlus size={16} className="file-icon" />
-                                                  <span className="file-name" title={file.name}>{file.name.length > 35 ? file.name.substring(0,32)+'...' : file.name}</span>
-                                                  <span className="file-size">{(file.size / (1024 * 1024)).toFixed(2)} MB</span>
-                                                  <button type="button" className="remove-file-btn" onClick={() => removeFile(index)} disabled={loading}> <X size={16} /> </button>
-                                              </li>
-                                          ))}
-                                      </ul>
-                                      
-                                      {/* Stima tempo per modalità testo */}
-                                      {files.length > 0 && (
-                                          <div className="time-estimate">
-                                              <Clock size={16} />
-                                              <span>Tempo stimato: {timeEstimate.min}-{timeEstimate.max} secondi</span>
-                                              <span className="estimate-mode">(Estrazione testo veloce)</span>
-                                          </div>
-                                      )}
-                                  </div>
-                              )}
-                              {files.length === 0 && (<div className="no-files-message">Nessun file PDF selezionato.</div>)}
-                          </div>
-                      </div>
+            <fieldset disabled={loading} style={{ border: 'none', padding: 0, margin: 0 }}>
+              <div className="form-grid">
+                <div className="form-section">
+                  <h2 className="section-title">Informazioni Base</h2>
+                  <div className="form-group">
+                    <label htmlFor="title">
+                      <span className="label-text">Titolo Progetto</span>
+                      <span className="required-mark">*</span>
+                    </label>
+                    <div className="input-wrapper">
+                      <BookOpen size={20} className="input-icon" />
+                      <input 
+                        type="text" 
+                        id="title" 
+                        name="title" 
+                        value={formData.title} 
+                        onChange={handleChange} 
+                        placeholder="Es. Prep. Metodi Matematici" 
+                        required 
+                      />
+                    </div>
                   </div>
+                  <div className="form-group">
+                    <label htmlFor="examName">
+                      <span className="label-text">Nome Esame</span>
+                      <span className="required-mark">*</span>
+                    </label>
+                    <div className="input-wrapper">
+                      <BookOpen size={20} className="input-icon" />
+                      <input 
+                        type="text" 
+                        id="examName" 
+                        name="examName" 
+                        value={formData.examName} 
+                        onChange={handleChange} 
+                        placeholder="Es. Metodi Matematici per l'Ingegneria" 
+                        required 
+                      />
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="totalDays">
+                      <span className="label-text">Giorni Totali</span>
+                      <span className="required-mark">*</span>
+                    </label>
+                    <div className="input-wrapper">
+                      <Calendar size={20} className="input-icon" />
+                      <input 
+                        type="number" 
+                        id="totalDays" 
+                        name="totalDays" 
+                        value={formData.totalDays} 
+                        onChange={handleChange} 
+                        min="1" 
+                        max="30" 
+                        required 
+                      />
+                    </div>
+                  </div>
+                </div>
 
-                   <div className="form-actions">
-                     <button type="button" className="cancel-btn" onClick={handleCancel} disabled={loading}> Annulla </button>
-                     <button type="submit" className="submit-btn" disabled={files.length === 0 || loading}>
-                       {loading ?
-                          (<> <Loader size={16} className="spin-icon" /> Analisi Testo... </> ) :
-                          (<> <BrainCircuit size={16} style={{marginRight:'5px'}}/> Analisi Veloce </>)
-                       }
-                     </button>
-                   </div>
-              </fieldset>
+                <div className="form-section">
+                  <h2 className="section-title">Caricamento File</h2>
+                  <div className="file-upload-area">
+                    <input 
+                      type="file" 
+                      id="fileInput" 
+                      multiple 
+                      accept=".pdf" 
+                      onChange={handleFileChange} 
+                      className="hidden-file-input" 
+                      disabled={loading} 
+                    />
+                    <div className="file-upload-container">
+                      <label htmlFor="fileInput" className={`file-upload-btn ${loading ? 'disabled' : ''}`}>
+                        <Upload size={20} />
+                        <span>Seleziona PDF</span>
+                      </label>
+                    </div>
+                    <div className="file-upload-info">
+                      <p>Carica i PDF dei tuoi materiali di studio</p>
+                    </div>
+                  </div>
+                  
+                  {files.length > 0 && (
+                    <div className="file-list">
+                      <h3>File Selezionati ({files.length}):</h3>
+                      <ul>
+                        {files.map((file, index) => (
+                          <li key={`${file.name}-${index}`} className="file-item">
+                            <div className="file-info">
+                              <FilePlus size={16} className="file-icon" />
+                              <span className="file-name" title={file.name}>
+                                {file.name.length > 35 ? file.name.substring(0, 32) + '...' : file.name}
+                              </span>
+                              <span className="file-size">
+                                {(file.size / (1024 * 1024)).toFixed(2)} MB
+                              </span>
+                            </div>
+                            <button 
+                              type="button" 
+                              className="remove-file-btn" 
+                              onClick={() => removeFile(index)} 
+                              disabled={loading}
+                            >
+                              <X size={16} />
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {files.length === 0 && (
+                    <div className="no-files-message">
+                      Nessun file PDF selezionato.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="form-actions">
+                <button 
+                  type="button" 
+                  className="cancel-btn" 
+                  onClick={handleCancel} 
+                  disabled={loading}
+                >
+                  Annulla
+                </button>
+                <button 
+                  type="submit" 
+                  className="submit-btn" 
+                  disabled={files.length === 0 || loading}
+                >
+                  {loading ? (
+                    <>
+                      <Loader size={16} className="spin-icon" />
+                      Analisi in corso...
+                    </>
+                  ) : (
+                    <>
+                      <BrainCircuit size={16} />
+                      Crea Piano
+                    </>
+                  )}
+                </button>
+              </div>
+            </fieldset>
           </form>
         </div>
       </div>
