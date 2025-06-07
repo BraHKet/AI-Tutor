@@ -1,11 +1,11 @@
-// src/components/StudyPlanViewer.jsx - Versione Minimalista
+// src/components/StudyPlanViewer.jsx - Versione con navigazione
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc, collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import NavBar from './NavBar';
 import { 
-  Loader, BookOpen, Calendar, AlertTriangle, ArrowLeft, CheckCircle
+  Loader, BookOpen, Calendar, AlertTriangle, ArrowLeft, CheckCircle, Play
 } from 'lucide-react';
 import './styles/StudyPlanViewer.css';
 import SimpleLoading from './SimpleLoading';
@@ -122,6 +122,16 @@ const StudyPlanViewer = () => {
     setDaysData(daysWithLockStatus);
   };
 
+  // Gestisce il click su un giorno per navigare alla selezione argomenti
+  const handleDayClick = (day) => {
+    if (day.isLocked) {
+      return; // Non fare nulla se il giorno è bloccato
+    }
+    
+    // Naviga alla pagina di selezione argomenti per questo giorno
+    navigate(`/projects/${projectId}/day/${day.day}/topics`);
+  };
+
   // Formatta la data in modo più leggibile
   const formatDate = (timestamp) => {
     if (!timestamp) return 'Data sconosciuta';
@@ -209,7 +219,8 @@ const StudyPlanViewer = () => {
             daysData.map(day => (
               <div 
                 key={`day-${day.day}`} 
-                className={`day-card ${day.isLocked ? 'locked' : ''}`}
+                className={`day-card ${day.isLocked ? 'locked' : 'clickable'}`}
+                onClick={() => handleDayClick(day)}
               >
                 {day.isLocked && (
                   <div className="day-card-lock-overlay">
@@ -246,60 +257,50 @@ const StudyPlanViewer = () => {
                           <div className="topic-header">
                             <div 
                               className="topic-checkbox"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation(); // Previene il click del giorno
                                 // Toggle completion - implementa se necessario
                                 console.log('Toggle completion for:', topic.title);
                               }}
                             >
-                              {topic.isCompleted ? (
-                                <CheckCircle size={20} className="checkbox-icon completed" />
-                              ) : (
-                                <Circle size={20} className="checkbox-icon" />
-                              )}
+                              {topic.isCompleted ? 
+                                <CheckCircle size={16} className="check-icon" /> : 
+                                <div className="unchecked-circle"></div>
+                              }
                             </div>
-                            
-                            <h4 className="topic-title">{topic.title}</h4>
-                            
-                            {topic.isCompleted && (
-                              <span className="completed-badge">✓</span>
-                            )}
+                            <span className="topic-title">{topic.title}</span>
                           </div>
+                          
+                          {topic.estimatedHours && (
+                            <div className="topic-duration">
+                              <span>{topic.estimatedHours}h</span>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
+                
+                {/* Pulsante per iniziare lo studio - visibile solo se non bloccato e ha argomenti */}
+                {!day.isLocked && day.topics.length > 0 && (
+                  <div className="day-card-footer">
+                    <button className="start-study-btn" onClick={(e) => {
+                      e.stopPropagation(); // Previene il click del giorno
+                      handleDayClick(day);
+                    }}>
+                      <Play size={16} />
+                      Inizia Studio
+                    </button>
+                  </div>
+                )}
               </div>
             ))
           )}
-        </div>
-        
-        <div className="plan-footer">
-          <button className="back-button" onClick={() => navigate('/projects')}>
-            <ArrowLeft size={16} />
-            Torna ai progetti
-          </button>
         </div>
       </div>
     </div>
   );
 };
-
-// Helper component for the Circle icon
-const Circle = ({ size, color = 'currentColor' }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke={color}
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <circle cx="12" cy="12" r="10"></circle>
-  </svg>
-);
 
 export default StudyPlanViewer;

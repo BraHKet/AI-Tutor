@@ -54,6 +54,35 @@ class GoogleDriveService {
     console.log('GoogleDriveService: Current origin:', window.location.origin);
   }
 
+  //fa il download dei chunk
+  async downloadPdfChunk(driveFileId, accessToken) {
+    console.log('GoogleDriveService: downloadPdfChunk() called for file ID:', driveFileId);
+    try {
+      const downloadUrl = `https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`;
+      const response = await fetch(downloadUrl, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json(); //Try to get more details from the error response
+        const errorMessage = errorData?.error?.message || response.statusText;
+        throw new Error(`HTTP error ${response.status}: ${errorMessage}`);
+      }
+
+      const blob = await response.blob();
+      if (!blob.type.includes('pdf')) {
+        throw new Error('Downloaded file is not a valid PDF');
+      }
+      return blob; // Return the blob instead of creating the File object here
+
+    } catch (error) {
+      console.error('GoogleDriveService: Error downloading PDF:', error);
+      throw error; // Re-throw the error to be handled by StudySession.js
+    }
+  }
+
   // Controlla la dimensione del file
   checkFileSize(file) {
     const fileSizeMB = file.size / (1024 * 1024);

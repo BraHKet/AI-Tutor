@@ -576,3 +576,92 @@
     font-size: 0.75em;
   }
 }
+
+
+/* Aggiungi questi stili al file src/components/styles/StudyPlanViewer.css esistente */
+
+/* Card cliccabili */
+.day-card.clickable {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.day-card.clickable:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(99, 102, 241, 0.15);
+  border-color: #6366f1;
+}
+
+.day-card.clickable:hover .day-card-title {
+  color: #6366f1;
+}
+
+/* Footer della card con pulsante */
+.day-card-footer {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.start-study-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  background: #6366f1;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.start-study-btn:hover {
+  background: #5b52f0;
+  transform: translateY(-1px);
+}
+
+/* Aggiustamenti per le checkbox degli argomenti */
+.topic-checkbox {
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.topic-checkbox:hover {
+  background: #f8fafc;
+}
+
+.check-icon {
+  color: #10b981;
+}
+
+.unchecked-circle {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #d1d5db;
+  border-radius: 50%;
+  transition: border-color 0.2s ease;
+}
+
+.topic-checkbox:hover .unchecked-circle {
+  border-color: #6b7280;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .day-card.clickable:hover {
+    transform: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  .start-study-btn {
+    padding: 0.875rem 1rem;
+    font-size: 1rem;
+  }
+}

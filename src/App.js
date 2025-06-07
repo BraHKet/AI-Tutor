@@ -6,6 +6,8 @@ import LoginPage from './components/LoginPage';
 import CreateProject from './components/CreateProject';
 import StudyPlanViewer from './components/StudyPlanViewer'; 
 import ProjectsSummary from './components/ProjectsSummary';
+import DayTopicsSelector from './components/DayTopicsSelector';
+import StudySession from './components/StudySession';
 import useGoogleAuth from './hooks/useGoogleAuth';
 import PlanReviewModal from './components/PlanReviewModal';
 import SimpleLoading from './components/SimpleLoading';
@@ -38,6 +40,8 @@ function App() {
             <Route path="/create-project" element={<CreateProject />} />
             <Route path="/projects" element={<ProjectsSummary />} />
             <Route path="/projects/:projectId/plan" element={<StudyPlanViewer />} />
+            <Route path="/projects/:projectId/day/:dayNum/topics" element={<DayTopicsSelector />} />
+            <Route path="/projects/:projectId/study/:topicId" element={<StudySession />} />
             <Route path="/plan-review" element={<PlanReviewModal />} />
           </>
         ) : (
