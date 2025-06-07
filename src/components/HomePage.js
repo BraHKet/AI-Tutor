@@ -6,6 +6,7 @@ import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'fire
 import { db } from '../utils/firebase';
 import useGoogleAuth from '../hooks/useGoogleAuth';
 import NavBar from './NavBar';
+import SimpleLoading from './SimpleLoading';
 
 import { 
   LogIn,
@@ -140,7 +141,11 @@ const HomePage = () => {
       <div className="home-page-container">
         <NavBar />
         <div className="home-content">
-          
+          <SimpleLoading 
+            message="Caricamento..." 
+            size="medium"
+            fullScreen={false}
+          />
         </div>
       </div>
     );

@@ -10,6 +10,7 @@ import {
 import useGoogleAuth from '../hooks/useGoogleAuth';
 import NavBar from './NavBar';
 import './styles/ProjectsSummary.css';
+import SimpleLoading from './SimpleLoading';
 
 const ProjectsSummary = () => {
   const navigate = useNavigate();
@@ -156,10 +157,11 @@ const ProjectsSummary = () => {
         )}
 
         {loading ? (
-          <div className="loading-container">
-            <Loader size={32} className="spin-icon" />
-            <span>Caricamento...</span>
-          </div>
+          <SimpleLoading 
+            message="Caricamento progetti..." 
+            size="medium"
+            fullScreen={false}
+          />
         ) : filteredProjects.length === 0 ? (
           <div className="empty-projects">
             <BookOpen size={48} strokeWidth={1} />

@@ -8,6 +8,7 @@ import {
   Loader, BookOpen, Calendar, AlertTriangle, ArrowLeft, CheckCircle
 } from 'lucide-react';
 import './styles/StudyPlanViewer.css';
+import SimpleLoading from './SimpleLoading';
 
 const StudyPlanViewer = () => {
   const { projectId } = useParams();
@@ -137,14 +138,9 @@ const StudyPlanViewer = () => {
   // --- RENDER CONDITIONALS ---
 
   if (loading) {
-    return (
-      <div className="study-plan-loading">
-        <Loader size={48} className="spin-icon" />
-        <span>Caricamento piano di studio...</span>
-      </div>
-    );
+    return <SimpleLoading message="Caricamento piano di studio..." />;
   }
-
+  
   if (error) {
     return (
       <div className="study-plan-container">

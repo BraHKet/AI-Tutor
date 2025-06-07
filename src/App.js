@@ -5,37 +5,50 @@ import HomePage from './components/HomePage';
 import LoginPage from './components/LoginPage';
 import CreateProject from './components/CreateProject';
 import StudyPlanViewer from './components/StudyPlanViewer'; 
-import ProjectsSummary from './components/ProjectsSummary'; // Importa il nuovo componente
+import ProjectsSummary from './components/ProjectsSummary';
 import useGoogleAuth from './hooks/useGoogleAuth';
 import PlanReviewModal from './components/PlanReviewModal';
+import SimpleLoading from './components/SimpleLoading';
 
 function App() {
   const { user, loading } = useGoogleAuth();
 
   if (loading) {
-    return <div>Loading...</div>; // O uno spinner migliore
+    return (
+      <SimpleLoading 
+        message="Inizializzazione..." 
+        size="medium"
+        fullScreen={true}
+      />
+    );
   }
 
   return (
     <Router>
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
+        {/* Route pubblica di login */}
+        <Route path="/" element={
+          user ? <Navigate to="/homepage" replace /> : <LoginPage />
+        } />
 
-        {/* Routes protette */}
-        <Route path="/homepage" element={<HomePage />} />
-        <Route path="/create-project" element={<CreateProject />} />
-        
-        {/* Rotta per il riepilogo progetti */}
-        <Route path="/projects" element={<ProjectsSummary />} />
-        
-        {/* Rotta per visualizzare il piano */}
-        <Route path="/projects/:projectId/plan" element={<StudyPlanViewer />} />
-        
-        {/* Rotta per la revisione del piano */}
-        <Route path="/plan-review" element={<PlanReviewModal />} />
+        {/* Routes protette - accessibili solo se autenticati */}
+        {user ? (
+          <>
+            <Route path="/homepage" element={<HomePage />} />
+            <Route path="/create-project" element={<CreateProject />} />
+            <Route path="/projects" element={<ProjectsSummary />} />
+            <Route path="/projects/:projectId/plan" element={<StudyPlanViewer />} />
+            <Route path="/plan-review" element={<PlanReviewModal />} />
+          </>
+        ) : (
+          /* Se non autenticato, redirect alla login */
+          <Route path="*" element={<Navigate to="/" replace />} />
+        )}
 
-        {/* Fallback o redirect se necessario */}
-        <Route path="*" element={<Navigate to={user ? "/" : "/login"} replace />} />
+        {/* Fallback per routes non esistenti */}
+        <Route path="*" element={
+          <Navigate to={user ? "/homepage" : "/"} replace />
+        } />
       </Routes>
     </Router>
   );
