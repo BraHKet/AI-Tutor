@@ -1,12 +1,11 @@
-// src/components/StudyPlanViewer.jsx - Con Gestione Solo Chunks
+// src/components/StudyPlanViewer.jsx - Versione Minimalista
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc, collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import NavBar from './NavBar';
 import { 
-  Loader, BookOpen, Calendar, AlertTriangle, ArrowLeft, Clock, Lock, CheckCircle, 
-  Info, FileText, Download, ExternalLink
+  Loader, BookOpen, Calendar, AlertTriangle, ArrowLeft, CheckCircle
 } from 'lucide-react';
 import './styles/StudyPlanViewer.css';
 
@@ -135,150 +134,6 @@ const StudyPlanViewer = () => {
     });
   };
 
-  // 🔗 Gestisce l'apertura dei link ai materiali
-  const handleMaterialClick = (source) => {
-    if (source.webViewLink) {
-      window.open(source.webViewLink, '_blank', 'noopener,noreferrer');
-    } else {
-      console.warn('StudyPlanViewer: No webViewLink available for source:', source);
-    }
-  };
-
-  // 🔄 Determina il tipo di storage del progetto
-  const getStorageMode = () => {
-    return project?.storageMode || (project?.originalFiles?.[0]?.driveFileId ? 'full' : 'chunks_only');
-  };
-
-  // 📊 Renderizza le fonti di un argomento in base al tipo di storage
-  const renderTopicSources = (topic) => {
-    const storageMode = getStorageMode();
-    const sources = topic.sources || [];
-    
-    if (sources.length === 0) {
-      return (
-        <div className="no-sources">
-          <Info size={14} />
-          <span>Nessun materiale associato</span>
-        </div>
-      );
-    }
-
-    return (
-      <div className="topic-sources">
-        <h4>Materiali di Studio:</h4>
-        <ul className="sources-list">
-          {sources.map((source, index) => {
-            switch (source.type) {
-              case 'pdf_chunk':
-                return (
-                  <li key={index} className="source-item">
-                    <FileText size={16} className="source-icon" />
-                    <div className="source-info">
-                      <button 
-                        className="source-link"
-                        onClick={() => handleMaterialClick(source)}
-                        title="Apri chunk PDF"
-                      >
-                        {source.chunkName || 'Chunk PDF'}
-                      </button>
-                      <div className="source-details">
-                        <span className="source-origin">
-                          📄 {source.originalFileName} 
-                          {source.pageStart && source.pageEnd && 
-                            ` (pagine ${source.pageStart}-${source.pageEnd})`
-                          }
-                        </span>
-                        {storageMode === 'chunks_only' && (
-                          <span className="storage-info"> • Solo chunks</span>
-                        )}
-                      </div>
-                    </div>
-                  </li>
-                );
-              
-              case 'pdf_original':
-                return (
-                  <li key={index} className="source-item">
-                    <BookOpen size={16} className="source-icon" />
-                    <div className="source-info">
-                      <button 
-                        className="source-link"
-                        onClick={() => handleMaterialClick(source)}
-                        title="Apri file completo"
-                      >
-                        {source.name} (Completo)
-                      </button>
-                      <span className="source-origin">📚 File originale completo</span>
-                    </div>
-                  </li>
-                );
-              
-              case 'pdf_metadata':
-                return (
-                  <li key={index} className="source-item">
-                    <Info size={16} className="source-icon" />
-                    <div className="source-info">
-                      <span className="source-metadata">
-                        📋 {source.originalFileName}
-                      </span>
-                      <div className="source-details">
-                        <span className="source-note">
-                          Metadati • {source.originalFileSize ? 
-                            `${Math.round(source.originalFileSize / 1024 / 1024)} MB` : 
-                            'Dimensione non disponibile'
-                          }
-                        </span>
-                        <span className="storage-info"> • File non caricato</span>
-                      </div>
-                    </div>
-                  </li>
-                );
-              
-              case 'note':
-                return (
-                  <li key={index} className="source-item">
-                    <Info size={16} className="source-icon" />
-                    <div className="source-info">
-                      <span className={`source-note ${source.noteType || ''}`}>
-                        {source.noteType === 'exam_simulation' && '🎯 '}
-                        {source.noteType === 'review' && '📚 '}
-                        {source.description}
-                      </span>
-                    </div>
-                  </li>
-                );
-              
-              case 'error_chunk':
-                return (
-                  <li key={index} className="source-item">
-                    <AlertTriangle size={16} className="source-icon error" />
-                    <div className="source-info">
-                      <span className="source-error">
-                        ❌ Errore: {source.name}
-                      </span>
-                      <span className="source-note">{source.error}</span>
-                    </div>
-                  </li>
-                );
-              
-              default:
-                return (
-                  <li key={index} className="source-item">
-                    <FileText size={16} className="source-icon" />
-                    <div className="source-info">
-                      <span className="source-unknown">
-                        📎 Materiale: {source.name || 'Sconosciuto'}
-                      </span>
-                    </div>
-                  </li>
-                );
-            }
-          })}
-        </ul>
-      </div>
-    );
-  };
-
   // --- RENDER CONDITIONALS ---
 
   if (loading) {
@@ -300,7 +155,7 @@ const StudyPlanViewer = () => {
           <p>{error}</p>
           <button onClick={() => navigate('/projects')} className="back-button">
             <ArrowLeft size={16} />
-            Torna alla lista dei progetti
+            Torna ai progetti
           </button>
         </div>
       </div>
@@ -317,14 +172,12 @@ const StudyPlanViewer = () => {
           <p>Non è stato possibile trovare i dettagli per il progetto con ID: <strong>{projectId}</strong>.</p>
           <button onClick={() => navigate('/projects')} className="back-button">
             <ArrowLeft size={16} />
-            Torna alla lista dei progetti
+            Torna ai progetti
           </button>
         </div>
       </div>
     );
   }
-
-  const storageMode = getStorageMode();
 
   return (
     <div className="study-plan-container">
@@ -337,47 +190,14 @@ const StudyPlanViewer = () => {
             <div className="plan-details">
               <div className="plan-detail">
                 <BookOpen size={16} />
-                <span>Esame: {project.examName}</span>
+                <span>{project.examName}</span>
               </div>
               
               <div className="plan-detail">
                 <Calendar size={16} />
-                <span>Giorni: {project.totalDays}</span>
-              </div>
-              
-              <div className="plan-detail">
-                <Clock size={16} />
-                <span>Creato il: {formatDate(project.createdAt)}</span>
-              </div>
-
-              {/* 🔍 Indicatore modalità storage */}
-              <div className="plan-detail">
-                <FileText size={16} />
-                <span>
-                  Storage: {storageMode === 'chunks_only' ? 
-                    '📦 Solo Chunks (Ottimizzato)' : 
-                    '📚 File Completi'
-                  }
-                </span>
+                <span>{project.totalDays} giorni</span>
               </div>
             </div>
-            
-            {project.description && (
-              <div className="plan-description">
-                <p>{project.description}</p>
-              </div>
-            )}
-
-            {/* 💡 Info sulla modalità chunks */}
-            {storageMode === 'chunks_only' && (
-              <div className="storage-mode-info">
-                <Info size={16} />
-                <span>
-                  Questo progetto utilizza la modalità ottimizzata: sono stati caricati solo i chunks 
-                  delle pagine selezionate per massimizzare l'efficienza.
-                </span>
-              </div>
-            )}
           </div>
         </div>
         
@@ -386,7 +206,7 @@ const StudyPlanViewer = () => {
           {daysData.length === 0 ? (
             <div className="error-container">
               <AlertTriangle size={24} />
-              <h2>Nessuna pianificazione trovata</h2>
+              <h2>Nessun piano trovato</h2>
               <p>Non è stato possibile trovare argomenti pianificati per questo progetto.</p>
             </div>
           ) : (
@@ -397,9 +217,9 @@ const StudyPlanViewer = () => {
               >
                 {day.isLocked && (
                   <div className="day-card-lock-overlay">
-                    <Lock size={32} />
+                    <AlertTriangle size={24} />
                     <div className="day-card-lock-message">
-                      Completa i giorni precedenti per sbloccare questo giorno
+                      Completa i giorni precedenti
                     </div>
                   </div>
                 )}
@@ -417,8 +237,8 @@ const StudyPlanViewer = () => {
                 <div className="day-card-content">
                   {day.topics.length === 0 ? (
                     <div className="empty-day">
-                      <Info size={24} />
-                      <p>Nessun argomento pianificato</p>
+                      <Calendar size={24} />
+                      <p>Nessun argomento</p>
                     </div>
                   ) : (
                     <div className="topics-list">
@@ -445,17 +265,9 @@ const StudyPlanViewer = () => {
                             <h4 className="topic-title">{topic.title}</h4>
                             
                             {topic.isCompleted && (
-                              <span className="completed-badge">✓ Completato</span>
+                              <span className="completed-badge">✓</span>
                             )}
                           </div>
-                          
-                          {topic.description && (
-                            <div className="topic-description">
-                              {topic.description}
-                            </div>
-                          )}
-                          
-                          {renderTopicSources(topic)}
                         </div>
                       ))}
                     </div>
@@ -469,7 +281,7 @@ const StudyPlanViewer = () => {
         <div className="plan-footer">
           <button className="back-button" onClick={() => navigate('/projects')}>
             <ArrowLeft size={16} />
-            Torna alla lista dei progetti
+            Torna ai progetti
           </button>
         </div>
       </div>
