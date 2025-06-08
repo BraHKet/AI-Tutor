@@ -1,0 +1,286 @@
+/* src/components/styles/TopicViewer.module.css - Versione Finale 2.0 */
+
+.topicContainer {
+    width: 100%;
+    min-height: 100vh;
+    background-color: #f8fafc;
+    background-image: radial-gradient(#eaf0f6 1px, transparent 1px);
+    background-size: 20px 20px;
+    display: flex;
+    align-items: center;
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+    box-sizing: border-box;
+}
+
+.pageContent {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem;
+    position: relative;
+}
+
+@media (min-width: 769px) {
+  .topicContainer {
+    padding-left: 200px; 
+  }
+}
+
+.topicHeader {
+    text-align: center;
+    margin-bottom: 1rem;
+    /* NUOVO: Rimosso il padding-top, l'header si posizionerà naturalmente */
+}
+
+.backButton {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: white;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0.4rem 0.8rem;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    position: absolute;
+    /* NUOVO: Spaziatura minima dall'alto */
+    top: 0rem; 
+    left: 1rem;
+    z-index: 20;
+}
+
+@media (min-width: 769px) {
+    /* Ora si allinea con l'inizio del padding del wrapper */
+    .backButton { left: 2rem; }
+}
+
+.backButton:hover {
+    background-color: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+.topicHeader h1 {
+    font-size: clamp(1.5rem, 5vw, 2.25rem);
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+    /* NUOVO: Aggiunto padding per evitare che il testo vada sotto il pulsante */
+    padding-top: 3rem;
+}
+.topicDescription {
+    font-size: clamp(0.85rem, 3vw, 1rem);
+    color: #64748b;
+    margin-top: 0.5rem;
+    max-width: 550px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* --- Canvas Orbitale sempre circolare --- */
+.orbitalCanvas {
+    position: relative;
+    width: 100%;
+    max-width: 650px;
+    margin: 1rem auto 3rem auto;
+    aspect-ratio: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    --main-node-size: clamp(90px, 20vw, 110px);
+    --satellite-size: clamp(60px, 15vw, 80px);
+    --radius: clamp(140px, 40vw, 250px);
+}
+
+.connectionsContainer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+.connectionLine {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: calc(var(--radius) - (var(--satellite-size) / 2));
+    height: 1.5px;
+    background-color: #d1d5db;
+    transform-origin: 0% 50%;
+}
+
+.mainNodeWrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    z-index: 10;
+    transition: transform 0.3s ease;
+}
+.mainNodeWrapper:hover { transform: scale(1.05); }
+
+.mainNode {
+    width: var(--main-node-size);
+    height: var(--main-node-size);
+    background: #1e293b;
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    box-shadow: 0 10px 25px -5px rgba(30, 41, 59, 0.3);
+}
+.mainNode svg { 
+    width: 45%;
+    height: 45%;
+}
+
+.mainNodeTitle {
+    font-weight: 500;
+    color: #1e293b;
+    font-size: clamp(0.8rem, 2.5vw, 0.9rem);
+}
+
+.satelliteWrapper {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: var(--satellite-size);
+    height: var(--satellite-size);
+    z-index: 10;
+    transform-origin: 0 0;
+}
+
+.satellite1 { transform: rotate(0deg)   translateX(var(--radius)) rotate(0deg)   translate(-50%, -50%); }
+.satellite2 { transform: rotate(60deg)  translateX(var(--radius)) rotate(-60deg)  translate(-50%, -50%); }
+.satellite3 { transform: rotate(120deg) translateX(var(--radius)) rotate(-120deg) translate(-50%, -50%); }
+.satellite4 { transform: rotate(180deg) translateX(var(--radius)) rotate(-180deg) translate(-50%, -50%); }
+.satellite5 { transform: rotate(240deg) translateX(var(--radius)) rotate(-240deg) translate(-50%, -50%); }
+.satellite6 { transform: rotate(300deg) translateX(var(--radius)) rotate(-300deg) translate(-50%, -50%); }
+
+.satelliteNode, .satelliteNodePlaceholder {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.satelliteNode {
+    background: #1e293b;
+    box-shadow: 0 8px 16px rgba(30,41,59,0.15);
+    color: white;
+}
+.satelliteNode:hover {
+    transform: scale(1.1);
+    background: #334155;
+    box-shadow: 0 12px 24px rgba(30,41,59,0.2);
+}
+.satelliteNode .nodeIcon {
+    width: 50%;
+    height: 50%;
+}
+.satelliteNode .nodeTitle { display: none; }
+
+.satelliteNodePlaceholder {
+    border: 1.5px dashed #d1d5db;
+    color: #9ca3af;
+    background: #fdfdfd;
+    flex-direction: column;
+}
+.satelliteNodePlaceholder:hover {
+    border-color: #6366f1;
+    background: #f7f8ff;
+    color: #6366f1;
+}
+.satelliteNodePlaceholder span {
+    font-size: clamp(0.6rem, 2vw, 0.75rem);
+    font-weight: 500;
+    margin-top: 0.25rem;
+}
+.satelliteNodePlaceholder svg {
+    width: 35%;
+    height: 35%;
+}
+
+/* --- Sezione AI --- */
+.aiSection {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin: 2rem auto 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e2e8f0;
+    max-width: 700px;
+    /* NUOVO: Aggiunto margine inferiore per dare spazio su mobile */
+    margin-bottom: 2rem;
+}
+@media (max-width: 768px) {
+    .aiSection { flex-direction: column; text-align: center; gap: 1rem; }
+}
+
+.aiIcon {
+    width: 50px;
+    height: 50px;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, #c4b5fd, #8b5cf6);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+.aiContent h2 {
+    font-size: 1.25rem;
+    margin: 0 0 0.25rem 0;
+    color: #1e293b;
+}
+.aiContent p {
+    font-size: 0.9rem;
+    margin: 0;
+    color: #64748b;
+    line-height: 1.5;
+}
+
+.aiButton {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #1e293b;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.7rem 1.2rem;
+    font-weight: 500;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-left: auto;
+}
+@media (max-width: 768px) {
+    .aiButton { margin-left: 0; }
+}
+.aiButton:hover {
+    background: #334155;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(30, 41, 59, 0.2);
+}
+
+.errorContainer {
+    padding: 2rem;
+    text-align: center;
+    color: #ef4444;
+}

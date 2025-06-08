@@ -1,25 +1,22 @@
-// src/components/StudyPlanViewer.jsx - Versione con navigazione
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc, collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import NavBar from './NavBar';
 import { 
-  Loader, BookOpen, Calendar, AlertTriangle, ArrowLeft, CheckCircle, Play
+  BookOpen, Calendar, AlertTriangle, ArrowLeft, CheckCircle, Lock, ChevronRight
 } from 'lucide-react';
-import './styles/StudyPlanViewer.css';
+// Importa gli stili come un oggetto 'styles' usando CSS Modules
+import styles from './styles/StudyPlanViewer.module.css';
 import SimpleLoading from './SimpleLoading';
 
 const StudyPlanViewer = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const [project, setProject] = useState(null);
-  const [topics, setTopics] = useState([]);
+  const [daysData, setDaysData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
-  // Stato per la visualizzazione a griglia
-  const [daysData, setDaysData] = useState([]);
 
   useEffect(() => {
     const fetchPlanData = async () => {
@@ -33,19 +30,16 @@ const StudyPlanViewer = () => {
       setError('');
       
       try {
-        // Fetch project details
         const projectRef = doc(db, 'projects', projectId);
         const projectSnap = await getDoc(projectRef);
 
         if (!projectSnap.exists()) {
-          console.error(`StudyPlanViewer: Project with ID ${projectId} not found.`);
           throw new Error("Progetto non trovato.");
         }
         
         const projectData = projectSnap.data();
         setProject(projectData);
         
-        // Fetch topics from subcollection, ordered
         const topicsRef = collection(db, 'projects', projectId, 'topics');
         const q = query(topicsRef, orderBy("assignedDay"), orderBy("orderInDay"));
         const topicsSnap = await getDocs(q);
@@ -55,15 +49,11 @@ const StudyPlanViewer = () => {
           ...doc.data() 
         }));
         
-        setTopics(topicsData);
-        
-        // Process data for day cards
-        processDaysData(topicsData);
+        processDaysData(topicsData, projectData.totalDays);
+
       } catch (err) {
         console.error("StudyPlanViewer: Error fetching study plan:", err);
         setError("Impossibile caricare i dati del piano di studio: " + err.message);
-        setProject(null);
-        setTopics([]);
       } finally {
         setLoading(false);
       }
@@ -72,9 +62,7 @@ const StudyPlanViewer = () => {
     fetchPlanData();
   }, [projectId]);
 
-  // Elabora i dati per la visualizzazione a griglia dei giorni
-  const processDaysData = (topicsData) => {
-    // Raggruppa i topic per giorno
+  const processDaysData = (topicsData, totalProjectDays) => {
     const topicsByDay = topicsData.reduce((acc, topic) => {
       const day = topic.assignedDay;
       if (!acc[day]) {
@@ -84,68 +72,40 @@ const StudyPlanViewer = () => {
       return acc;
     }, {});
     
-    // Crea l'array dei giorni con statistiche
-    const days = Object.keys(topicsByDay).map(dayNum => {
-      const dayTopics = topicsByDay[dayNum];
-      const completedTopics = dayTopics.filter(t => t.isCompleted);
-      
-      return {
-        day: parseInt(dayNum),
-        topics: dayTopics,
-        topicsCount: dayTopics.length,
-        completedCount: completedTopics.length,
-        completionPercentage: dayTopics.length > 0 
-          ? Math.round((completedTopics.length / dayTopics.length) * 100) 
-          : 0,
-        isFullyCompleted: dayTopics.length > 0 && completedTopics.length === dayTopics.length
-      };
-    }).sort((a, b) => a.day - b.day);
-    
-    // Calcola lo stato di blocco per ogni giorno
-    const daysWithLockStatus = days.map((day, index) => {
-      let isLocked = false;
-      
-      // Controlla se uno dei giorni precedenti non è completato al 100%
-      for (let i = 0; i < index; i++) {
-        if (!days[i].isFullyCompleted) {
-          isLocked = true;
-          break;
+    // Crea un array per tutti i giorni del progetto, anche quelli vuoti
+    const daysArray = Array.from({ length: totalProjectDays }, (_, i) => {
+        const dayNum = i + 1;
+        const dayTopics = topicsByDay[dayNum] || [];
+        const completedTopics = dayTopics.filter(t => t.isCompleted);
+        
+        return {
+            day: dayNum,
+            topics: dayTopics,
+            topicsCount: dayTopics.length,
+            completedCount: completedTopics.length,
+            isFullyCompleted: dayTopics.length > 0 && completedTopics.length === dayTopics.length,
+        };
+    });
+
+    let previousDayCompleted = true;
+    const daysWithLockStatus = daysArray.map(day => {
+        // Un giorno è bloccato se un giorno precedente con argomenti non è stato completato
+        const isLocked = !previousDayCompleted;
+        // Aggiorna lo stato per il giorno successivo. Se il giorno corrente non è completo e ha argomenti, i successivi saranno bloccati.
+        if (!day.isFullyCompleted && day.topics.length > 0) {
+            previousDayCompleted = false;
         }
-      }
-      
-      return {
-        ...day,
-        isLocked
-      };
+        return { ...day, isLocked };
     });
     
     setDaysData(daysWithLockStatus);
   };
 
-  // Gestisce il click su un giorno per navigare alla selezione argomenti
-  const handleDayClick = (day) => {
-    if (day.isLocked) {
-      return; // Non fare nulla se il giorno è bloccato
-    }
-    
-    // Naviga alla pagina di selezione argomenti per questo giorno
-    navigate(`/projects/${projectId}/day/${day.day}/topics`);
+  // Funzione per navigare alla pagina del singolo argomento
+  const handleTopicClick = (topicId, isDayLocked) => {
+    if (isDayLocked) return;
+    navigate(`/projects/${projectId}/topic/${topicId}`);
   };
-
-  // Formatta la data in modo più leggibile
-  const formatDate = (timestamp) => {
-    if (!timestamp) return 'Data sconosciuta';
-    
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    
-    return date.toLocaleDateString('it-IT', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
-  // --- RENDER CONDITIONALS ---
 
   if (loading) {
     return <SimpleLoading message="Caricamento piano di studio..." />;
@@ -153,150 +113,91 @@ const StudyPlanViewer = () => {
   
   if (error) {
     return (
-      <div className="study-plan-container">
+      <div className={styles.studyPlanContainer}>
         <NavBar />
-        <div className="error-container">
-          <AlertTriangle size={36} />
-          <h2>Errore nel Caricamento</h2>
-          <p>{error}</p>
-          <button onClick={() => navigate('/projects')} className="back-button">
-            <ArrowLeft size={16} />
-            Torna ai progetti
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!project) {
-    return (
-      <div className="study-plan-container">
-        <NavBar />
-        <div className="error-container">
-          <AlertTriangle size={36} />
-          <h2>Progetto non trovato</h2>
-          <p>Non è stato possibile trovare i dettagli per il progetto con ID: <strong>{projectId}</strong>.</p>
-          <button onClick={() => navigate('/projects')} className="back-button">
-            <ArrowLeft size={16} />
-            Torna ai progetti
-          </button>
+        <div className={styles.contentWrapper}>
+            <div className={styles.errorContainer}>
+              <AlertTriangle size={48} />
+              <h2>Errore nel Caricamento</h2>
+              <p>{error}</p>
+              <button onClick={() => navigate('/projects')} className={styles.backButton}>
+                <ArrowLeft size={16} />
+                Torna ai progetti
+              </button>
+            </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="study-plan-container">
+    <div className={styles.studyPlanContainer}>
       <NavBar />
-      
-      <div className="study-plan-content">
-        <div className="study-plan-header">
-          <div className="plan-info">
+      <div className={styles.contentWrapper}>
+        <header className={styles.studyPlanHeader}>
             <h1>{project.title}</h1>
-            <div className="plan-details">
-              <div className="plan-detail">
-                <BookOpen size={16} />
-                <span>{project.examName}</span>
+            <p className={styles.planSubtitle}>Il tuo percorso personalizzato verso il successo.</p>
+        </header>
+        
+        <div className={styles.daysGrid}>
+          {daysData.map(day => (
+            <div 
+              key={`day-${day.day}`} 
+              className={`${styles.dayCard} ${day.isLocked ? styles.locked : ''}`}
+            >
+              {day.isLocked && (
+                <div className={styles.lockOverlay}>
+                  <Lock size={20} />
+                  <span>Completa i giorni precedenti per sbloccare</span>
+                </div>
+              )}
+              
+              <div className={styles.dayCardHeader}>
+                <h3>Giorno {day.day}</h3>
+                {day.isFullyCompleted && (
+                  <div className={styles.completedBadge}>
+                    <CheckCircle size={14} />
+                    <span>Completato</span>
+                  </div>
+                )}
               </div>
               
-              <div className="plan-detail">
-                <Calendar size={16} />
-                <span>{project.totalDays} giorni</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Vista a griglia dei giorni */}
-        <div className="days-grid">
-          {daysData.length === 0 ? (
-            <div className="error-container">
-              <AlertTriangle size={24} />
-              <h2>Nessun piano trovato</h2>
-              <p>Non è stato possibile trovare argomenti pianificati per questo progetto.</p>
-            </div>
-          ) : (
-            daysData.map(day => (
-              <div 
-                key={`day-${day.day}`} 
-                className={`day-card ${day.isLocked ? 'locked' : 'clickable'}`}
-                onClick={() => handleDayClick(day)}
-              >
-                {day.isLocked && (
-                  <div className="day-card-lock-overlay">
-                    <AlertTriangle size={24} />
-                    <div className="day-card-lock-message">
-                      Completa i giorni precedenti
-                    </div>
+              <div className={styles.dayCardContent}>
+                {day.topics.length === 0 ? (
+                  <div className={styles.emptyDayMessage}>
+                    <p>Nessun argomento per oggi. Riposo!</p>
                   </div>
-                )}
-                
-                <div className="day-card-header">
-                  <Calendar size={20} />
-                  <h3 className="day-card-title">Giorno {day.day}</h3>
-                  <div className="day-stats">
-                    <span className="completion-badge">
-                      {day.completedCount}/{day.topicsCount}
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="day-card-content">
-                  {day.topics.length === 0 ? (
-                    <div className="empty-day">
-                      <Calendar size={24} />
-                      <p>Nessun argomento</p>
-                    </div>
-                  ) : (
-                    <div className="topics-list">
-                      {day.topics.map(topic => (
-                        <div 
-                          key={topic.id} 
-                          className={`topic-item ${topic.isCompleted ? 'completed' : ''}`}
-                        >
-                          <div className="topic-header">
-                            <div 
-                              className="topic-checkbox"
-                              onClick={(e) => {
-                                e.stopPropagation(); // Previene il click del giorno
-                                // Toggle completion - implementa se necessario
-                                console.log('Toggle completion for:', topic.title);
-                              }}
-                            >
-                              {topic.isCompleted ? 
-                                <CheckCircle size={16} className="check-icon" /> : 
-                                <div className="unchecked-circle"></div>
-                              }
-                            </div>
-                            <span className="topic-title">{topic.title}</span>
-                          </div>
-                          
-                          {topic.estimatedHours && (
-                            <div className="topic-duration">
-                              <span>{topic.estimatedHours}h</span>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                
-                {/* Pulsante per iniziare lo studio - visibile solo se non bloccato e ha argomenti */}
-                {!day.isLocked && day.topics.length > 0 && (
-                  <div className="day-card-footer">
-                    <button className="start-study-btn" onClick={(e) => {
-                      e.stopPropagation(); // Previene il click del giorno
-                      handleDayClick(day);
-                    }}>
-                      <Play size={16} />
-                      Inizia Studio
-                    </button>
-                  </div>
+                ) : (
+                  <ul className={styles.topicsList}>
+                    {day.topics.map(topic => (
+                      <li 
+                        key={topic.id} 
+                        className={`${styles.topicItem} ${topic.isCompleted ? styles.completed : ''}`}
+                        onClick={() => handleTopicClick(topic.id, day.isLocked)}
+                      >
+                        <span className={styles.topicTitle}>{topic.title}</span>
+                        <ChevronRight size={18} className={styles.topicArrow} />
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </div>
-            ))
-          )}
+              
+              {day.topics.length > 0 && (
+                <div className={styles.dayCardFooter}>
+                   <div className={styles.progressBar}>
+                      <div 
+                          className={styles.progressFill}
+                          style={{ width: `${(day.completedCount / day.topicsCount) * 100}%` }}
+                      ></div>
+                   </div>
+                   <span className={styles.progressText}>
+                      {day.completedCount} di {day.topicsCount} completati
+                   </span>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       </div>
     </div>

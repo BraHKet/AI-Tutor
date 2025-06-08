@@ -1,13 +1,12 @@
-// src/components/NavBar.js
 import React, { useState, useEffect } from 'react';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { Home, BookOpen, List, User } from 'lucide-react';
-import './styles/NavBar.css';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { Home, BookOpen, List } from 'lucide-react';
+// 1. Importa gli stili come un oggetto 'styles'
+import styles from './styles/NavBar.module.css';
 import useGoogleAuth from '../hooks/useGoogleAuth';
 
 const NavBar = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useGoogleAuth();
 
@@ -15,10 +14,8 @@ const NavBar = () => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
     };
-
     window.addEventListener('resize', handleResize);
     handleResize();
-    
     return () => {
       window.removeEventListener('resize', handleResize);
     };
@@ -27,7 +24,7 @@ const NavBar = () => {
   const handleLogout = async () => {
     try {
       await logout();
-      navigate('/'); // Redirect to login page after logout
+      navigate('/');
     } catch (error) {
       console.error('Logout error:', error);
     }
@@ -39,44 +36,45 @@ const NavBar = () => {
     { path: '/projects', icon: <List size={24} />, label: 'Riepilogo Progetti' },
   ];
 
+  // 2. Applica le classi usando l'oggetto 'styles'
   return (
-    <nav className={`navbar ${isMobile ? 'mobile' : 'desktop'}`}>
-      <div className="navbar-container">
+    <nav className={`${styles.navbar} ${isMobile ? styles.mobile : styles.desktop}`}>
+      <div className={styles.navbarContainer}>
         {!isMobile && (
-          <div className="navbar-logo">
+          <div className={styles.navbarLogo}>
             <h2>AI Tutor</h2>
           </div>
         )}
         
-        <div className="navbar-links">
+        <div className={styles.navbarLinks}>
           {navItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
               className={({ isActive }) => 
-                isActive ? "nav-item active" : "nav-item"
+                `${styles.navItem} ${isActive ? styles.active : ''}`
               }
             >
-              <div className="nav-icon">{item.icon}</div>
-              {!isMobile && <span className="nav-label">{item.label}</span>}
+              <div className={styles.navIcon}>{item.icon}</div>
+              {!isMobile && <span className={styles.navLabel}>{item.label}</span>}
             </NavLink>
           ))}
         </div>
         
         {!isMobile && user && (
-          <div className="navbar-footer">
-            <div className="user-info">
+          <div className={styles.navbarFooter}>
+            <div className={styles.userInfo}>
               <img 
                 src={user.photoURL || 'https://via.placeholder.com/40'} 
                 alt="User profile" 
-                className="user-avatar"
+                className={styles.userAvatar}
               />
-              <div className="user-details">
-                <p className="user-name">{user.displayName || 'User'}</p>
-                <p className="user-email">{user.email}</p>
+              <div className={styles.userDetails}>
+                <p className={styles.userName}>{user.displayName || 'User'}</p>
+                <p className={styles.userEmail}>{user.email}</p>
               </div>
             </div>
-            <button className="logout-btn" onClick={handleLogout}>
+            <button className={styles.logoutBtn} onClick={handleLogout}>
               Logout
             </button>
           </div>

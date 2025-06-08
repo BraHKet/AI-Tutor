@@ -1,20 +1,21 @@
-/* src/components/styles/NavBar.css */
+/* src/components/styles/NavBar.module.css - Versione Dark Mode Originale */
+
 .navbar {
   position: fixed;
   transition: all 0.3s ease;
-  z-index: 100;
+  z-index: 1000;
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
 }
 
-.navbar-container {
+.navbarContainer {
   display: flex;
   flex-direction: column;
   height: 100%;
 }
 
-/* Desktop/Tablet Navbar (Vertical - Slim Version) */
-.navbar.desktop {
-  width: 200px;  /* Made narrower as requested */
+/* --- Desktop/Tablet Navbar (Verticale scura) --- */
+.desktop {
+  width: 200px;
   height: 100vh;
   left: 0;
   top: 0;
@@ -23,18 +24,19 @@
   padding: 20px 0;
 }
 
-.navbar.desktop .navbar-logo {
+.desktop .navbarLogo {
   padding: 0 15px 15px;
   margin-bottom: 15px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   text-align: center;
 }
 
-.navbar.desktop .navbar-logo h2 {
+.desktop .navbarLogo h2 {
   font-size: 1.5rem;
+  margin: 0; /* Aggiunto per rimuovere margini di default */
 }
 
-.navbar.desktop .navbar-links {
+.desktop .navbarLinks {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -42,7 +44,7 @@
   width: 100%;
 }
 
-.navbar.desktop .nav-item {
+.navItem {
   display: flex;
   align-items: center;
   width: 85%;
@@ -54,31 +56,31 @@
   transition: all 0.2s ease;
 }
 
-.navbar.desktop .nav-item:hover {
+.desktop .navItem:hover {
   color: white;
   background-color: rgba(255, 255, 255, 0.1);
 }
 
-.navbar.desktop .nav-item.active {
+.desktop .navItem.active {
   color: white;
   background: linear-gradient(90deg, rgba(138, 101, 255, 0.3) 0%, transparent 100%);
   border-left: 3px solid #8a65ff;
 }
 
-.navbar.desktop .nav-icon {
+.navIcon {
   margin-right: 12px;
   display: flex;
   align-items: center;
 }
 
-.navbar.desktop .navbar-footer {
+.desktop .navbarFooter {
   padding: 15px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   margin-top: auto;
 }
 
-/* Mobile Navbar (App Style - Fixed Bottom) */
-.navbar.mobile {
+/* --- Mobile Navbar (Orizzontale scura) --- */
+.mobile {
   width: 100%;
   height: 60px;
   bottom: 0;
@@ -89,52 +91,47 @@
   align-items: center;
 }
 
-.navbar.mobile .navbar-container {
+.mobile .navbarContainer {
   width: 100%;
   flex-direction: row;
 }
 
-.navbar.mobile .navbar-links {
+.mobile .navbarLinks {
   display: flex;
   justify-content: space-around;
   width: 100%;
   height: 100%;
 }
 
-.navbar.mobile .nav-item {
-  display: flex;
+.mobile .navItem {
   flex-direction: column;
-  align-items: center;
   justify-content: center;
   padding: 8px 0;
-  color: rgba(255, 255, 255, 0.7);
-  text-decoration: none;
+  margin: 0;
   flex: 1;
-  transition: all 0.2s ease;
 }
 
-.navbar.mobile .nav-item:hover {
+.mobile .navItem:hover {
   color: white;
 }
 
-.navbar.mobile .nav-item.active {
+.mobile .navItem.active {
   color: #8a65ff;
 }
 
-.navbar.mobile .nav-icon {
-  display: flex;
-  align-items: center;
+.mobile .navIcon {
+  margin-right: 0; /* Rimuove il margine per la vista mobile */
   justify-content: center;
 }
 
-/* User Info Styles */
-.user-info {
+/* --- Stili Utente --- */
+.userInfo {
   display: flex;
   align-items: center;
   margin-bottom: 15px;
 }
 
-.user-avatar {
+.userAvatar {
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -143,12 +140,12 @@
   border: 2px solid #8a65ff;
 }
 
-.user-details {
+.userDetails {
   flex: 1;
   overflow: hidden;
 }
 
-.user-name {
+.userName {
   font-weight: 600;
   margin: 0;
   white-space: nowrap;
@@ -157,7 +154,7 @@
   font-size: 14px;
 }
 
-.user-email {
+.userEmail {
   font-size: 11px;
   color: rgba(255, 255, 255, 0.6);
   margin: 0;
@@ -166,7 +163,7 @@
   text-overflow: ellipsis;
 }
 
-.logout-btn {
+.logoutBtn {
   width: 100%;
   padding: 8px;
   background: rgba(255, 255, 255, 0.1);
@@ -178,16 +175,6 @@
   font-size: 13px;
 }
 
-.logout-btn:hover {
+.logoutBtn:hover {
   background: rgba(255, 255, 255, 0.2);
-}
-
-/* Content adjustment helper classes (to add to your main CSS) */
-.content-with-navbar-desktop {
-  margin-left: 200px;
-  transition: margin-left 0.3s ease;
-}
-
-.content-with-navbar-mobile {
-  padding-bottom: 60px;
 }

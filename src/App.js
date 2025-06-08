@@ -1,4 +1,3 @@
-// App.js 
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import HomePage from './components/HomePage';
@@ -6,11 +5,15 @@ import LoginPage from './components/LoginPage';
 import CreateProject from './components/CreateProject';
 import StudyPlanViewer from './components/StudyPlanViewer'; 
 import ProjectsSummary from './components/ProjectsSummary';
-import DayTopicsSelector from './components/DayTopicsSelector';
+// 1. RIMUOVI: DayTopicsSelector non serve più
+// import DayTopicsSelector from './components/DayTopicsSelector'; 
 import StudySession from './components/StudySession';
 import useGoogleAuth from './hooks/useGoogleAuth';
 import PlanReviewModal from './components/PlanReviewModal';
 import SimpleLoading from './components/SimpleLoading';
+
+// 2. AGGIUNGI: Importa il nuovo componente per la visualizzazione del singolo argomento
+import TopicViewer from './components/TopicViewer';
 
 function App() {
   const { user, loading } = useGoogleAuth();
@@ -40,7 +43,16 @@ function App() {
             <Route path="/create-project" element={<CreateProject />} />
             <Route path="/projects" element={<ProjectsSummary />} />
             <Route path="/projects/:projectId/plan" element={<StudyPlanViewer />} />
-            <Route path="/projects/:projectId/day/:dayNum/topics" element={<DayTopicsSelector />} />
+            
+            {/* 3. SOSTITUISCI: La vecchia rotta viene sostituita con quella nuova */}
+            
+            {/* VECCHIA ROTTA (da cancellare)
+            <Route path="/projects/:projectId/day/:dayNum/topics" element={<DayTopicsSelector />} /> 
+            */}
+            
+            {/* NUOVA ROTTA per il singolo argomento */}
+            <Route path="/projects/:projectId/topic/:topicId" element={<TopicViewer />} />
+
             <Route path="/projects/:projectId/study/:topicId" element={<StudySession />} />
             <Route path="/plan-review" element={<PlanReviewModal />} />
           </>
