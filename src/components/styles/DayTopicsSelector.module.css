@@ -1,0 +1,337 @@
+/* src/components/styles/DayTopicsSelector.module.css */
+
+.dayTopicsContainer {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f7f9fc 0%, #edf2f9 100%);
+  width: 100%;
+}
+
+.dayTopicsContent {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* Gestione layout con Navbar */
+@media (min-width: 769px) {
+  .dayTopicsContent {
+    margin-left: 200px;
+  }
+}
+@media (max-width: 768px) {
+  .dayTopicsContent {
+    padding: 1.5rem 1rem 80px 1rem;
+  }
+}
+
+.dayTopicsHeader {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem 2rem;
+  margin-bottom: 2.5rem;
+  box-shadow: 0 8px 30px -10px rgba(100, 116, 139, 0.15);
+  border: 1px solid #e2e8f0;
+}
+
+/* 
+  Ora questa regola è SICURA e non ha bisogno di "hack" di specificità,
+  perché i CSS Modules la isolano.
+*/
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  color: #64748b;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease-out;
+  text-decoration: none;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+}
+
+.backButton:hover {
+  background: #eef2ff;
+  color: #4f46e5;
+  transform: translateY(-2px);
+}
+
+.backButton svg {
+    transition: transform 0.2s ease-out;
+}
+
+.backButton:hover svg {
+    transform: translateX(-3px);
+}
+
+.dayInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.dayTitleSection {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.dayTitleSection h1 {
+  margin: 0;
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.dayTitleSection svg {
+  color: #6366f1;
+}
+
+.projectName {
+  background: #eef2ff;
+  color: #4338ca;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 1px solid #c7d2fe;
+}
+
+.dayStatsCards {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.statCard {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 150px;
+  transition: all 0.2s ease-out;
+}
+
+.statCard:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(100, 116, 139, 0.12);
+}
+
+.statCard svg {
+  color: #6366f1;
+}
+
+.statNumber {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1;
+}
+
+.statLabel {
+  font-size: 0.8rem;
+  color: #64748b;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.topicsSection {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+.sectionHeader {
+  margin-bottom: 2rem;
+  padding-left: 0.5rem;
+}
+
+.sectionHeader h2 {
+  font-size: 1.75rem;
+  color: #1e293b;
+  margin: 0 0 0.25rem 0;
+}
+
+.sectionHeader p {
+  color: #64748b;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.topicsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.topicCard {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease-out;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 20px -5px rgba(100, 116, 139, 0.1);
+}
+
+.topicCard:hover {
+  transform: translateY(-5px);
+  border-color: #6366f1;
+  box-shadow: 0 10px 35px -10px rgba(99, 102, 241, 0.25);
+}
+
+.topicCard.completed {
+  border-color: #34d399;
+  background: #f0fdf4;
+  cursor: default;
+}
+
+.topicCard.completed:hover {
+  transform: translateY(0);
+  box-shadow: 0 4px 20px -5px rgba(16, 185, 129, 0.2);
+}
+
+.topicCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  width: 100%;
+}
+
+.topicNumber {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.topicStatusCompleted {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    background-color: #dcfce7;
+    color: #166534;
+    padding: 0.3rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.topicTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.4;
+  margin: 0;
+  flex-grow: 1;
+}
+
+.topicDescription {
+  color: #64748b;
+  line-height: 1.6;
+  font-size: 0.9rem;
+  margin: 0.25rem 0 1.5rem 0;
+  flex-grow: 1;
+}
+
+.topicCardFooter {
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.topicMeta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.metaItem {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.studyButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: #6366f1;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1.25rem;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.2s ease-out;
+  box-shadow: 0 4px 15px -5px rgba(99, 102, 241, 0.4);
+}
+
+.studyButton:hover {
+  background: #4f46e5;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px -5px rgba(99, 102, 241, 0.5);
+}
+
+.topicCard.completed .studyButton {
+    background: #10b981;
+    box-shadow: 0 4px 15px -5px rgba(16, 185, 129, 0.4);
+}
+.topicCard.completed .studyButton:hover {
+    background: #059669;
+    box-shadow: 0 6px 20px -5px rgba(16, 185, 129, 0.5);
+}
+
+.emptyState, .errorContainer {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: white;
+  border-radius: 16px;
+  border: 1px dashed #cbd5e1;
+  color: #64748b;
+  margin-top: 2rem;
+}
+
+.emptyState svg, .errorContainer svg {
+  color: #94a3b8;
+  margin-bottom: 1rem;
+}
+
+.errorContainer svg {
+    color: #ef4444;
+}
+
+.emptyState h3, .errorContainer h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #334155;
+  margin: 0 0 0.5rem 0;
+}
+
+.emptyState p, .errorContainer p {
+  font-size: 1rem;
+  max-width: 450px;
+  margin: 0 auto 1.5rem auto;
+  line-height: 1.6;
+}

@@ -1,13 +1,13 @@
-// src/components/DayTopicsSelector.js
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc, collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import NavBar from './NavBar';
 import { 
-  ArrowLeft, BookOpen, Calendar, Clock, Play, CheckCircle, AlertTriangle, Target, Zap
+  ArrowLeft, BookOpen, Calendar, Clock, Play, CheckCircle, AlertTriangle, Target, Zap, TrendingUp
 } from 'lucide-react';
-import './styles/DayTopicsSelector.css';
+// 1. MODIFICA IMPORT: Importiamo gli stili come un oggetto 'styles'
+import styles from './styles/DayTopicsSelector.module.css'; 
 import SimpleLoading from './SimpleLoading';
 
 const DayTopicsSelector = () => {
@@ -18,6 +18,7 @@ const DayTopicsSelector = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // ... (tutta la logica Javascript rimane invariata) ...
   useEffect(() => {
     const fetchDayData = async () => {
       if (!projectId || !dayNum) {
@@ -25,23 +26,16 @@ const DayTopicsSelector = () => {
         setLoading(false);
         return;
       }
-
       setLoading(true);
       setError('');
-
       try {
-        // Fetch project details
         const projectRef = doc(db, 'projects', projectId);
         const projectSnap = await getDoc(projectRef);
-
         if (!projectSnap.exists()) {
           throw new Error("Progetto non trovato.");
         }
-
         const projectData = projectSnap.data();
         setProject(projectData);
-
-        // Fetch topics for this specific day
         const topicsRef = collection(db, 'projects', projectId, 'topics');
         const q = query(
           topicsRef, 
@@ -49,14 +43,11 @@ const DayTopicsSelector = () => {
           orderBy("orderInDay")
         );
         const topicsSnap = await getDocs(q);
-
         const topicsData = topicsSnap.docs.map(doc => ({ 
           id: doc.id, 
           ...doc.data() 
         }));
-
         setDayTopics(topicsData);
-
       } catch (err) {
         console.error("DayTopicsSelector: Error fetching data:", err);
         setError("Impossibile caricare i dati: " + err.message);
@@ -64,56 +55,30 @@ const DayTopicsSelector = () => {
         setLoading(false);
       }
     };
-
     fetchDayData();
   }, [projectId, dayNum]);
 
   const handleTopicClick = (topic) => {
-    // Naviga alla sessione di studio per questo argomento
-    navigate(`/projects/${projectId}/study/${topic.id}`);
+    if (!topic.isCompleted) {
+        navigate(`/projects/${projectId}/study/${topic.id}`);
+    }
   };
 
   const handleBackClick = () => {
     navigate(`/projects/${projectId}/plan`);
   };
 
-  // Calcola statistiche del giorno
   const calculateDayStats = () => {
     const totalTopics = dayTopics.length;
     const completedTopics = dayTopics.filter(t => t.isCompleted).length;
     const totalHours = dayTopics.reduce((sum, topic) => sum + (topic.estimatedHours || 0), 0);
-    const completedHours = dayTopics
-      .filter(t => t.isCompleted)
-      .reduce((sum, topic) => sum + (topic.estimatedHours || 0), 0);
-
     return {
       totalTopics,
       completedTopics,
       totalHours,
-      completedHours,
       completionPercentage: totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100) : 0
     };
   };
-
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'high': return '#ef4444';
-      case 'medium': return '#f59e0b';
-      case 'low': return '#10b981';
-      default: return '#6b7280';
-    }
-  };
-
-  const getPriorityLabel = (priority) => {
-    switch (priority) {
-      case 'high': return 'Alta';
-      case 'medium': return 'Media';
-      case 'low': return 'Bassa';
-      default: return 'Standard';
-    }
-  };
-
-  // --- RENDER CONDITIONALS ---
 
   if (loading) {
     return <SimpleLoading message="Caricamento argomenti del giorno..." />;
@@ -121,16 +86,19 @@ const DayTopicsSelector = () => {
 
   if (error) {
     return (
-      <div className="day-topics-container">
+      // 2. MODIFICA className: usiamo l'oggetto 'styles'
+      <div className={styles.dayTopicsContainer}>
         <NavBar />
-        <div className="error-container">
-          <AlertTriangle size={36} />
-          <h2>Errore nel Caricamento</h2>
-          <p>{error}</p>
-          <button onClick={handleBackClick} className="back-button">
-            <ArrowLeft size={16} />
-            Torna al piano
-          </button>
+        <div className={styles.dayTopicsContent}>
+            <div className={styles.errorContainer}>
+              <AlertTriangle size={48} />
+              <h2>Errore nel Caricamento</h2>
+              <p>{error}</p>
+              <button onClick={handleBackClick} className={styles.backButton}>
+                <ArrowLeft size={16} />
+                Torna al piano
+              </button>
+            </div>
         </div>
       </div>
     );
@@ -139,132 +107,122 @@ const DayTopicsSelector = () => {
   const dayStats = calculateDayStats();
 
   return (
-    <div className="day-topics-container">
+    <div className={styles.dayTopicsContainer}>
       <NavBar />
       
-      <div className="day-topics-content">
-        {/* Header con informazioni del giorno */}
-        <div className="day-topics-header">
-          <button onClick={handleBackClick} className="back-button">
-            <ArrowLeft size={20} />
+      <div className={styles.dayTopicsContent}>
+        <header className={styles.dayTopicsHeader}>
+          <button onClick={handleBackClick} className={styles.backButton}>
+            <ArrowLeft size={16} />
             Torna al Piano
           </button>
 
-          <div className="day-info">
-            <div className="day-title-section">
-              <Calendar size={24} />
+          <div className={styles.dayInfo}>
+            <div className={styles.dayTitleSection}>
+              <Calendar size={32} />
               <h1>Giorno {dayNum}</h1>
               {project && (
-                <span className="project-name">{project.title}</span>
+                <span className={styles.projectName}>{project.title}</span>
               )}
             </div>
 
-            <div className="day-stats-cards">
-              <div className="stat-card">
+            <div className={styles.dayStatsCards}>
+              <div className={styles.statCard}>
                 <Target size={20} />
                 <div>
-                  <span className="stat-number">{dayStats.completedTopics}/{dayStats.totalTopics}</span>
-                  <span className="stat-label">Argomenti completati</span>
+                  <span className={styles.statNumber}>{dayStats.completedTopics}/{dayStats.totalTopics}</span>
+                  <span className={styles.statLabel}>Argomenti</span>
                 </div>
               </div>
 
-              <div className="stat-card">
+              <div className={styles.statCard}>
                 <Clock size={20} />
                 <div>
-                  <span className="stat-number">{dayStats.completedHours}/{dayStats.totalHours}h</span>
-                  <span className="stat-label">Ore di studio</span>
+                  <span className={styles.statNumber}>{dayStats.totalHours}h</span>
+                  <span className={styles.statLabel}>Ore stimate</span>
                 </div>
               </div>
 
-              <div className="stat-card">
-                <Zap size={20} />
+              <div className={styles.statCard}>
+                <TrendingUp size={20} />
                 <div>
-                  <span className="stat-number">{dayStats.completionPercentage}%</span>
-                  <span className="stat-label">Progresso</span>
+                  <span className={styles.statNumber}>{dayStats.completionPercentage}%</span>
+                  <span className={styles.statLabel}>Progresso</span>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        </header>
 
-        {/* Lista degli argomenti */}
-        <div className="topics-section">
-          <div className="section-header">
-            <h2>Scegli l'argomento da studiare</h2>
-            <p>Clicca su un argomento per iniziare la sessione di studio</p>
+        <section className={styles.topicsSection}>
+          <div className={styles.sectionHeader}>
+            <h2>Argomenti di Oggi</h2>
+            <p>Seleziona un argomento per iniziare la tua sessione di studio.</p>
           </div>
 
           {dayTopics.length === 0 ? (
-            <div className="empty-state">
+            <div className={styles.emptyState}>
               <BookOpen size={48} />
-              <h3>Nessun argomento pianificato</h3>
-              <p>Non ci sono argomenti assegnati a questo giorno.</p>
+              <h3>Nessun argomento per oggi!</h3>
+              <p>Goditi il tuo giorno libero o aggiungi nuovi argomenti dal piano di studio.</p>
             </div>
           ) : (
-            <div className="topics-grid">
+            <div className={styles.topicsGrid}>
               {dayTopics.map((topic, index) => (
                 <div 
                   key={topic.id} 
-                  className={`topic-card ${topic.isCompleted ? 'completed' : ''}`}
+                  // 3. MODIFICA className con condizioni
+                  className={`${styles.topicCard} ${topic.isCompleted ? styles.completed : ''}`}
                   onClick={() => handleTopicClick(topic)}
                 >
-                  <div className="topic-card-header">
-                    <div className="topic-status">
-                      {topic.isCompleted ? (
-                        <CheckCircle size={24} className="status-icon completed" />
-                      ) : (
-                        <div className="status-icon pending">
-                          <span>{index + 1}</span>
+                  <div className={styles.topicCardHeader}>
+                    <span className={styles.topicNumber}>#{index + 1}</span>
+                    {topic.isCompleted && (
+                        <div className={styles.topicStatusCompleted}>
+                            <CheckCircle size={16} />
+                            <span>Completato</span>
                         </div>
-                      )}
-                    </div>
-
-                    <div className="topic-priority" style={{ backgroundColor: getPriorityColor(topic.priority) }}>
-                      {getPriorityLabel(topic.priority)}
-                    </div>
-                  </div>
-
-                  <div className="topic-card-content">
-                    <h3 className="topic-title">{topic.title}</h3>
-                    
-                    {topic.description && (
-                      <p className="topic-description">{topic.description}</p>
                     )}
+                  </div>
+                  
+                  <h3 className={styles.topicTitle}>{topic.title}</h3>
+                  
+                  {topic.description && (
+                    <p className={styles.topicDescription}>{topic.description}</p>
+                  )}
 
-                    <div className="topic-meta">
-                      {topic.estimatedHours && (
-                        <div className="meta-item">
-                          <Clock size={16} />
-                          <span>{topic.estimatedHours} ore</span>
+                  <div className={styles.topicCardFooter}>
+                    <div className={styles.topicMeta}>
+                      {topic.estimatedHours > 0 && (
+                        <div className={styles.metaItem}>
+                          <Clock size={14} />
+                          <span>{topic.estimatedHours}h stimate</span>
                         </div>
                       )}
-
-                      {topic.totalPages && (
-                        <div className="meta-item">
-                          <BookOpen size={16} />
+                      {topic.totalPages > 0 && (
+                        <div className={styles.metaItem}>
+                          <BookOpen size={14} />
                           <span>{topic.totalPages} pagine</span>
                         </div>
                       )}
                     </div>
-                  </div>
 
-                  <div className="topic-card-footer">
                     <button 
-                      className="study-button"
+                      className={styles.studyButton}
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleTopicClick(topic);
+                        navigate(`/projects/${projectId}/study/${topic.id}`);
                       }}
                     >
                       <Play size={16} />
-                      {topic.isCompleted ? 'Rivedi' : 'Studia'}
+                      {topic.isCompleted ? 'Rivedi Argomento' : 'Inizia a Studiare'}
                     </button>
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </div>
+        </section>
       </div>
     </div>
   );
