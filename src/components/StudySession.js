@@ -48,6 +48,7 @@ const StudySession = () => {
   const [notes, setNotes] = useState([]);
   const [renderingPage, setRenderingPage] = useState(false);
   
+  
   const canvasRef = useRef(null);
   const overlayRef = useRef(null);
   const containerRef = useRef(null);
