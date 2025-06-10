@@ -1,35 +1,40 @@
-/* src/components/styles/StudyPlanViewer.module.css - Stile "High Contrast" */
+/* 
+  src/components/styles/StudyPlanViewer.module.css 
+  Stile "High Contrast" con Struttura Robusta e Totalmente Responsive
+*/
 
+/* 
+  ---------------------------------------------------------------------------
+  STILI DI BASE (Mobile First)
+  Questi stili si applicano a schermi piccoli (smartphone).
+  Il contenuto occupa il 100% della larghezza.
+  ---------------------------------------------------------------------------
+*/
 .studyPlanContainer {
   width: 100%;
   min-height: 100vh;
-  background-color: #f0f2f5; /* Sfondo mantenuto */
+  background-color: #f0f2f5;
   background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
   background-size: 20px 20px;
 }
 
 .contentWrapper {
-  padding: 2rem;
+  /* Padding per mobile, con 80px in basso per la eventuale nav bar mobile */
+  padding: 1.5rem 1rem 80px 1rem;
   max-width: 1400px;
-  margin: 0 auto;
+  margin: 0 auto; /* Nessun margine laterale di base */
   box-sizing: border-box;
-}
-
-@media (min-width: 769px) {
-  .contentWrapper { margin-left: 200px; }
-}
-@media (max-width: 768px) {
-  .contentWrapper { padding: 1.5rem 1rem 80px 1rem; }
 }
 
 /* --- Header della Pagina --- */
 .studyPlanHeader {
-  margin-bottom: 2.5rem;
-  padding-left: 0.5rem;
+  margin-bottom: 2rem;
+  padding-left: 0;
+  text-align: center; 
 }
 
 .studyPlanHeader h1 {
-  font-size: 2.75rem;
+  font-size: 2.25rem; /* Font più piccolo per mobile */
   font-weight: 800;
   color: #1a202c;
   letter-spacing: -0.04em;
@@ -37,7 +42,7 @@
 }
 
 .planSubtitle {
-  font-size: 1.125rem;
+  font-size: 1rem;
   color: #718096;
   margin-top: 0.25rem;
 }
@@ -45,17 +50,15 @@
 /* --- Griglia delle Card --- */
 .daysGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 2rem;
+  grid-template-columns: 1fr; /* Una colonna su mobile */
+  gap: 1.5rem;
 }
 
 /* --- Stile della Day Card (Più contrasto) --- */
 .dayCard {
-  background: white;
+  background: rgb(209, 191, 255);
   border-radius: 18px;
-  /* Bordo sottile per definire meglio i contorni */
   border: 1px solid #e2e8f0; 
-  /* Ombra più marcata per sollevare la card */
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.07), 0 5px 10px -5px rgba(0, 0, 0, 0.04);
   display: flex;
   flex-direction: column;
@@ -66,7 +69,6 @@
 
 .dayCard:hover {
   transform: translateY(-8px) scale(1.02);
-  /* Ombra più intensa in hover */
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15); 
   border-color: #c7d2fe;
 }
@@ -97,6 +99,8 @@
   gap: 0.75rem;
   color: #4a5568;
   font-weight: 500;
+  text-align: center;
+  padding: 1rem;
 }
 
 .dayCardHeader {
@@ -151,7 +155,6 @@
   gap: 0.75rem;
 }
 
-/* --- Stile degli Argomenti (Pulsanti cliccabili) --- */
 .topicItem {
   display: flex;
   justify-content: space-between;
@@ -160,7 +163,6 @@
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease-out;
-  /* Stile base per gli argomenti attivi */
   background-color: #f7f8ff;
   border: 1px solid #e0e7ff;
 }
@@ -177,7 +179,6 @@
   color: #4c51bf;
 }
 
-/* Stile per gli argomenti completati */
 .topicItem.completed {
   background-color: #f9fafb;
   border-color: #e5e7eb;
@@ -205,7 +206,6 @@
   display: none;
 }
 
-/* Stile per le card bloccate */
 .dayCard.locked .topicItem {
   cursor: not-allowed;
   background-color: #f9fafb !important;
@@ -213,13 +213,13 @@
   transform: none !important;
 }
 .dayCard.locked .topicTitle {
-    color: #d1d5db;
+  color: #d1d5db;
 }
 .dayCard.locked .topicItem:hover {
-    color: #d1d5db;
+  color: #d1d5db;
 }
 .dayCard.locked .topicItem .topicArrow {
-    display: none;
+  display: none;
 }
 
 .dayCardFooter {
@@ -243,7 +243,7 @@
   transition: width 0.5s ease-out;
 }
 .dayCard.locked .progressFill {
-    background: #cbd5e1;
+  background: #cbd5e1;
 }
 
 .progressText {
@@ -251,17 +251,55 @@
   color: #718096;
 }
 
-/* ... stili per errore e loading ... */
 .errorContainer {
-    text-align: center;
-    padding: 2rem;
-    color: #ef4444;
+  text-align: center;
+  padding: 2rem;
+  color: #ef4444;
 }
+
 .backButton {
-    padding: 0.5rem 1rem;
-    border: none;
-    background: #6366f1;
-    color: white;
-    border-radius: 8px;
-    cursor: pointer;
+  padding: 0.5rem 1rem;
+  border: none;
+  background: #6366f1;
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+
+/* 
+  ---------------------------------------------------------------------------
+  MEDIA QUERY PER TABLET E DESKTOP (da 768px in su)
+  Da questa larghezza in poi, la sidebar è visibile, quindi il contenuto
+  DEVE avere un margine a sinistra.
+  ---------------------------------------------------------------------------
+*/
+@media (min-width: 768px) {
+  .contentWrapper {
+    /* LA SOLUZIONE CHIAVE: Applichiamo il margine per fare spazio alla sidebar */
+    margin-left: 200px;
+    /* Ripristiniamo il padding per schermi più grandi */
+    padding: 2rem;
+  }
+
+  .studyPlanHeader {
+    text-align: left;
+    padding-left: 0.5rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .studyPlanHeader h1 {
+    /* Ripristiniamo la dimensione originale del font */
+    font-size: 2.75rem;
+  }
+
+  .planSubtitle {
+    font-size: 1.125rem;
+  }
+
+  .daysGrid {
+    /* Ripristiniamo il layout a griglia */
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 2rem;
+  }
 }
