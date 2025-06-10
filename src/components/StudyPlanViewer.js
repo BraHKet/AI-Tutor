@@ -3,8 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc, collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import NavBar from './NavBar';
+// Importa le icone necessarie, inclusa la nuova 'Check'
 import { 
-  BookOpen, Calendar, AlertTriangle, ArrowLeft, CheckCircle, Lock, ChevronRight
+  BookOpen, Calendar, AlertTriangle, ArrowLeft, CheckCircle, Lock, ChevronRight, Check, Coffee
 } from 'lucide-react';
 // Importa gli stili come un oggetto 'styles' usando CSS Modules
 import styles from './styles/StudyPlanViewer.module.css';
@@ -72,7 +73,6 @@ const StudyPlanViewer = () => {
       return acc;
     }, {});
     
-    // Crea un array per tutti i giorni del progetto, anche quelli vuoti
     const daysArray = Array.from({ length: totalProjectDays }, (_, i) => {
         const dayNum = i + 1;
         const dayTopics = topicsByDay[dayNum] || [];
@@ -89,10 +89,8 @@ const StudyPlanViewer = () => {
 
     let previousDayCompleted = true;
     const daysWithLockStatus = daysArray.map(day => {
-        // Un giorno è bloccato se un giorno precedente con argomenti non è stato completato
         const isLocked = !previousDayCompleted;
-        // Aggiorna lo stato per il giorno successivo. Se il giorno corrente non è completo e ha argomenti, i successivi saranno bloccati.
-        if (!day.isFullyCompleted && day.topics.length > 0) {
+        if (day.topics.length > 0 && !day.isFullyCompleted) {
             previousDayCompleted = false;
         }
         return { ...day, isLocked };
@@ -101,14 +99,14 @@ const StudyPlanViewer = () => {
     setDaysData(daysWithLockStatus);
   };
 
-  // Funzione per navigare alla pagina del singolo argomento
-  const handleTopicClick = (topicId, isDayLocked) => {
-    if (isDayLocked) return;
+  const handleTopicClick = (topicId, isDayLocked, isCompleted) => {
+    // Non permettere il click su argomenti bloccati o già completati
+    if (isDayLocked || isCompleted) return;
     navigate(`/projects/${projectId}/topic/${topicId}`);
   };
 
   if (loading) {
-    return <SimpleLoading message="Caricamento piano di studio..." />;
+    return <SimpleLoading message="Sto preparando il tuo piano di studio..." />;
   }
   
   if (error) {
@@ -117,12 +115,12 @@ const StudyPlanViewer = () => {
         <NavBar />
         <div className={styles.contentWrapper}>
             <div className={styles.errorContainer}>
-              <AlertTriangle size={48} />
-              <h2>Errore nel Caricamento</h2>
+              <AlertTriangle size={48} className="mx-auto" />
+              <h2>Oops! Qualcosa è andato storto.</h2>
               <p>{error}</p>
               <button onClick={() => navigate('/projects')} className={styles.backButton}>
-                <ArrowLeft size={16} />
-                Torna ai progetti
+                <ArrowLeft size={18} />
+                Torna ai Miei Progetti
               </button>
             </div>
         </div>
@@ -135,8 +133,8 @@ const StudyPlanViewer = () => {
       <NavBar />
       <div className={styles.contentWrapper}>
         <header className={styles.studyPlanHeader}>
-            <h1>{project.title}</h1>
-            <p className={styles.planSubtitle}>Il tuo percorso personalizzato verso il successo.</p>
+            <h1>{project?.title || 'Piano di Studio'}</h1>
+            <p className={styles.planSubtitle}>Il tuo percorso personalizzato verso il successo. Un passo alla volta.</p>
         </header>
         
         <div className={styles.daysGrid}>
@@ -147,7 +145,7 @@ const StudyPlanViewer = () => {
             >
               {day.isLocked && (
                 <div className={styles.lockOverlay}>
-                  <Lock size={20} />
+                  <Lock size={28} />
                   <span>Completa i giorni precedenti per sbloccare</span>
                 </div>
               )}
@@ -165,7 +163,8 @@ const StudyPlanViewer = () => {
               <div className={styles.dayCardContent}>
                 {day.topics.length === 0 ? (
                   <div className={styles.emptyDayMessage}>
-                    <p>Nessun argomento per oggi. Riposo!</p>
+                    <Coffee size={24} />
+                    <p>Giorno di riposo. Ricarica le energie!</p>
                   </div>
                 ) : (
                   <ul className={styles.topicsList}>
@@ -173,10 +172,16 @@ const StudyPlanViewer = () => {
                       <li 
                         key={topic.id} 
                         className={`${styles.topicItem} ${topic.isCompleted ? styles.completed : ''}`}
-                        onClick={() => handleTopicClick(topic.id, day.isLocked)}
+                        onClick={() => handleTopicClick(topic.id, day.isLocked, topic.isCompleted)}
+                        title={day.isLocked ? "Bloccato" : (topic.isCompleted ? "Completato" : "Clicca per studiare")}
                       >
                         <span className={styles.topicTitle}>{topic.title}</span>
-                        <ChevronRight size={18} className={styles.topicArrow} />
+                        {/* MODIFICA: Mostra un'icona diversa se l'argomento è completato */}
+                        {topic.isCompleted ? (
+                           <Check size={20} className={styles.topicIcon} />
+                        ) : (
+                           <ChevronRight size={20} className={styles.topicIcon} />
+                        )}
                       </li>
                     ))}
                   </ul>
@@ -192,7 +197,7 @@ const StudyPlanViewer = () => {
                       ></div>
                    </div>
                    <span className={styles.progressText}>
-                      {day.completedCount} di {day.topicsCount} completati
+                      Progresso: {day.completedCount} di {day.topicsCount} argomenti
                    </span>
                 </div>
               )}
