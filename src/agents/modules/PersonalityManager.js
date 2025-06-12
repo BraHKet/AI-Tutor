@@ -1,5 +1,5 @@
 // ==========================================
-// PERSONALITY MANAGER MODULE (SIMPLIFIED)
+// FILE: src/agents/modules/PersonalityManager.js (VERSIONE CORRETTA DEFINITIVA)
 // ==========================================
 
 export class PersonalityManager {
@@ -41,10 +41,12 @@ export class PersonalityManager {
         console.log('🎭 Personality Manager initialized (simplified)');
     }
 
-    // MODIFICATO: Ora restituisce l'oggetto personalità completo
+    // =======================================================
+    // ===== MODIFICA CHIAVE PER RISOLVERE L'ERRORE ==========
+    // =======================================================
     async selectOptimalPersonality(studentProfile, topics, preferredPersonality = null) {
         try {
-            let personalityKey = 'adaptive'; // Default
+            let personalityKey = 'adaptive'; // Usiamo sempre la chiave inglese (es. 'adaptive') come ID.
 
             if (preferredPersonality && this.personalities[preferredPersonality]) {
                 personalityKey = preferredPersonality;
@@ -54,18 +56,22 @@ export class PersonalityManager {
                 if (studentCharacteristics.confident) personalityKey = 'strict';
             }
             
-            return this.personalities[personalityKey];
+            // Restituiamo l'intero oggetto personalità, ma aggiungiamo anche la sua chiave per riferimento.
+            return {
+                key: personalityKey, 
+                ...this.personalities[personalityKey]
+            };
 
         } catch (error) {
             console.error('Failed to select personality:', error);
-            return this.personalities['adaptive']; // Fallback sicuro
+            // Fallback sicuro che include la chiave
+            return { key: 'adaptive', ...this.personalities['adaptive'] };
         }
     }
+    // =======================================================
+    // ================= FINE DELLA MODIFICA ==================
+    // =======================================================
 
-    // RIMOSSO: `generateResponse` non è più necessario qui. 
-    // La generazione è delegata a QuestionGenerator, che riceve la personalità come input.
-
-    // I metodi per le statistiche e altro rimangono utili e invariati
     async updateEffectiveness(insights) {
         try {
             const personalityInsights = insights.filter(insight => 

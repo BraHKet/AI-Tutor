@@ -1,5 +1,5 @@
 // ==========================================
-// EXAMINATION ENGINE MODULE
+// FILE: src/agents/modules/ExaminationEngine.js (100% COMPLETO)
 // ==========================================
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
@@ -8,11 +8,10 @@ export class ExaminationEngine {
     constructor(supabaseClient) {
         this.supabase = supabaseClient;
         this.genAI = new GoogleGenerativeAI(process.env.REACT_APP_GEMINI_API_KEY);
-        this.model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+        this.model = this.genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
         this.agentProfile = null;
         this.currentSessionId = null;
         
-        // Evaluation criteria weights
         this.evaluationWeights = {
             completeness: 0.25,
             technicalAccuracy: 0.30,
@@ -36,7 +35,6 @@ export class ExaminationEngine {
             
             const analysis = this.parseResponseAnalysis(analysisText);
             
-            // Store analysis for agent learning
             await this.storeResponseAnalysis(response, analysis, currentTopic);
             
             return analysis;
@@ -97,16 +95,18 @@ Rispondi in questo formato JSON:
 
     parseResponseAnalysis(analysisText) {
         try {
-            let cleanedText = analysisText.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+            let cleanedText = analysisText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
             const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
-                cleanedText = jsonMatch[0];
+                let jsonString = jsonMatch[0];
+                // Tentativo di correggere comuni errori JSON come virgole finali
+                jsonString = jsonString.replace(/,\s*(\]|})/g, '$1');
+                const analysis = JSON.parse(jsonString);
+                return this.validateAndNormalizeAnalysis(analysis);
             }
-            
-            const analysis = JSON.parse(cleanedText);
-            return this.validateAndNormalizeAnalysis(analysis);
+            throw new Error("No JSON object found in AI response.");
         } catch (error) {
-            console.error('Failed to parse analysis:', error);
+            console.error('Failed to parse analysis JSON:', error, "Raw text:", analysisText);
             return this.getFallbackAnalysis();
         }
     }
@@ -130,12 +130,10 @@ Rispondi in questo formato JSON:
 
         const normalized = { ...defaults, ...analysis };
         
-        // Ensure scores are in valid range
         ['completeness', 'technicalAccuracy', 'conceptualUnderstanding', 'logicalFlow', 'overallScore'].forEach(field => {
             normalized[field] = Math.max(0, Math.min(100, normalized[field] || 0));
         });
         
-        // Calculate overall score if not provided
         if (!analysis.overallScore) {
             normalized.overallScore = Math.round(
                 normalized.completeness * this.evaluationWeights.completeness +
@@ -149,7 +147,6 @@ Rispondi in questo formato JSON:
     }
 
     async determineNextAction(analysis, conversationContext) {
-        // If student is clearly blocked or struggling
         if (analysis.studentEmotionalState === 'blocked' || analysis.overallScore < 40) {
             return {
                 type: 'provide_guidance',
@@ -158,8 +155,6 @@ Rispondi in questo formato JSON:
                 reason: 'Student appears blocked or struggling significantly'
             };
         }
-        
-        // If student has gaps but is making progress
         if (analysis.essentialPointsMissing.length > 0 && analysis.overallScore >= 60) {
             return {
                 type: 'follow_up_question',
@@ -169,8 +164,6 @@ Rispondi in questo formato JSON:
                 focusAreas: analysis.essentialPointsMissing
             };
         }
-        
-        // If student shows good understanding, challenge them
         if (analysis.overallScore >= 80) {
             return {
                 type: 'advanced_challenge',
@@ -179,8 +172,6 @@ Rispondi in questo formato JSON:
                 reason: 'Student ready for advanced concepts'
             };
         }
-        
-        // Default: continue conversation
         return {
             type: 'continue_conversation',
             urgency: 'low',
@@ -199,7 +190,6 @@ Rispondi in questo formato JSON:
             
             const evaluation = this.parseFinalEvaluation(evaluationText);
             
-            // Add session metadata
             evaluation.sessionId = session.id;
             evaluation.totalDuration = this.calculateSessionDuration(session);
             evaluation.totalTurns = conversationHistory.length;
@@ -258,11 +248,11 @@ Rispondi in questo formato JSON:
             let cleanedText = evaluationText.replace(/```json\n?/g, '').replace(/```\n?/g, '');
             const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
-                cleanedText = jsonMatch[0];
+                let jsonString = jsonMatch[0].replace(/,\s*(\]|})/g, '$1');
+                const evaluation = JSON.parse(jsonString);
+                return this.validateFinalEvaluation(evaluation);
             }
-            
-            const evaluation = JSON.parse(cleanedText);
-            return this.validateFinalEvaluation(evaluation);
+            throw new Error("No JSON object found in final evaluation response.");
         } catch (error) {
             console.error('Failed to parse final evaluation:', error);
             return this.getFallbackFinalEvaluation();

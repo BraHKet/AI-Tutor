@@ -1,191 +1,111 @@
 // ==========================================
-// FILE: src/agents/modules/QuestionGenerator.js (VERSIONE COMPLETA E CORRETTA)
+// FILE: src/agents/modules/QuestionGenerator.js (NUOVA LOGICA BASATA SU TESTO)
 // ==========================================
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 export class QuestionGenerator {
-    constructor(supabaseClient) { // Modificato per accettare la chiave API
+    constructor(supabaseClient) {
         this.supabase = supabaseClient;
-        
         this.genAI = new GoogleGenerativeAI(process.env.REACT_APP_GEMINI_API_KEY);
         this.model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
-        this.agentProfile = null;
     }
 
     async initialize(agentProfile) {
         this.agentProfile = agentProfile;
-        console.log('❓ Question Generator initialized');
+        console.log('❓ Question Generator initialized for text-based questions');
     }
 
-    async generateOpeningRequest(topics, studentProfile, options = {}) {
-        try {
-            const selectedTopic = this.selectOptimalTopic(topics, studentProfile);
-            const personality = options.personality;
+    // NUOVA LOGICA: Genera una domanda di apertura basata sull'inizio del testo
+    async generateOpeningRequest(pdfText, personality) {
+        const textSnippet = pdfText.slice(0, 2000); // Usa l'inizio del testo per il contesto
 
-            // Controllo di sicurezza per evitare errori se la personalità non viene passata
-            if (!personality || !personality.name || !personality.description) {
-                console.error("Invalid personality object received in generateOpeningRequest:", personality);
-                throw new Error("A valid personality object is required to generate a request.");
-            }
+        const prompt = `Sei un professore di fisica Adattivo (${personality.description}).
+Stai iniziando un esame orale basato ESCLUSIVAMENTE sul seguente materiale di studio. Non fare domande sulla tua conoscenza generale, ma solo su ciò che è scritto qui.
 
-            const prompt = `Sei un professore di fisica ${personality.name} che sta per iniziare un esame orale.
-La tua personalità è descritta come: "${personality.description}".
+INIZIO DEL MATERIALE DI STUDIO:
+"""
+${textSnippet}
+"""
 
-ARGOMENTO DA CHIEDERE: "${selectedTopic.topic_name}"
-DIFFICOLTÀ ARGOMENTO: ${selectedTopic.difficulty_level}/10
-PUNTI ESSENZIALI CHE LO STUDENTE DOVREBBE TRATTARE: ${JSON.stringify(selectedTopic.essential_points)}
-
-Il tuo compito è formulare una domanda di apertura. Deve essere chiara, naturale e perfettamente in linea con la tua personalità. Invita lo studente a esporre l'argomento.
+Formula una domanda di apertura che inviti lo studente a iniziare a esporre il contenuto del documento, partendo dal primo argomento trattato. La tua domanda deve essere naturale e in linea con la tua personalità.
 
 Restituisci la tua risposta ESCLUSIVAMENTE in formato JSON:
 {
-  "question": "La tua domanda di apertura, formulata con la personalità richiesta.",
-  "strategy": "La strategia che hai usato (es. 'Inizio diretto e formale', 'Approccio amichevole e incoraggiante').",
-  "estimatedDuration": ${selectedTopic.estimated_exposition_time || 10}
+  "question": "La tua domanda di apertura."
 }`;
-            
-            const aiRequest = await this.generateAIResponse(prompt);
 
-            // Aggiunto controllo sul risultato per evitare crash
-            if (!aiRequest || !aiRequest.question) {
-                console.warn("AI did not return a valid question object. Using fallback.");
-                return this.getFallbackOpeningRequest(selectedTopic);
-            }
-
-            return {
-                message: aiRequest.question,
-                topic: selectedTopic,
-                strategy: aiRequest.strategy,
-                estimatedDuration: aiRequest.estimatedDuration,
-            };
-        } catch (error) {
-            console.error('Failed to generate opening request:', error);
-            return this.getFallbackOpeningRequest(topics[0]);
-        }
+        const aiResponse = await this.generateAIResponse(prompt);
+        return {
+            message: aiResponse.question || "Buongiorno. Può iniziare a esporre il contenuto del materiale che ha studiato, partendo dall'inizio?",
+        };
     }
 
-    async generateFollowUpQuestion(analysis, conversationContext, nextAction, personality) {
-        try {
-            const historyContext = conversationContext.turnHistory
-                .slice(-4)
-                .map(turn => `${turn.speaker?.toUpperCase()}: ${turn.content}`)
-                .join('\n');
+    // NUOVA LOGICA: Genera un follow-up basato sulla risposta e sul contesto del PDF
+    async generateFollowUpQuestion(analysis, conversationHistory, pdfText, personality) {
+        const studentResponse = conversationHistory[conversationHistory.length - 1].content;
+        
+        // Semplice ricerca di contesto nel PDF (versione semplificata di RAG)
+        const contextSnippet = this.findRelevantSnippet(studentResponse, pdfText);
 
-            // Controllo di sicurezza per risolvere "Cannot read properties of undefined (reading 'name')"
-            if (!personality || !personality.name || !personality.description) {
-                console.error("Invalid personality object received in generateFollowUpQuestion:", personality);
-                throw new Error("A valid personality object is required to generate a follow-up.");
-            }
+        const prompt = `Sei un professore di fisica Adattivo (${personality.description}). Stai conducendo un esame orale basato ESCLUSIVAMENTE sul materiale fornito.
 
-            const prompt = `Sei un professore di fisica ${personality.name} (${personality.description}) che sta conducendo un esame orale. Devi formulare la prossima domanda o affermazione.
+ANALISI DELLA RISPOSTA DELLO STUDENTE:
+- Livello Comprensione: ${analysis.understandingLevel}
+- Errori Tecnici: ${JSON.stringify(analysis.technicalErrors.map(e => e.error))}
+- Punti di Forza: ${JSON.stringify(analysis.strengths)}
 
-CONTESTO CONVERSAZIONE:
-${historyContext}
+CONTESTO RILEVANTE DAL MATERIALE DI STUDIO:
+"""
+${contextSnippet}
+"""
 
-ANALISI DELL'ULTIMA RISPOSTA DELLO STUDENTE:
-- Punteggio Complessivo: ${analysis.overallScore}/100
-- Errori Rilevati: ${JSON.stringify(analysis.technicalErrors)}
-- Punti Mancanti: ${JSON.stringify(analysis.essentialPointsMissing)}
-- Stato Emotivo Studente: ${analysis.studentEmotionalState}
-
-AZIONE STRATEGICA DA INTRAPRENDERE: ${nextAction.type} (${nextAction.reason})
-PERSONALITÀ DA MANTENERE: ${personality.name}
-
-Formula la prossima domanda o affermazione in modo naturale e colloquiale. Deve implementare l'azione strategica e mantenere la tua personalità. Ad esempio, se devi fornire una guida a uno studente bloccato e sei un professore 'gentile', il tuo tono sarà rassicurante. Se sei 'severo', sarai più diretto.
+Basandoti sull'analisi della risposta dello studente e SUL CONTESTO DEL MATERIALE DI STUDIO, formula una domanda di approfondimento. Puoi chiedere di chiarire un punto, correggere un errore, o collegare il concetto a un'altra parte del testo fornito. Sii fedele al materiale.
 
 Restituisci la tua risposta ESCLUSIVAMENTE in formato JSON:
 {
-  "question": "La tua domanda/affermazione esatta.",
-  "type": "${nextAction.type}",
-  "strategy": "La strategia specifica che hai usato (es. 'Domanda mirata su un punto debole', 'Incoraggiamento per sblocco').",
-  "difficulty": "easy|medium|hard",
-  "expectedResponse": "Descrivi brevemente cosa ti aspetti che lo studente risponda."
+  "question": "La tua domanda di follow-up."
 }`;
-
-            const followUpData = await this.generateAIResponse(prompt);
-            
-            // Aggiunto controllo sul risultato per evitare crash
-            if (!followUpData || !followUpData.question) {
-                console.warn("AI did not return a valid follow-up object. Using fallback.");
-                return this.getFallbackFollowUp(analysis);
+        
+        const aiResponse = await this.generateAIResponse(prompt);
+        return {
+            message: aiResponse.question || "Interessante. Può fornirmi maggiori dettagli basandosi sul testo?",
+            type: 'follow_up',
+        };
+    }
+    
+    // Helper per trovare un pezzo di testo rilevante (RAG molto semplificato)
+    findRelevantSnippet(studentResponse, pdfText) {
+        // Cerca la prima occorrenza di una parola chiave dalla risposta dello studente
+        const keywords = studentResponse.split(' ').filter(w => w.length > 4);
+        for (const keyword of keywords) {
+            const index = pdfText.toLowerCase().indexOf(keyword.toLowerCase());
+            if (index !== -1) {
+                // Restituisce un frammento di testo attorno alla parola chiave trovata
+                const start = Math.max(0, index - 500);
+                const end = Math.min(pdfText.length, index + 500);
+                return pdfText.slice(start, end);
             }
-
-            return {
-                message: followUpData.question,
-                type: followUpData.type,
-                strategy: followUpData.strategy,
-                expectedResponse: followUpData.expectedResponse,
-                difficulty: followUpData.difficulty,
-            };
-        } catch (error) {
-            console.error('Failed to generate follow-up:', error);
-            return this.getFallbackFollowUp(analysis);
         }
+        // Se non trova nulla, restituisce l'inizio del documento
+        return pdfText.slice(0, 1000);
     }
 
-    // Correzione per risolvere il "ReferenceError: Cannot access 'response' before initialization"
     async generateAIResponse(prompt) {
         try {
-            // 1. Esegui la chiamata a Gemini e attendi il risultato
             const result = await this.model.generateContent(prompt);
-            
-            // 2. Estrai l'oggetto 'response' dal risultato
             const response = await result.response;
-            
-            // 3. Estrai il testo dall'oggetto 'response'
             const text = response.text();
-            
-            // 4. Ora procedi con il parsing del testo
             let cleanedText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
             const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
-
             if (jsonMatch) {
-                cleanedText = jsonMatch[0];
-                return JSON.parse(cleanedText);
-            } else {
-                throw new Error("No JSON object could be found in the AI response.");
+                return JSON.parse(jsonMatch[0]);
             }
+            throw new Error("No JSON object found in AI response.");
         } catch (error) {
             console.error('Failed to generate or parse AI response:', error);
-            return {
-                question: "Molto interessante, prosegua pure.",
-                strategy: "fallback_continuation",
-                type: "follow_up"
-            };
+            return { question: "Potrebbe ripetere o elaborare meglio, per favore?" };
         }
-    }
-
-    selectOptimalTopic(topics, studentProfile) {
-        const studentLevel = studentProfile?.physics_knowledge_level || 5;
-        const suitableTopics = topics.filter(topic => 
-            topic && typeof topic.difficulty_level === 'number' && Math.abs(topic.difficulty_level - studentLevel) <= 2
-        );
-        return suitableTopics.length > 0 ? suitableTopics[0] : topics[0];
-    }
-
-    getFallbackOpeningRequest(topic) {
-        return {
-            message: `Mi parli di ${topic?.topic_name || 'fisica generale'}.`,
-            topic: topic,
-            requestType: 'basic_exposition',
-            estimatedDuration: 10,
-            strategy: 'standard_fallback'
-        };
-    }
-
-    getFallbackFollowUp(analysis) {
-        let message = "Può approfondire questo punto?";
-        // Aggiunto controllo per evitare errori se analysis o essentialPointsMissing non esistono
-        if (analysis && Array.isArray(analysis.essentialPointsMissing) && analysis.essentialPointsMissing.length > 0) {
-            message = `Bene, ora parliamo di: ${analysis.essentialPointsMissing[0]}.`;
-        }
-        return {
-            message: message,
-            type: 'follow_up',
-            strategy: 'continuation_fallback',
-            difficulty: 'medium'
-        };
     }
 }
 
