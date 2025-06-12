@@ -68,6 +68,11 @@ const TopicViewer = () => {
         fetchTopic();
     }, [projectId, topicId]);
     
+    const handleStartExam = () => {
+        // Naviga alla pagina dell'agente passando gli ID correnti
+        navigate(`/projects/${projectId}/topic/${topicId}/exam`);
+    };
+
     const handleMainPdfClick = () => {
         navigate(`/projects/${projectId}/study/${topicId}`);
     };
@@ -131,7 +136,7 @@ const TopicViewer = () => {
                         <h2>Mettiti alla prova</h2>
                         <p>Quando ti senti pronto, avvia una sessione di interrogazione con l'IA.</p>
                     </div>
-                    <button className={styles.aiButton}>
+                    <button className={styles.aiButton} onClick={handleStartExam}>
                         <Bot size={18}/>
                         Interrogami
                     </button>

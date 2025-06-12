@@ -11,7 +11,7 @@ import StudySession from './components/StudySession';
 import useGoogleAuth from './hooks/useGoogleAuth';
 import PlanReviewModal from './components/PlanReviewModal';
 import SimpleLoading from './components/SimpleLoading';
-
+import AgentDemo from './components/AgentDemo'
 // 2. AGGIUNGI: Importa il nuovo componente per la visualizzazione del singolo argomento
 import TopicViewer from './components/TopicViewer';
 
@@ -55,6 +55,10 @@ function App() {
 
             <Route path="/projects/:projectId/study/:topicId" element={<StudySession />} />
             <Route path="/plan-review" element={<PlanReviewModal />} />
+
+            {/* NUOVA ROTTA per l'agente */}
+            {/* Gli passiamo projectId e topicId per sapere quale PDF caricare */}
+            <Route path="/projects/:projectId/topic/:topicId/exam" element={<AgentDemo />} />
           </>
         ) : (
           /* Se non autenticato, redirect alla login */

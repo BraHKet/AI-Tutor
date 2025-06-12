@@ -44,6 +44,7 @@ const TopicDetailViewer = ({
   const thumbnailObserverRef = useRef(null);
   const abortControllerRef = useRef(null);
 
+
   // Determina quali file sono rilevanti per questo argomento
   const getRelevantFiles = () => {
     const relevantFiles = [];
