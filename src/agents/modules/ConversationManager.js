@@ -1,114 +1,119 @@
 // ==========================================
-// FILE: src/agents/modules/ConversationManager.js (VERSIONE COMPLETA E ROBUSTA)
+// FILE: src/agents/modules/ConversationManager.js (SESSIONE CONTINUA MINIMAL)
 // ==========================================
 
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
 export class ConversationManager {
-    constructor(supabaseClient) {
-        this.supabase = supabaseClient;
-        this.agentProfile = null;
-        
-        // Lo stato ora è un oggetto, per evitare che venga sovrascritto.
-        this.currentContext = {
-            sessionId: null,
-            currentTopic: null,
-            conversationPhase: 'inactive',
-            turnHistory: [],
-            studentProfile: null,
-            professorPersonality: null, // Memorizzeremo la CHIAVE della personalità qui
-            availableTopics: [],
-            startTime: null
-        };
+    constructor() {
+        this.genAI = new GoogleGenerativeAI(process.env.REACT_APP_GEMINI_API_KEY);
+        this.model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        this.chatSession = null;
+        this.isActive = false;
     }
 
-    async initialize(agentProfile) {
-        this.agentProfile = agentProfile;
-        console.log('💬 Conversation Manager initialized (simplified)');
+    async startSession(pdfData) {
+        const systemPrompt = `Tu sei un PROFESSORE UNIVERSITARIO di fisica durante un esame orale.
+
+COMPITO:
+1. Analizza questo PDF completamente (tutte le pagine)
+2. Identifica tutto ciò che lo studente deve trattare
+3. Gestisci l'esame fino al completamento totale
+
+REGOLE:
+- Fai domande per coprire TUTTO il PDF
+- Non dare suggerimenti (solo interrogare)
+- Tieni traccia del progresso
+- Lo studente può inviare testo + disegni/formule
+
+FORMATO RISPOSTA (sempre JSON):
+{
+  "type": "setup|question|completion",
+  "message": "Messaggio allo studente",
+  "progress": {"covered": 0, "total": 20, "percentage": 0},
+  "isComplete": false,
+  "mainTopic": "Argomento" // solo nel setup
+}
+
+Inizia con type="setup" e la prima domanda.`;
+
+        try {
+            this.chatSession = this.model.startChat({ history: [] });
+            
+            const result = await this.chatSession.sendMessage([
+                { inlineData: { mimeType: pdfData.mimeType, data: pdfData.data } },
+                { text: systemPrompt }
+            ]);
+            
+            const response = this.parseResponse(result.response.text());
+            this.isActive = true;
+            
+            return {
+                success: true,
+                mainTopic: response.mainTopic,
+                initialQuestion: response.message,
+                totalItems: response.progress.total
+            };
+        } catch (error) {
+            console.error('❌ Session start failed:', error);
+            throw error;
+        }
     }
 
-    // `personalityKey` è la chiave inglese, es. "adaptive"
-    async startConversation(sessionId, personalityKey, topics) {
-        this.resetContext(); // Assicura che partiamo da uno stato pulito
-        
-        this.currentContext.sessionId = sessionId;
-        this.currentContext.professorPersonality = personalityKey; // Memorizza la chiave
-        this.currentContext.availableTopics = topics;
-        this.currentContext.currentTopic = topics[0] || null; // Anche se non lo usiamo molto, lo teniamo
-        this.currentContext.conversationPhase = 'starting';
-        this.currentContext.startTime = new Date();
-
-        console.log(`💬 Conversation started - Session ${sessionId} with personality key: ${personalityKey}`);
-        return this.currentContext;
-    }
-
-    async processTurn(speaker, content, metadata = {}) {
-        if (!this.currentContext.sessionId) {
-            console.error("Cannot process turn: No active session.");
-            return;
+    async sendMessage(text, image = null) {
+        if (!this.isActive || !this.chatSession) {
+            throw new Error('No active session');
         }
 
-        const turn = {
-            turnNumber: this.currentContext.turnHistory.length + 1,
-            speaker,
-            content,
-            timestamp: new Date(),
-            metadata
-        };
+        try {
+            const inputs = [];
+            
+            if (image) {
+                const imageData = image.split(',')[1];
+                inputs.push({ inlineData: { mimeType: 'image/png', data: imageData } });
+            }
+            
+            inputs.push({ text: `Studente risponde: "${text}"${image ? ' (con disegno allegato)' : ''}. Valuta e procedi.` });
+            
+            const result = await this.chatSession.sendMessage(inputs);
+            return this.parseResponse(result.response.text());
+        } catch (error) {
+            console.error('❌ Message failed:', error);
+            throw error;
+        }
+    }
 
-        this.currentContext.turnHistory.push(turn);
+    parseResponse(aiResponse) {
+        try {
+            const cleanedText = aiResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+            const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
+            
+            if (jsonMatch) {
+                const parsed = JSON.parse(jsonMatch[0].replace(/,\s*(\]|})/g, '$1'));
+                return {
+                    type: parsed.type || 'question',
+                    message: parsed.message || 'Continui la sua esposizione.',
+                    progress: parsed.progress || { covered: 0, total: 1, percentage: 0 },
+                    isComplete: parsed.isComplete || false,
+                    mainTopic: parsed.mainTopic
+                };
+            }
+        } catch (error) {
+            console.error('❌ Parse failed:', error);
+        }
         
-        // Non c'è bisogno di altre logiche complesse qui per ora
-        // await this.logConversationTurn(turn); // Puoi decommentarlo se la tabella 'conversation_turns' è pronta
-
+        // Fallback
         return {
-            success: true,
-            turnNumber: turn.turnNumber,
+            type: 'question',
+            message: 'Continui la sua esposizione.',
+            progress: { covered: 0, total: 1, percentage: 0 },
+            isComplete: false
         };
     }
 
-    // Questo metodo è la fonte di verità per il contesto
-    getCurrentContext() {
-        // Restituisce una copia dell'oggetto per evitare modifiche accidentali
-        return { ...this.currentContext };
-    }
-
-    async completeConversation() {
-        this.currentContext.conversationPhase = 'completed';
-        const endTime = new Date();
-        const duration = this.currentContext.startTime ? Math.round((endTime - this.currentContext.startTime) / 1000 / 60) : 0;
-        
-        console.log(`✅ Conversation completed - Session ${this.currentContext.sessionId}`);
-        
-        const summary = this.getContextSummary();
-        summary.totalDuration = duration;
-        
-        return summary;
-    }
-    
-    getContextSummary() {
-        return {
-            sessionId: this.currentContext.sessionId,
-            phase: this.currentContext.conversationPhase,
-            totalTurns: this.currentContext.turnHistory.length,
-            professorPersonality: this.currentContext.professorPersonality
-        };
-    }
-
-    getConversationHistory() {
-        return [...this.currentContext.turnHistory];
-    }
-
-    resetContext() {
-        this.currentContext = {
-            sessionId: null,
-            currentTopic: null,
-            conversationPhase: 'inactive',
-            turnHistory: [],
-            studentProfile: null,
-            professorPersonality: null,
-            availableTopics: [],
-            startTime: null
-        };
-        console.log("💬 Conversation context has been reset.");
+    endSession() {
+        this.chatSession = null;
+        this.isActive = false;
     }
 }
 
