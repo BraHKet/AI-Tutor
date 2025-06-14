@@ -1,5 +1,5 @@
 // ==========================================
-// FILE: src/components/AgentDemo.js (CON INSERIMENTO DISEGNI IN TEMPO REALE)
+// FILE: src/components/AgentDemo.js (INTERFACCIA FLUIDA E NATURALE)
 // ==========================================
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -9,7 +9,7 @@ import { db } from '../utils/firebase';
 import { googleDriveService } from '../utils/googleDriveService';
 import { PhysicsAgent } from '../agents/PhysicsAgent';
 import VoiceManager, { voiceUtils } from './VoiceManager';
-import { Bot, FileText, MessageSquare, Palette, RotateCcw, Send, Trash2, Plus } from 'lucide-react';
+import { Bot, FileText, MessageSquare, Palette, Send, Trash2, Plus } from 'lucide-react';
 
 export default function AgentDemo() {
   const { projectId, topicId } = useParams();
@@ -28,8 +28,8 @@ export default function AgentDemo() {
   const [isComplete, setIsComplete] = useState(false);
   const [progress, setProgress] = useState({ covered: 0, total: 0, percentage: 0 });
   
-  // Enhanced Response Building states
-  const [responseParts, setResponseParts] = useState([]); // Array di {type: 'text'|'image', content: string|dataURL}
+  // Background Response Building states
+  const [responseParts, setResponseParts] = useState([]);
   const [currentTextPart, setCurrentTextPart] = useState('');
   
   // Enhanced Drawing states
@@ -74,7 +74,6 @@ export default function AgentDemo() {
     setCurrentTranscript(transcript);
     
     if (isFinal && transcript.trim()) {
-      // Aggiungi automaticamente il testo trascritto alla parte corrente
       setCurrentTextPart(prev => prev + (prev ? ' ' : '') + transcript.trim());
       setCurrentTranscript('');
     }
@@ -101,7 +100,6 @@ export default function AgentDemo() {
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d');
       
-      // High DPI support
       const rect = canvas.getBoundingClientRect();
       const dpr = window.devicePixelRatio || 1;
       
@@ -112,16 +110,13 @@ export default function AgentDemo() {
       canvas.style.width = rect.width + 'px';
       canvas.style.height = rect.height + 'px';
       
-      // Set drawing properties
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
       ctx.imageSmoothingEnabled = true;
       
-      // Clear to white background
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       
-      // Save initial state
       saveCanvasState();
     }
   };
@@ -141,7 +136,6 @@ export default function AgentDemo() {
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
     
-    // Non moltiplicare per DPR qui perché il canvas è già scalato
     return {
       x: e.clientX - rect.left,
       y: e.clientY - rect.top
@@ -157,10 +151,9 @@ export default function AgentDemo() {
     ctx.beginPath();
     ctx.moveTo(coords.x, coords.y);
     
-    // Set tool properties
     if (currentTool === 'eraser') {
       ctx.globalCompositeOperation = 'destination-out';
-      ctx.lineWidth = strokeWidth * 3; // Eraser is wider
+      ctx.lineWidth = strokeWidth * 3;
     } else {
       ctx.globalCompositeOperation = 'source-over';
       ctx.strokeStyle = strokeColor;
@@ -238,7 +231,6 @@ export default function AgentDemo() {
     const ctx = canvas.getContext('2d');
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     
-    // Check if canvas has content other than white background
     const data = imageData.data;
     for (let i = 0; i < data.length; i += 4) {
       if (data[i] !== 255 || data[i + 1] !== 255 || data[i + 2] !== 255) {
@@ -248,7 +240,6 @@ export default function AgentDemo() {
     return false;
   };
 
-  // Initialize canvas when shown
   useEffect(() => {
     if (showCanvas && canvasRef.current) {
       initializeCanvas();
@@ -256,7 +247,7 @@ export default function AgentDemo() {
   }, [showCanvas]);
 
   // ===============================================
-  // ENHANCED RESPONSE BUILDING FUNCTIONS
+  // BACKGROUND RESPONSE BUILDING FUNCTIONS
   // ===============================================
 
   const insertDrawingHere = () => {
@@ -264,26 +255,22 @@ export default function AgentDemo() {
     
     const drawingData = getCanvasImage();
     
-    // Aggiungi la parte di testo corrente se non è vuota
+    // Background: aggiungi testo corrente se non è vuoto
     if (currentTextPart.trim()) {
       setResponseParts(prev => [...prev, { type: 'text', content: currentTextPart.trim() }]);
       setCurrentTextPart('');
     }
     
-    // Aggiungi il disegno
+    // Background: aggiungi il disegno
     setResponseParts(prev => [...prev, { type: 'image', content: drawingData }]);
     
-    // Pulisci il canvas
+    // Pulisci il canvas silenziosamente
     clearCanvas();
-    
-    // Mostra notifica
-    alert('📌 Disegno inserito! Continua a parlare...');
   };
 
   const buildFinalResponse = () => {
     const allParts = [...responseParts];
     
-    // Aggiungi la parte di testo finale se non è vuota
     if (currentTextPart.trim()) {
       allParts.push({ type: 'text', content: currentTextPart.trim() });
     }
@@ -292,7 +279,6 @@ export default function AgentDemo() {
   };
 
   const assembleFinalText = (parts) => {
-    // Combina tutte le parti di testo per Gemini
     const textParts = parts.filter(part => part.type === 'text').map(part => part.content);
     const imageParts = parts.filter(part => part.type === 'image');
     
@@ -394,23 +380,20 @@ export default function AgentDemo() {
       const finalText = assembleFinalText(finalParts);
       const firstImage = getFirstImage(finalParts);
       
-      // Crea il messaggio per la conversazione
       const conversationMessage = {
         speaker: 'student',
         content: finalText,
-        parts: finalParts, // Salva le parti per la visualizzazione
+        parts: finalParts,
         timestamp: new Date()
       };
       
       setConversation(prev => [...prev, conversationMessage]);
 
-      // Invia a Gemini
       const result = await agent.processResponse({
         text: finalText,
         image: firstImage
       });
 
-      // Pulisci tutto
       clearResponse();
 
       setConversation(prev => [...prev, {
@@ -480,7 +463,7 @@ export default function AgentDemo() {
           alignItems: 'center'
         }}>
           <Bot size={32} style={{ marginRight: '12px' }} />
-          AI Physics Exam (Real-time Drawing Insertion)
+          AI Physics Exam (Natural Flow)
         </h1>
         
         {/* Status */}
@@ -495,46 +478,41 @@ export default function AgentDemo() {
           <strong>Status:</strong> {status}
         </div>
 
-        {/* Voice Manager */}
+        {/* Voice Settings Only */}
         {voiceEnabled && (
-          <div>
+          <div style={{ marginBottom: '15px' }}>
             <div style={{ 
               display: 'flex', 
               justifyContent: 'space-between', 
               alignItems: 'center',
-              marginBottom: '10px'
+              background: '#f8fafc',
+              padding: '10px',
+              borderRadius: '6px',
+              border: '1px solid #e5e7eb'
             }}>
-              <h3 style={{ margin: '0', fontSize: '16px' }}>🎤 Voice Controls</h3>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <label style={{ fontSize: '14px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <input
-                    type="checkbox"
-                    checked={autoSpeak}
-                    onChange={(e) => setAutoSpeak(e.target.checked)}
-                  />
-                  Auto-speak responses
-                </label>
-                <button
-                  onClick={() => setVoiceEnabled(false)}
-                  style={{
-                    background: '#6b7280',
-                    color: 'white',
-                    border: 'none',
-                    padding: '4px 8px',
-                    borderRadius: '4px',
-                    fontSize: '12px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Disable Voice
-                </button>
-              </div>
+              <label style={{ fontSize: '14px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <input
+                  type="checkbox"
+                  checked={autoSpeak}
+                  onChange={(e) => setAutoSpeak(e.target.checked)}
+                />
+                🔊 Auto-speak professor responses
+              </label>
+              <button
+                onClick={() => setVoiceEnabled(false)}
+                style={{
+                  background: '#6b7280',
+                  color: 'white',
+                  border: 'none',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  cursor: 'pointer'
+                }}
+              >
+                Disable Voice
+              </button>
             </div>
-            
-            <VoiceManager 
-              onTranscriptUpdate={handleTranscriptUpdate}
-              disabled={isProcessing || isComplete}
-            />
           </div>
         )}
 
@@ -705,7 +683,7 @@ export default function AgentDemo() {
                     </div>
                   )}
                   
-                  {/* Backward compatibility per vecchi disegni */}
+                  {/* Backward compatibility */}
                   {turn.drawing && !turn.parts && (
                     <img 
                       src={turn.drawing} 
@@ -731,302 +709,9 @@ export default function AgentDemo() {
               ))}
             </div>
 
-            {/* Response Building Interface */}
+            {/* Fluid Input Interface */}
             {!isComplete && (
               <div>
-                {/* Current Response Preview */}
-                <div style={{ 
-                  background: '#fffbeb', 
-                  border: '2px solid #f59e0b', 
-                  borderRadius: '8px', 
-                  padding: '15px',
-                  marginBottom: '20px'
-                }}>
-                  <h4 style={{ margin: '0 0 10px 0', color: '#92400e' }}>📝 Your Response Building:</h4>
-                  
-                  {/* Mostra le parti già inserite */}
-                  {responseParts.map((part, index) => (
-                    <div key={index} style={{ 
-                      marginBottom: '8px',
-                      padding: '8px',
-                      background: part.type === 'text' ? '#fef3c7' : '#ddd6fe',
-                      borderRadius: '4px',
-                      border: '1px solid #d97706'
-                    }}>
-                      {part.type === 'text' ? (
-                        <span>📄 "{part.content}"</span>
-                      ) : (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span>🎨 Disegno/Formula inserito</span>
-                          <img 
-                            src={part.content} 
-                            alt="Inserted drawing" 
-                            style={{ 
-                              height: '40px', 
-                              border: '1px solid #ccc',
-                              borderRadius: '4px'
-                            }} 
-                          />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  
-                  {/* Parte di testo corrente */}
-                  {currentTextPart && (
-                    <div style={{ 
-                      padding: '8px',
-                      background: '#fef3c7',
-                      borderRadius: '4px',
-                      border: '2px dashed #d97706'
-                    }}>
-                      📄 "{currentTextPart}"
-                    </div>
-                  )}
-                  
-                  {responseParts.length === 0 && !currentTextPart && (
-                    <div style={{ color: '#92400e', fontStyle: 'italic' }}>
-                      Inizia a parlare per costruire la tua risposta...
-                    </div>
-                  )}
-                </div>
-
-                {/* Professional Drawing Tablet */}
-                <div style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'center',
-                  marginBottom: '15px' 
-                }}>
-                  <h4 style={{ margin: '0', display: 'flex', alignItems: 'center' }}>
-                    <Palette size={20} style={{ marginRight: '8px' }} />
-                    Drawing Tablet (Insert Formulas While Speaking)
-                  </h4>
-                  <button
-                    onClick={() => setShowCanvas(!showCanvas)}
-                    style={{
-                      background: showCanvas ? '#ef4444' : '#10b981',
-                      color: 'white',
-                      border: 'none',
-                      padding: '8px 16px',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px'
-                    }}
-                  >
-                    {showCanvas ? 'Hide Tablet' : 'Show Tablet'}
-                  </button>
-                </div>
-
-                {showCanvas && (
-                  <div style={{
-                    background: '#ffffff',
-                    border: '2px solid #e5e7eb',
-                    borderRadius: '12px',
-                    padding: '15px',
-                    marginBottom: '20px'
-                  }}>
-                    {/* Drawing Tools */}
-                    <div style={{
-                      display: 'flex',
-                      gap: '15px',
-                      alignItems: 'center',
-                      marginBottom: '15px',
-                      flexWrap: 'wrap',
-                      padding: '10px',
-                      background: '#f8fafc',
-                      borderRadius: '8px'
-                    }}>
-                      {/* Tool Selection */}
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <button
-                          onClick={() => setCurrentTool('pen')}
-                          style={{
-                            background: currentTool === 'pen' ? '#3b82f6' : '#e5e7eb',
-                            color: currentTool === 'pen' ? 'white' : '#374151',
-                            border: 'none',
-                            padding: '8px 12px',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontSize: '14px'
-                          }}
-                        >
-                          ✏️ Pen
-                        </button>
-                        <button
-                          onClick={() => setCurrentTool('eraser')}
-                          style={{
-                            background: currentTool === 'eraser' ? '#3b82f6' : '#e5e7eb',
-                            color: currentTool === 'eraser' ? 'white' : '#374151',
-                            border: 'none',
-                            padding: '8px 12px',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontSize: '14px'
-                          }}
-                        >
-                          🗑️ Eraser
-                        </button>
-                      </div>
-
-                      {/* Color Selection */}
-                      {currentTool !== 'eraser' && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '14px', fontWeight: '500' }}>Color:</span>
-                          <input
-                            type="color"
-                            value={strokeColor}
-                            onChange={(e) => setStrokeColor(e.target.value)}
-                            style={{
-                              width: '40px',
-                              height: '32px',
-                              border: 'none',
-                              borderRadius: '6px',
-                              cursor: 'pointer'
-                            }}
-                          />
-                          <div style={{ display: 'flex', gap: '4px' }}>
-                            {['#000000', '#FF0000', '#0000FF', '#00AA00', '#FF8800', '#8A2BE2'].map(color => (
-                              <button
-                                key={color}
-                                onClick={() => setStrokeColor(color)}
-                                style={{
-                                  width: '24px',
-                                  height: '24px',
-                                  background: color,
-                                  border: strokeColor === color ? '2px solid #333' : '1px solid #ccc',
-                                  borderRadius: '4px',
-                                  cursor: 'pointer'
-                                }}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Stroke Width */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '14px', fontWeight: '500' }}>Size:</span>
-                        <input
-                          type="range"
-                          min="1"
-                          max="20"
-                          value={strokeWidth}
-                          onChange={(e) => setStrokeWidth(parseInt(e.target.value))}
-                          style={{ width: '80px' }}
-                        />
-                        <span style={{ fontSize: '12px', minWidth: '24px' }}>{strokeWidth}px</span>
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div style={{ display: 'flex', gap: '6px', marginLeft: 'auto' }}>
-                        <button
-                          onClick={undoCanvas}
-                          disabled={historyStep <= 0}
-                          style={{
-                            background: historyStep > 0 ? '#6b7280' : '#d1d5db',
-                            color: 'white',
-                            border: 'none',
-                            padding: '6px 10px',
-                            borderRadius: '4px',
-                            cursor: historyStep > 0 ? 'pointer' : 'not-allowed',
-                            fontSize: '12px'
-                          }}
-                        >
-                          ↶ Undo
-                        </button>
-                        <button
-                          onClick={redoCanvas}
-                          disabled={historyStep >= canvasHistory.length - 1}
-                          style={{
-                            background: historyStep < canvasHistory.length - 1 ? '#6b7280' : '#d1d5db',
-                            color: 'white',
-                            border: 'none',
-                            padding: '6px 10px',
-                            borderRadius: '4px',
-                            cursor: historyStep < canvasHistory.length - 1 ? 'pointer' : 'not-allowed',
-                            fontSize: '12px'
-                          }}
-                        >
-                          ↷ Redo
-                        </button>
-                        <button
-                          onClick={clearCanvas}
-                          style={{
-                            background: '#ef4444',
-                            color: 'white',
-                            border: 'none',
-                            padding: '6px 10px',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontSize: '12px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px'
-                          }}
-                        >
-                          <Trash2 size={12} />
-                          Clear
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Canvas */}
-                    <div style={{
-                      border: '3px solid #d1d5db',
-                      borderRadius: '8px',
-                      background: '#ffffff',
-                      position: 'relative'
-                    }}>
-                      <canvas
-                        ref={canvasRef}
-                        onMouseDown={startDrawing}
-                        onMouseMove={draw}
-                        onMouseUp={stopDrawing}
-                        onMouseLeave={stopDrawing}
-                        style={{
-                          width: '100%',
-                          height: '300px',
-                          cursor: currentTool === 'pen' ? 'crosshair' : currentTool === 'eraser' ? 'not-allowed' : 'default',
-                          display: 'block',
-                          borderRadius: '5px'
-                        }}
-                      />
-                    </div>
-
-                    {/* Insert Drawing Button */}
-                    <div style={{
-                      marginTop: '15px',
-                      display: 'flex',
-                      gap: '10px',
-                      justifyContent: 'center'
-                    }}>
-                      <button
-                        onClick={insertDrawingHere}
-                        disabled={!hasDrawing() || isProcessing}
-                        style={{
-                          background: hasDrawing() ? '#f59e0b' : '#d1d5db',
-                          color: 'white',
-                          border: 'none',
-                          padding: '12px 24px',
-                          borderRadius: '8px',
-                          cursor: hasDrawing() ? 'pointer' : 'not-allowed',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          fontSize: '16px',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <Plus size={18} />
-                        📌 Insert Formula HERE (Continue Speaking)
-                      </button>
-                    </div>
-                  </div>
-                )}
-
                 {/* Current Transcript Preview */}
                 {currentTranscript && (
                   <div style={{
@@ -1053,17 +738,17 @@ export default function AgentDemo() {
                         cursor: 'pointer'
                       }}
                     >
-                      Add to Text
+                      Add
                     </button>
                   </div>
                 )}
 
-                {/* Manual Text Input */}
-                <div style={{ marginBottom: '10px' }}>
+                {/* Manual Text Input with Voice */}
+                <div style={{ marginBottom: '15px' }}>
                   <textarea
                     value={currentTextPart}
                     onChange={(e) => setCurrentTextPart(e.target.value)}
-                    placeholder="Type additional text or use voice..."
+                    placeholder="Type your response or use voice..."
                     disabled={isProcessing}
                     style={{ 
                       width: '100%', 
@@ -1072,13 +757,218 @@ export default function AgentDemo() {
                       border: '1px solid #d1d5db',
                       minHeight: '80px',
                       resize: 'vertical',
-                      fontFamily: 'inherit'
+                      fontFamily: 'inherit',
+                      marginBottom: '10px'
                     }}
                   />
+                  
+                  {/* Voice Controls positioned under and to the right */}
+                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    {voiceEnabled && (
+                      <VoiceManager 
+                        onTranscriptUpdate={handleTranscriptUpdate}
+                        disabled={isProcessing || isComplete}
+                      />
+                    )}
+                  </div>
                 </div>
 
-                {/* Final Action Buttons */}
-                <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                {/* Drawing Tools - Compact Version */}
+                <div style={{
+                  background: '#f8fafc',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '8px',
+                  padding: '15px',
+                  marginBottom: '15px'
+                }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    marginBottom: showCanvas ? '15px' : '0' 
+                  }}>
+                    <h4 style={{ margin: '0', display: 'flex', alignItems: 'center', fontSize: '14px' }}>
+                      <Palette size={16} style={{ marginRight: '8px' }} />
+                      Drawing Tools
+                    </h4>
+                    <button
+                      onClick={() => setShowCanvas(!showCanvas)}
+                      style={{
+                        background: showCanvas ? '#ef4444' : '#3b82f6',
+                        color: 'white',
+                        border: 'none',
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '12px'
+                      }}
+                    >
+                      {showCanvas ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
+
+                  {showCanvas && (
+                    <div>
+                      {/* Compact Tools */}
+                      <div style={{
+                        display: 'flex',
+                        gap: '10px',
+                        alignItems: 'center',
+                        marginBottom: '10px',
+                        flexWrap: 'wrap'
+                      }}>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          <button
+                            onClick={() => setCurrentTool('pen')}
+                            style={{
+                              background: currentTool === 'pen' ? '#3b82f6' : '#e5e7eb',
+                              color: currentTool === 'pen' ? 'white' : '#374151',
+                              border: 'none',
+                              padding: '6px 10px',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '12px'
+                            }}
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            onClick={() => setCurrentTool('eraser')}
+                            style={{
+                              background: currentTool === 'eraser' ? '#3b82f6' : '#e5e7eb',
+                              color: currentTool === 'eraser' ? 'white' : '#374151',
+                              border: 'none',
+                              padding: '6px 10px',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '12px'
+                            }}
+                          >
+                            🗑️
+                          </button>
+                        </div>
+
+                        {currentTool !== 'eraser' && (
+                          <>
+                            <input
+                              type="color"
+                              value={strokeColor}
+                              onChange={(e) => setStrokeColor(e.target.value)}
+                              style={{
+                                width: '32px',
+                                height: '28px',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer'
+                              }}
+                            />
+                            <input
+                              type="range"
+                              min="1"
+                              max="20"
+                              value={strokeWidth}
+                              onChange={(e) => setStrokeWidth(parseInt(e.target.value))}
+                              style={{ width: '60px' }}
+                            />
+                          </>
+                        )}
+
+                        <div style={{ display: 'flex', gap: '4px', marginLeft: 'auto' }}>
+                          <button
+                            onClick={undoCanvas}
+                            disabled={historyStep <= 0}
+                            style={{
+                              background: historyStep > 0 ? '#6b7280' : '#d1d5db',
+                              color: 'white',
+                              border: 'none',
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              cursor: historyStep > 0 ? 'pointer' : 'not-allowed',
+                              fontSize: '10px'
+                            }}
+                          >
+                            ↶
+                          </button>
+                          <button
+                            onClick={redoCanvas}
+                            disabled={historyStep >= canvasHistory.length - 1}
+                            style={{
+                              background: historyStep < canvasHistory.length - 1 ? '#6b7280' : '#d1d5db',
+                              color: 'white',
+                              border: 'none',
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              cursor: historyStep < canvasHistory.length - 1 ? 'pointer' : 'not-allowed',
+                              fontSize: '10px'
+                            }}
+                          >
+                            ↷
+                          </button>
+                          <button
+                            onClick={clearCanvas}
+                            style={{
+                              background: '#ef4444',
+                              color: 'white',
+                              border: 'none',
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '10px'
+                            }}
+                          >
+                            <Trash2 size={10} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Canvas */}
+                      <div style={{
+                        border: '2px solid #d1d5db',
+                        borderRadius: '6px',
+                        background: '#ffffff',
+                        marginBottom: '10px'
+                      }}>
+                        <canvas
+                          ref={canvasRef}
+                          onMouseDown={startDrawing}
+                          onMouseMove={draw}
+                          onMouseUp={stopDrawing}
+                          onMouseLeave={stopDrawing}
+                          style={{
+                            width: '100%',
+                            height: '200px',
+                            cursor: currentTool === 'pen' ? 'crosshair' : currentTool === 'eraser' ? 'not-allowed' : 'default',
+                            display: 'block',
+                            borderRadius: '4px'
+                          }}
+                        />
+                      </div>
+
+                      {/* Insert Drawing Button */}
+                      <div style={{ textAlign: 'center' }}>
+                        <button
+                          onClick={insertDrawingHere}
+                          disabled={!hasDrawing() || isProcessing}
+                          style={{
+                            background: hasDrawing() ? '#f59e0b' : '#d1d5db',
+                            color: 'white',
+                            border: 'none',
+                            padding: '8px 16px',
+                            borderRadius: '6px',
+                            cursor: hasDrawing() ? 'pointer' : 'not-allowed',
+                            fontSize: '12px',
+                            fontWeight: '500'
+                          }}
+                        >
+                          📌 Insert Formula Here
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Send Button */}
+                <div style={{ textAlign: 'center' }}>
                   <button 
                     onClick={sendCompleteResponse}
                     disabled={isProcessing || (responseParts.length === 0 && !currentTextPart.trim())}
@@ -1094,32 +984,12 @@ export default function AgentDemo() {
                       fontWeight: '600',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '8px'
+                      gap: '8px',
+                      margin: '0 auto'
                     }}
                   >
                     <Send size={18} />
-                    🚀 Send Complete Response
-                  </button>
-                  
-                  <button 
-                    onClick={clearResponse}
-                    disabled={isProcessing}
-                    style={{ 
-                      background: '#ef4444', 
-                      color: 'white', 
-                      border: 'none', 
-                      padding: '14px 28px', 
-                      borderRadius: '8px', 
-                      cursor: 'pointer',
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}
-                  >
-                    <Trash2 size={18} />
-                    🗑️ Clear All
+                    Send Response
                   </button>
                 </div>
               </div>
