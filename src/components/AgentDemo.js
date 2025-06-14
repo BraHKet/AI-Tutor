@@ -1,5 +1,5 @@
 // ==========================================
-// FILE: src/components/AgentDemo.js (MINIMAL CON TAVOLETTA GRAFICA)
+// FILE: src/components/AgentDemo.js (MINIMAL CON TAVOLETTA GRAFICA + VOICE)
 // ==========================================
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -8,6 +8,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import { googleDriveService } from '../utils/googleDriveService';
 import { PhysicsAgent } from '../agents/PhysicsAgent';
+import VoiceManager, { voiceUtils } from './VoiceManager';
 import { Bot, FileText, MessageSquare } from 'lucide-react';
 
 export default function AgentDemo() {
@@ -33,6 +34,11 @@ export default function AgentDemo() {
   const [isDrawing, setIsDrawing] = useState(false);
   const [showCanvas, setShowCanvas] = useState(false);
 
+  // Voice states
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [autoSpeak, setAutoSpeak] = useState(true);
+  const [currentTranscript, setCurrentTranscript] = useState('');
+
   // Initialize
   useEffect(() => {
     const init = async () => {
@@ -54,6 +60,30 @@ export default function AgentDemo() {
     };
     init();
   }, []);
+
+  // Voice transcript handler
+  const handleTranscriptUpdate = (transcript, isFinal) => {
+    setCurrentTranscript(transcript);
+    
+    if (isFinal && transcript.trim()) {
+      // Auto-insert transcript into text input when final
+      setUserInput(prev => prev + (prev ? ' ' : '') + transcript.trim());
+      setCurrentTranscript('');
+    }
+  };
+
+  // Auto-speak professor responses
+  useEffect(() => {
+    if (autoSpeak && conversation.length > 0) {
+      const lastMessage = conversation[conversation.length - 1];
+      if (lastMessage.speaker === 'professor' && lastMessage.content) {
+        // Small delay to ensure message is displayed first
+        setTimeout(() => {
+          voiceUtils.speak(lastMessage.content);
+        }, 500);
+      }
+    }
+  }, [conversation, autoSpeak]);
 
   // Drawing functions
   const startDrawing = (e) => {
@@ -166,6 +196,9 @@ export default function AgentDemo() {
     try {
       setIsProcessing(true);
       
+      // Stop any ongoing speech before processing
+      voiceUtils.stopSpeaking();
+      
       // Add user message
       const drawing = hasDrawing() ? getCanvasImage() : null;
       setConversation(prev => [...prev, { 
@@ -183,6 +216,7 @@ export default function AgentDemo() {
 
       // Clear inputs
       setUserInput('');
+      setCurrentTranscript('');
       if (drawing) clearCanvas();
 
       // Add professor response
@@ -207,6 +241,14 @@ export default function AgentDemo() {
       setStatus(`❌ Error: ${error.message}`);
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  // Insert transcript into input
+  const useTranscript = () => {
+    if (currentTranscript.trim()) {
+      setUserInput(prev => prev + (prev ? ' ' : '') + currentTranscript.trim());
+      setCurrentTranscript('');
     }
   };
 
@@ -258,7 +300,7 @@ export default function AgentDemo() {
           alignItems: 'center'
         }}>
           <Bot size={32} style={{ marginRight: '12px' }} />
-          AI Physics Exam (Continuous Session)
+          AI Physics Exam (Continuous Session + Voice)
         </h1>
         
         {/* Status */}
@@ -272,6 +314,67 @@ export default function AgentDemo() {
         }}>
           <strong>Status:</strong> {status}
         </div>
+
+        {/* Voice Manager */}
+        {voiceEnabled && (
+          <div>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              marginBottom: '10px'
+            }}>
+              <h3 style={{ margin: '0', fontSize: '16px' }}>🎤 Voice Controls</h3>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <label style={{ fontSize: '14px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <input
+                    type="checkbox"
+                    checked={autoSpeak}
+                    onChange={(e) => setAutoSpeak(e.target.checked)}
+                  />
+                  Auto-speak responses
+                </label>
+                <button
+                  onClick={() => setVoiceEnabled(false)}
+                  style={{
+                    background: '#6b7280',
+                    color: 'white',
+                    border: 'none',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    fontSize: '12px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Disable Voice
+                </button>
+              </div>
+            </div>
+            
+            <VoiceManager 
+              onTranscriptUpdate={handleTranscriptUpdate}
+              disabled={isProcessing || isComplete}
+            />
+          </div>
+        )}
+
+        {!voiceEnabled && (
+          <div style={{ marginBottom: '15px' }}>
+            <button
+              onClick={() => setVoiceEnabled(true)}
+              style={{
+                background: '#3b82f6',
+                color: 'white',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: '6px',
+                cursor: 'pointer'
+              }}
+            >
+              🎤 Enable Voice Features
+            </button>
+          </div>
+        )}
 
         {/* Progress */}
         {examStarted && (
@@ -364,10 +467,31 @@ export default function AgentDemo() {
                   <div style={{ 
                     fontWeight: 'bold', 
                     color: turn.speaker === 'professor' ? '#1d4ed8' : '#059669',
-                    marginBottom: '5px'
+                    marginBottom: '5px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
                   }}>
-                    {turn.speaker === 'professor' ? '🎓 Professor' : '👨‍🎓 Student'}
-                    {turn.drawing && ' 🎨'}
+                    <span>
+                      {turn.speaker === 'professor' ? '🎓 Professor' : '👨‍🎓 Student'}
+                      {turn.drawing && ' 🎨'}
+                    </span>
+                    {turn.speaker === 'professor' && voiceEnabled && (
+                      <button
+                        onClick={() => voiceUtils.speak(turn.content)}
+                        style={{
+                          background: '#3b82f6',
+                          color: 'white',
+                          border: 'none',
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          fontSize: '12px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        🔊 Repeat
+                      </button>
+                    )}
                   </div>
                   <div style={{ whiteSpace: 'pre-wrap', marginBottom: '8px' }}>
                     {turn.content}
@@ -460,12 +584,43 @@ export default function AgentDemo() {
                   </div>
                 )}
 
+                {/* Current Transcript Preview */}
+                {currentTranscript && (
+                  <div style={{
+                    background: '#fffbeb',
+                    border: '1px solid #f59e0b',
+                    borderRadius: '6px',
+                    padding: '8px',
+                    marginBottom: '10px',
+                    fontSize: '14px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}>
+                    <span><strong>Speaking:</strong> {currentTranscript}</span>
+                    <button
+                      onClick={useTranscript}
+                      style={{
+                        background: '#f59e0b',
+                        color: 'white',
+                        border: 'none',
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        fontSize: '12px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Use
+                    </button>
+                  </div>
+                )}
+
                 {/* Text Input */}
                 <div style={{ display: 'flex', gap: '12px' }}>
                   <textarea
                     value={userInput}
                     onChange={(e) => setUserInput(e.target.value)}
-                    placeholder="Type your response..."
+                    placeholder="Type your response or use voice..."
                     disabled={isProcessing}
                     style={{ 
                       flex: 1, 
@@ -508,6 +663,11 @@ export default function AgentDemo() {
           }}>
             <div style={{ fontSize: '48px', marginBottom: '10px' }}>🎉</div>
             <h3 style={{ color: '#15803d', margin: '0' }}>Examination Completed!</h3>
+            {autoSpeak && (
+              <div style={{ marginTop: '10px', fontSize: '14px', color: '#059669' }}>
+                🔊 Completion message will be spoken automatically
+              </div>
+            )}
           </div>
         )}
       </div>
