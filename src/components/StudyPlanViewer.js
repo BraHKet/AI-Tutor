@@ -84,24 +84,15 @@ const StudyPlanViewer = () => {
             topicsCount: dayTopics.length,
             completedCount: completedTopics.length,
             isFullyCompleted: dayTopics.length > 0 && completedTopics.length === dayTopics.length,
+            isLocked: false // MODIFICA: Tutti i giorni sono sempre sbloccati
         };
     });
-
-    let previousDayCompleted = true;
-    const daysWithLockStatus = daysArray.map(day => {
-        const isLocked = !previousDayCompleted;
-        if (day.topics.length > 0 && !day.isFullyCompleted) {
-            previousDayCompleted = false;
-        }
-        return { ...day, isLocked };
-    });
     
-    setDaysData(daysWithLockStatus);
+    setDaysData(daysArray);
   };
 
   const handleTopicClick = (topicId, isDayLocked, isCompleted) => {
-    // Non permettere il click su argomenti bloccati o già completati
-    if (isDayLocked || isCompleted) return;
+    // MODIFICA: Permetti sempre il click su tutti gli argomenti (anche completati per rivedere)
     navigate(`/projects/${projectId}/topic/${topicId}`);
   };
 
@@ -141,14 +132,9 @@ const StudyPlanViewer = () => {
           {daysData.map(day => (
             <div 
               key={`day-${day.day}`} 
-              className={`${styles.dayCard} ${day.isLocked ? styles.locked : ''}`}
+              className={`${styles.dayCard}`}
             >
-              {day.isLocked && (
-                <div className={styles.lockOverlay}>
-                  <Lock size={28} />
-                  <span>Completa i giorni precedenti per sbloccare</span>
-                </div>
-              )}
+              {/* MODIFICA: Rimosso completamente il lockOverlay */}
               
               <div className={styles.dayCardHeader}>
                 <h3>Giorno {day.day}</h3>
@@ -173,7 +159,7 @@ const StudyPlanViewer = () => {
                         key={topic.id} 
                         className={`${styles.topicItem} ${topic.isCompleted ? styles.completed : ''}`}
                         onClick={() => handleTopicClick(topic.id, day.isLocked, topic.isCompleted)}
-                        title={day.isLocked ? "Bloccato" : (topic.isCompleted ? "Completato" : "Clicca per studiare")}
+                        title={topic.isCompleted ? "Completato - clicca per rivedere" : "Clicca per studiare"}
                       >
                         <span className={styles.topicTitle}>{topic.title}</span>
                         {/* MODIFICA: Mostra un'icona diversa se l'argomento è completato */}
