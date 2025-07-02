@@ -1,15 +1,19 @@
 // ==========================================
-// FILE: src/components/AgentDemo.js (INTERFACCIA FLUIDA E NATURALE)
+// FILE: src/components/AgentDemo.js (SEQUENTIAL RESPONSE SYSTEM)
 // ==========================================
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import { googleDriveService } from '../utils/googleDriveService';
 import { PhysicsAgent } from '../agents/PhysicsAgent';
 import VoiceManager, { voiceUtils } from './VoiceManager';
-import { Bot, FileText, MessageSquare, Palette, Send, Trash2, Plus } from 'lucide-react';
+import { 
+  Bot, FileText, MessageSquare, Send, Trash2, 
+  History, Mic, X, Volume2, Edit3, Plus, Type
+} from 'lucide-react';
+import styles from './styles/AgentDemo.module.css';
 
 export default function AgentDemo() {
   const { projectId, topicId } = useParams();
@@ -28,24 +32,30 @@ export default function AgentDemo() {
   const [isComplete, setIsComplete] = useState(false);
   const [progress, setProgress] = useState({ covered: 0, total: 0, percentage: 0 });
   
-  // Background Response Building states
-  const [responseParts, setResponseParts] = useState([]);
-  const [currentTextPart, setCurrentTextPart] = useState('');
+  // Sequential Response states - NUOVO SISTEMA
+  const [sequentialElements, setSequentialElements] = useState([]);
+  const [activeElementId, setActiveElementId] = useState(null);
+  const [currentTool, setCurrentTool] = useState('pointer'); // Solo per i canvas di disegno
   
-  // Enhanced Drawing states
-  const canvasRef = useRef(null);
+  // Drawing states per ogni canvas - OTTIMIZZATO
   const [isDrawing, setIsDrawing] = useState(false);
-  const [showCanvas, setShowCanvas] = useState(false);
-  const [currentTool, setCurrentTool] = useState('pen');
   const [strokeWidth, setStrokeWidth] = useState(2);
   const [strokeColor, setStrokeColor] = useState('#000000');
-  const [canvasHistory, setCanvasHistory] = useState([]);
-  const [historyStep, setHistoryStep] = useState(-1);
+  const lastPointRef = useRef(null); // <-- MODIFICATO: Usa useRef per le coordinate
+  const [activeCanvasId, setActiveCanvasId] = useState(null);
+  const [canvasHeight, setCanvasHeight] = useState(300); // Altezza ridimensionabile
+  const drawingAnimationFrame = useRef(null);
 
   // Voice states
+  const [voiceActiveForElement, setVoiceActiveForElement] = useState(null);
+  const [currentTranscript, setCurrentTranscript] = useState('');
+
+  // AI Response states
+  const [showAIResponse, setShowAIResponse] = useState(false);
+  const [currentAIResponse, setCurrentAIResponse] = useState('');
+  const [showHistory, setShowHistory] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [autoSpeak, setAutoSpeak] = useState(true);
-  const [currentTranscript, setCurrentTranscript] = useState('');
 
   // Initialize
   useEffect(() => {
@@ -69,241 +79,307 @@ export default function AgentDemo() {
     init();
   }, []);
 
-  // Voice transcript handler
-  const handleTranscriptUpdate = (transcript, isFinal) => {
+  // Voice transcript handler - OTTIMIZZATO ANTI-BLOCCO
+  const handleTranscriptUpdate = useCallback((transcript, isFinal) => {
+    console.log('🎤 Voice update:', { transcript, isFinal, activeElement: voiceActiveForElement });
+    
+    // Aggiorna sempre il transcript corrente (per feedback visivo)
     setCurrentTranscript(transcript);
     
-    if (isFinal && transcript.trim()) {
-      setCurrentTextPart(prev => prev + (prev ? ' ' : '') + transcript.trim());
-      setCurrentTranscript('');
+    // Solo quando è final E c'è contenuto E c'è un elemento attivo
+    if (isFinal && transcript.trim() && voiceActiveForElement) {
+      const cleanTranscript = transcript.trim();
+      console.log('✅ Adding to element:', voiceActiveForElement, 'text:', cleanTranscript);
+      
+      setSequentialElements(prev => prev.map(element => {
+        if (element.id === voiceActiveForElement) {
+          const newContent = element.content + (element.content ? ' ' : '') + cleanTranscript;
+          console.log('📝 Updated element content:', newContent);
+          return { ...element, content: newContent };
+        }
+        return element;
+      }));
+      
+      // Pulisci il transcript dopo l'aggiunta
+      setTimeout(() => {
+        setCurrentTranscript('');
+      }, 100);
     }
-  };
+  }, [voiceActiveForElement]);
 
-  // Auto-speak professor responses
+  // Auto-speak AI responses
   useEffect(() => {
-    if (autoSpeak && conversation.length > 0) {
-      const lastMessage = conversation[conversation.length - 1];
-      if (lastMessage.speaker === 'professor' && lastMessage.content) {
-        setTimeout(() => {
-          voiceUtils.speak(lastMessage.content);
-        }, 500);
-      }
+    if (autoSpeak && showAIResponse && currentAIResponse) {
+      setTimeout(() => {
+        voiceUtils.speak(currentAIResponse);
+      }, 500);
     }
-  }, [conversation, autoSpeak]);
+  }, [showAIResponse, currentAIResponse, autoSpeak]);
+
+  // Cleanup animation frame on unmount
+  useEffect(() => {
+    return () => {
+      if (drawingAnimationFrame.current) {
+        cancelAnimationFrame(drawingAnimationFrame.current);
+      }
+    };
+  }, []);
 
   // ===============================================
-  // ENHANCED DRAWING FUNCTIONS
+  // SEQUENTIAL ELEMENTS FUNCTIONS - NUOVO SISTEMA
   // ===============================================
 
-  const initializeCanvas = () => {
-    if (canvasRef.current) {
-      const canvas = canvasRef.current;
+  const addTextElement = useCallback(() => {
+    const newElement = {
+      id: Date.now(),
+      type: 'text',
+      content: '',
+      timestamp: new Date()
+    };
+    
+    setSequentialElements(prev => [...prev, newElement]);
+    setActiveElementId(newElement.id);
+    
+    // Auto-focus dopo un momento
+    setTimeout(() => {
+      const textarea = document.getElementById(`element-${newElement.id}`);
+      if (textarea) textarea.focus();
+    }, 50);
+  }, []);
+
+  const addDrawingElement = useCallback(() => {
+    const newElement = {
+      id: Date.now(),
+      type: 'drawing',
+      content: '', // Conterrà i dati canvas
+      canvasData: null,
+      timestamp: new Date()
+    };
+    
+    setSequentialElements(prev => [...prev, newElement]);
+    setActiveElementId(newElement.id);
+    setActiveCanvasId(newElement.id);
+    
+    // Inizializza il canvas dopo un momento
+    setTimeout(() => {
+      initializeElementCanvas(newElement.id);
+    }, 100);
+  }, []);
+
+  const updateElementContent = useCallback((id, content) => {
+    setSequentialElements(prev => prev.map(element => 
+      element.id === id ? { ...element, content } : element
+    ));
+  }, []);
+
+  const deleteElement = useCallback((id) => {
+    setSequentialElements(prev => prev.filter(element => element.id !== id));
+    if (activeElementId === id) {
+      setActiveElementId(null);
+    }
+    if (activeCanvasId === id) {
+      setActiveCanvasId(null);
+    }
+  }, [activeElementId, activeCanvasId]);
+
+  // ===============================================
+  // CANVAS FUNCTIONS per elementi di disegno
+  // ===============================================
+
+  const initializeElementCanvas = useCallback((elementId) => {
+    const canvas = document.getElementById(`canvas-${elementId}`);
+    if (canvas) {
+      const container = canvas.parentElement;
+      const rect = container.getBoundingClientRect();
+      
+      // Canvas prende tutta la larghezza disponibile
+      const width = Math.max(600, rect.width - 32); // -32 per padding container
+      const height = canvasHeight;
+      
+      canvas.width = width;
+      canvas.height = height;
+      canvas.style.width = width + 'px';
+      canvas.style.height = height + 'px';
+      
       const ctx = canvas.getContext('2d');
-      
-      const rect = canvas.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      
-      ctx.scale(dpr, dpr);
-      canvas.style.width = rect.width + 'px';
-      canvas.style.height = rect.height + 'px';
-      
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
       ctx.imageSmoothingEnabled = true;
       
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Ottimizzazioni anti-lag
+      ctx.imageSmoothingQuality = 'high';
       
-      saveCanvasState();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
-  };
+  }, [canvasHeight]);
 
-  const saveCanvasState = () => {
-    if (canvasRef.current) {
-      const canvas = canvasRef.current;
-      const dataUrl = canvas.toDataURL();
-      const newHistory = canvasHistory.slice(0, historyStep + 1);
-      newHistory.push(dataUrl);
-      setCanvasHistory(newHistory);
-      setHistoryStep(newHistory.length - 1);
-    }
-  };
-
-  const getCanvasCoordinates = (e) => {
-    const canvas = canvasRef.current;
+  const getEventCoords = useCallback((e, canvasId) => {
+    const canvas = document.getElementById(`canvas-${canvasId}`);
+    if (!canvas) return null;
     const rect = canvas.getBoundingClientRect();
-    
-    return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
-    };
-  };
+    const clientX = e.clientX || e.touches?.[0]?.clientX || 0; // <-- RIGA SBAGLIATA
+    const clientY = e.clientY || e.touches?.[0]?.clientY || 0; // <-- RIGA SBAGLIATA
+    return { x: clientX - rect.left, y: clientY - rect.top };
+}, []);
 
-  const startDrawing = (e) => {
-    setIsDrawing(true);
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    const coords = getCanvasCoordinates(e);
+  const startDrawing = useCallback((e, canvasId) => {
+    if (currentTool !== 'pen' && currentTool !== 'eraser') return;
     
+    e.preventDefault(); // <-- Usa 'e' direttamente
+    setIsDrawing(true);
+    setActiveCanvasId(canvasId);
+    
+    const canvas = document.getElementById(`canvas-${canvasId}`);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
+    ctx.globalCompositeOperation = currentTool === 'eraser' ? 'destination-out' : 'source-over';
+    ctx.lineWidth = currentTool === 'eraser' ? strokeWidth * 5 : strokeWidth;
+    ctx.strokeStyle = strokeColor;
+
+    // Usa 'e' direttamente. React fornisce già il metodo corretto.
+    const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+    const firstEvent = events[0];
+    const coords = getEventCoords(firstEvent, canvasId);
+    if (!coords) return;
+    
+    lastPointRef.current = coords;
     ctx.beginPath();
     ctx.moveTo(coords.x, coords.y);
-    
-    if (currentTool === 'eraser') {
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.lineWidth = strokeWidth * 3;
-    } else {
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.strokeStyle = strokeColor;
-      ctx.lineWidth = strokeWidth;
-    }
-  };
-
-  const draw = (e) => {
-    if (!isDrawing) return;
-    
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    const coords = getCanvasCoordinates(e);
-    
     ctx.lineTo(coords.x, coords.y);
     ctx.stroke();
-  };
 
-  const stopDrawing = () => {
-    if (isDrawing) {
+}, [currentTool, getEventCoords, strokeColor, strokeWidth]);
+
+  const draw = useCallback((e, canvasId) => {
+    if (!isDrawing || !lastPointRef.current || activeCanvasId !== canvasId) return;
+    
+    e.preventDefault(); // <-- Usa 'e' direttamente
+
+    if (drawingAnimationFrame.current) cancelAnimationFrame(drawingAnimationFrame.current);
+    
+    drawingAnimationFrame.current = requestAnimationFrame(() => {
+        const canvas = document.getElementById(`canvas-${canvasId}`);
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+
+        // Usa 'e' direttamente.
+        const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+      
+        for (const event of events) {
+            const coords = getEventCoords(event, canvasId);
+            if (!coords) continue;
+            ctx.lineTo(coords.x, coords.y);
+        }
+        ctx.stroke();
+      
+        const lastCoords = getEventCoords(events[events.length - 1], canvasId);
+        if(lastCoords) {
+            lastPointRef.current = lastCoords;
+        }
+    });
+}, [isDrawing, activeCanvasId, getEventCoords]);
+
+  const stopDrawing = useCallback((canvasId) => {
+    if (isDrawing && activeCanvasId === canvasId) {
       setIsDrawing(false);
-      saveCanvasState();
-    }
-  };
-
-  const clearCanvas = () => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    saveCanvasState();
-  };
-
-  const undoCanvas = () => {
-    if (historyStep > 0) {
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-      const img = new Image();
+      lastPointRef.current = null; // MODIFICATO: Resetta il ref
       
-      img.onload = () => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
-      };
-      
-      setHistoryStep(historyStep - 1);
-      img.src = canvasHistory[historyStep - 1];
-    }
-  };
-
-  const redoCanvas = () => {
-    if (historyStep < canvasHistory.length - 1) {
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-      const img = new Image();
-      
-      img.onload = () => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
-      };
-      
-      setHistoryStep(historyStep + 1);
-      img.src = canvasHistory[historyStep + 1];
-    }
-  };
-
-  const getCanvasImage = () => {
-    return canvasRef.current?.toDataURL('image/png');
-  };
-
-  const hasDrawing = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return false;
-    
-    const ctx = canvas.getContext('2d');
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    
-    const data = imageData.data;
-    for (let i = 0; i < data.length; i += 4) {
-      if (data[i] !== 255 || data[i + 1] !== 255 || data[i + 2] !== 255) {
-        return true;
+      if (drawingAnimationFrame.current) {
+        cancelAnimationFrame(drawingAnimationFrame.current);
+        drawingAnimationFrame.current = null;
       }
+      
+      setTimeout(() => {
+        const canvas = document.getElementById(`canvas-${canvasId}`);
+        if (canvas) {
+          const dataURL = canvas.toDataURL('image/png');
+          setSequentialElements(prev => prev.map(element => 
+            element.id === canvasId 
+              ? { ...element, canvasData: dataURL }
+              : element
+          ));
+        }
+      }, 100);
     }
-    return false;
-  };
+}, [isDrawing, activeCanvasId]);
 
-  useEffect(() => {
-    if (showCanvas && canvasRef.current) {
-      initializeCanvas();
+  const clearElementCanvas = useCallback((canvasId) => {
+    const canvas = document.getElementById(`canvas-${canvasId}`);
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Aggiorna l'elemento
+      setSequentialElements(prev => prev.map(element => 
+        element.id === canvasId 
+          ? { ...element, canvasData: null }
+          : element
+      ));
     }
-  }, [showCanvas]);
+  }, []);
 
   // ===============================================
-  // BACKGROUND RESPONSE BUILDING FUNCTIONS
+  // CONTENT FUNCTIONS
   // ===============================================
 
-  const insertDrawingHere = () => {
-    if (!hasDrawing()) return;
-    
-    const drawingData = getCanvasImage();
-    
-    // Background: aggiungi testo corrente se non è vuoto
-    if (currentTextPart.trim()) {
-      setResponseParts(prev => [...prev, { type: 'text', content: currentTextPart.trim() }]);
-      setCurrentTextPart('');
-    }
-    
-    // Background: aggiungi il disegno
-    setResponseParts(prev => [...prev, { type: 'image', content: drawingData }]);
-    
-    // Pulisci il canvas silenziosamente
-    clearCanvas();
-  };
+  const hasContent = useCallback(() => {
+    return sequentialElements.some(element => {
+      if (element.type === 'text') {
+        return element.content.trim();
+      } else if (element.type === 'drawing') {
+        return element.canvasData;
+      }
+      return false;
+    });
+  }, [sequentialElements]);
 
-  const buildFinalResponse = () => {
-    const allParts = [...responseParts];
+  const compileSequentialContent = useCallback(() => {
+    let combinedText = '';
+    const sequentialData = [];
     
-    if (currentTextPart.trim()) {
-      allParts.push({ type: 'text', content: currentTextPart.trim() });
-    }
+    // Processa gli elementi nell'ordine esatto di aggiunta
+    sequentialElements.forEach((element, index) => {
+      if (element.type === 'text' && element.content.trim()) {
+        const textContent = element.content.trim();
+        combinedText += `${textContent}\n\n`;
+        sequentialData.push({
+          type: 'text',
+          content: textContent,
+          index: index
+        });
+      } else if (element.type === 'drawing' && element.canvasData) {
+        combinedText += `[Disegno/Formula ${index + 1}]\n\n`;
+        sequentialData.push({
+          type: 'drawing',
+          content: element.canvasData,
+          index: index
+        });
+      }
+    });
     
-    return allParts;
-  };
+    // Per compatibilità con il sistema esistente, usa il primo disegno come primary
+    const firstDrawing = sequentialData.find(item => item.type === 'drawing');
+    
+    return { 
+      textContent: combinedText.trim(), 
+      sequentialData: sequentialData,
+      // Per compatibilità con il sistema esistente
+      drawingImage: firstDrawing ? firstDrawing.content : null,
+      drawingImages: sequentialData.filter(item => item.type === 'drawing').map(item => item.content)
+    };
+  }, [sequentialElements]);
 
-  const assembleFinalText = (parts) => {
-    const textParts = parts.filter(part => part.type === 'text').map(part => part.content);
-    const imageParts = parts.filter(part => part.type === 'image');
-    
-    let finalText = textParts.join(' ');
-    if (imageParts.length > 0) {
-      finalText += ` [${imageParts.length} disegno/i allegato/i]`;
-    }
-    
-    return finalText;
-  };
-
-  const getFirstImage = (parts) => {
-    const imagePart = parts.find(part => part.type === 'image');
-    return imagePart ? imagePart.content : null;
-  };
-
-  const clearResponse = () => {
-    setResponseParts([]);
-    setCurrentTextPart('');
+  const clearAllElements = useCallback(() => {
+    setSequentialElements([]);
+    setActiveElementId(null);
+    setActiveCanvasId(null);
+    setVoiceActiveForElement(null);
     setCurrentTranscript('');
-    clearCanvas();
-  };
+  }, []);
 
   // ===============================================
-  // EXAM FUNCTIONS
+  // EXAM FUNCTIONS (rimangono uguali)
   // ===============================================
 
   const analyzeMaterial = async () => {
@@ -353,11 +429,16 @@ export default function AgentDemo() {
         setExamStarted(true);
         setMainTopic(result.mainTopic);
         setProgress({ covered: 0, total: result.totalItems, percentage: 0 });
-        setConversation([{
+        
+        const initialMessage = {
           speaker: 'professor',
           content: result.initialQuestion,
           timestamp: new Date()
-        }]);
+        };
+        
+        setConversation([initialMessage]);
+        setCurrentAIResponse(result.initialQuestion);
+        setShowAIResponse(true);
         setStatus(`💬 Exam started (0/${result.totalItems} items)`);
       }
     } catch (error) {
@@ -367,40 +448,56 @@ export default function AgentDemo() {
     }
   };
 
-  const sendCompleteResponse = async () => {
-    if (!agent || isProcessing) return;
-
-    const finalParts = buildFinalResponse();
-    if (finalParts.length === 0 && !currentTextPart.trim()) return;
+  const sendSequentialContent = async () => {
+    if (!agent || isProcessing || !hasContent()) return;
 
     try {
       setIsProcessing(true);
       voiceUtils.stopSpeaking();
       
-      const finalText = assembleFinalText(finalParts);
-      const firstImage = getFirstImage(finalParts);
+      const { textContent, drawingImage, sequentialData } = compileSequentialContent();
       
-      const conversationMessage = {
+      // Debug: stampa la sequenza elaborata
+      console.log('📝 Sequential content:', {
+        textContent,
+        sequentialData,
+        originalOrder: sequentialElements.map(el => ({ id: el.id, type: el.type }))
+      });
+      
+      let finalText = textContent;
+      if (drawingImage && textContent) {
+        finalText += ' [Con elementi grafici allegati]';
+      } else if (drawingImage && !textContent) {
+        finalText = '[Solo elementi grafici]';
+      }
+      
+      const studentMessage = {
         speaker: 'student',
         content: finalText,
-        parts: finalParts,
+        image: drawingImage,
+        textContent: textContent,
+        sequentialData: sequentialData, // Aggiungi dati sequenziali
         timestamp: new Date()
       };
       
-      setConversation(prev => [...prev, conversationMessage]);
+      setConversation(prev => [...prev, studentMessage]);
 
       const result = await agent.processResponse({
-        text: finalText,
-        image: firstImage
+        text: textContent,
+        image: drawingImage,
+        sequential: sequentialData // Passa anche i dati sequenziali
       });
 
-      clearResponse();
-
-      setConversation(prev => [...prev, {
+      const aiMessage = {
         speaker: 'professor',
         content: result.response,
         timestamp: new Date()
-      }]);
+      };
+      
+      setConversation(prev => [...prev, aiMessage]);
+      setCurrentAIResponse(result.response);
+      setShowAIResponse(true);
+      clearAllElements();
 
       if (result.progress) {
         setProgress(result.progress);
@@ -413,609 +510,390 @@ export default function AgentDemo() {
       }
       
     } catch (error) {
+      console.error('❌ Send failed:', error);
       setStatus(`❌ Error: ${error.message}`);
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const useTranscript = () => {
-    if (currentTranscript.trim()) {
-      setCurrentTextPart(prev => prev + (prev ? ' ' : '') + currentTranscript.trim());
-      setCurrentTranscript('');
-    }
+  const closeAIResponse = () => {
+    setShowAIResponse(false);
+    setCurrentAIResponse('');
+  };
+
+  // Helper functions
+  const getStatusClass = () => {
+    if (status.startsWith('❌')) return styles.statusError;
+    if (status.startsWith('✅')) return styles.statusSuccess;
+    if (status.startsWith('🎉')) return styles.statusComplete;
+    return styles.statusDefault;
   };
 
   return (
-    <div style={{ 
-      padding: '20px', 
-      fontFamily: 'system-ui', 
-      maxWidth: '1200px', 
-      margin: '0 auto',
-      backgroundColor: '#f8fafc',
-      minHeight: '100vh'
-    }}>
-      <div style={{ 
-        backgroundColor: 'white', 
-        padding: '30px', 
-        borderRadius: '12px',
-        boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-      }}>
-        
-        {/* Header */}
-        <button onClick={() => navigate(-1)} style={{ 
-          marginBottom: '20px', 
-          background: 'transparent', 
-          border: '1px solid #d1d5db', 
-          padding: '8px 16px', 
-          borderRadius: '6px', 
-          cursor: 'pointer'
-        }}>
-          ← Back
-        </button>
-
-        <h1 style={{ 
-          color: '#1e40af', 
-          borderBottom: '3px solid #e5e7eb', 
-          paddingBottom: '15px',
-          margin: '0 0 30px 0',
-          display: 'flex',
-          alignItems: 'center'
-        }}>
-          <Bot size={32} style={{ marginRight: '12px' }} />
-          AI Physics Exam (Natural Flow)
-        </h1>
-        
-        {/* Status */}
-        <div style={{ 
-          background: status.startsWith('❌') ? '#fee2e2' : 
-                     status.startsWith('✅') ? '#dcfce7' : 
-                     status.startsWith('🎉') ? '#ecfdf5' : '#dbeafe', 
-          padding: '16px', 
-          borderRadius: '8px',
-          marginBottom: '25px'
-        }}>
-          <strong>Status:</strong> {status}
+    <div className={styles.container}>
+      
+      {/* Header */}
+      <div className={styles.header}>
+        <div className={styles.headerLeft}>
+          <button onClick={() => navigate(-1)} className={styles.backButton}>
+            ← Back
+          </button>
+          
+          <h1 className={styles.title}>
+            <Bot size={20} />
+            AI Physics Exam
+          </h1>
         </div>
 
-        {/* Voice Settings Only */}
-        {voiceEnabled && (
-          <div style={{ marginBottom: '15px' }}>
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center',
-              background: '#f8fafc',
-              padding: '10px',
-              borderRadius: '6px',
-              border: '1px solid #e5e7eb'
-            }}>
-              <label style={{ fontSize: '14px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <input
-                  type="checkbox"
-                  checked={autoSpeak}
-                  onChange={(e) => setAutoSpeak(e.target.checked)}
-                />
-                🔊 Auto-speak professor responses
-              </label>
+        <div className={styles.headerRight}>
+          {examStarted && (
+            <div className={styles.progressBadge}>
+              {progress.covered}/{progress.total} ({progress.percentage}%)
+            </div>
+          )}
+
+          <button
+            onClick={() => setShowHistory(!showHistory)}
+            className={showHistory ? styles.historyButtonActive : styles.historyButtonInactive}
+          >
+            <History size={16} />
+            History
+          </button>
+
+          <button
+            onClick={() => setVoiceEnabled(!voiceEnabled)}
+            className={voiceEnabled ? styles.voiceButtonEnabled : styles.voiceButtonDisabled}
+          >
+            <Volume2 size={16} />
+            {voiceEnabled ? 'Voice On' : 'Voice Off'}
+          </button>
+        </div>
+      </div>
+
+      {/* Status Bar */}
+      <div className={getStatusClass()}>
+        <strong>Status:</strong> {status}
+      </div>
+
+      {/* Main Content Area */}
+      <div className={styles.mainContent}>
+        
+        {/* History Sidebar */}
+        {showHistory && (
+          <div className={styles.historySidebar}>
+            <div className={styles.sidebarHeader}>
+              <h3 className={styles.sidebarTitle}>Conversation History</h3>
               <button
-                onClick={() => setVoiceEnabled(false)}
-                style={{
-                  background: '#6b7280',
-                  color: 'white',
-                  border: 'none',
-                  padding: '4px 8px',
-                  borderRadius: '4px',
-                  fontSize: '12px',
-                  cursor: 'pointer'
-                }}
+                onClick={() => setShowHistory(false)}
+                className={styles.closeButton}
               >
-                Disable Voice
+                <X size={18} />
               </button>
             </div>
-          </div>
-        )}
-
-        {!voiceEnabled && (
-          <div style={{ marginBottom: '15px' }}>
-            <button
-              onClick={() => setVoiceEnabled(true)}
-              style={{
-                background: '#3b82f6',
-                color: 'white',
-                border: 'none',
-                padding: '8px 16px',
-                borderRadius: '6px',
-                cursor: 'pointer'
-              }}
-            >
-              🎤 Enable Voice Features
-            </button>
-          </div>
-        )}
-
-        {/* Progress */}
-        {examStarted && (
-          <div style={{ 
-            background: '#f0f9ff', 
-            padding: '15px', 
-            borderRadius: '8px',
-            marginBottom: '25px',
-            border: '1px solid #0ea5e9'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <strong>Progress: {mainTopic}</strong>
-              <span>{progress.covered}/{progress.total} ({progress.percentage}%)</span>
-            </div>
-            <div style={{ 
-              width: '100%', 
-              backgroundColor: '#e5e7eb', 
-              borderRadius: '6px', 
-              height: '8px'
-            }}>
-              <div style={{ 
-                width: `${progress.percentage}%`, 
-                backgroundColor: '#3b82f6', 
-                height: '100%',
-                borderRadius: '6px',
-                transition: 'width 0.3s'
-              }}></div>
-            </div>
-          </div>
-        )}
-
-        {/* Controls */}
-        <div style={{ marginBottom: '25px', display: 'flex', gap: '12px' }}>
-          <button 
-            onClick={analyzeMaterial} 
-            disabled={isProcessing || materialReady}
-            style={{ 
-              background: materialReady ? '#10b981' : '#3b82f6', 
-              color: 'white', 
-              border: 'none', 
-              padding: '12px 18px', 
-              borderRadius: '6px', 
-              cursor: materialReady ? 'not-allowed' : 'pointer',
-              opacity: materialReady ? 0.7 : 1
-            }}
-          >
-            <FileText size={16} style={{ marginRight: '6px', display: 'inline' }} />
-            {materialReady ? '✔️ Ready' : '📄 Analyze PDF'}
-          </button>
-
-          <button 
-            onClick={startExam} 
-            disabled={isProcessing || !materialReady || examStarted}
-            style={{ 
-              background: examStarted ? '#10b981' : '#8b5cf6', 
-              color: 'white', 
-              border: 'none', 
-              padding: '12px 18px', 
-              borderRadius: '6px', 
-              cursor: (!materialReady || examStarted) ? 'not-allowed' : 'pointer',
-              opacity: (!materialReady || examStarted) ? 0.7 : 1
-            }}
-          >
-            <MessageSquare size={16} style={{ marginRight: '6px', display: 'inline' }} />
-            {examStarted ? '✔️ Started' : '🎓 Start Exam'}
-          </button>
-        </div>
-
-        {/* Conversation */}
-        {examStarted && (
-          <div style={{ marginBottom: '25px' }}>
-            <h3 style={{ marginBottom: '15px' }}>💬 Conversation</h3>
             
-            <div style={{ 
-              background: '#f9fafb', 
-              border: '1px solid #e5e7eb', 
-              borderRadius: '8px', 
-              padding: '20px', 
-              maxHeight: '400px', 
-              overflowY: 'auto',
-              marginBottom: '20px'
-            }}>
+            <div className={styles.conversationContainer}>
               {conversation.map((turn, index) => (
-                <div key={index} style={{ 
-                  marginBottom: '15px',
-                  padding: '12px',
-                  borderRadius: '8px',
-                  background: turn.speaker === 'professor' ? '#dbeafe' : '#dcfce7'
-                }}>
-                  <div style={{ 
-                    fontWeight: 'bold', 
-                    color: turn.speaker === 'professor' ? '#1d4ed8' : '#059669',
-                    marginBottom: '5px',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}>
-                    <span>
-                      {turn.speaker === 'professor' ? '🎓 Professor' : '👨‍🎓 Student'}
-                      {turn.parts && turn.parts.some(p => p.type === 'image') && ' 🎨'}
-                    </span>
-                    {turn.speaker === 'professor' && voiceEnabled && (
-                      <button
-                        onClick={() => voiceUtils.speak(turn.content)}
-                        style={{
-                          background: '#3b82f6',
-                          color: 'white',
-                          border: 'none',
-                          padding: '4px 8px',
-                          borderRadius: '4px',
-                          fontSize: '12px',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        🔊 Repeat
-                      </button>
-                    )}
+                <div key={index} className={turn.speaker === 'professor' ? styles.professorTurn : styles.studentTurn}>
+                  <div className={turn.speaker === 'professor' ? styles.professorSpeaker : styles.studentSpeaker}>
+                    {turn.speaker === 'professor' ? '🎓 Professor' : '👨‍🎓 Student'}
+                    {turn.image && ' 🎨'}
                   </div>
                   
-                  {/* Mostra le parti strutturate per lo studente */}
-                  {turn.parts ? (
-                    <div>
-                      {turn.parts.map((part, partIndex) => (
-                        <div key={partIndex} style={{ marginBottom: '8px' }}>
-                          {part.type === 'text' ? (
-                            <div style={{ whiteSpace: 'pre-wrap' }}>{part.content}</div>
-                          ) : (
-                            <img 
-                              src={part.content} 
-                              alt="Formula/Drawing" 
-                              style={{ 
-                                maxWidth: '100%', 
-                                border: '2px solid #d1d5db', 
-                                borderRadius: '8px',
-                                background: 'white',
-                                padding: '4px',
-                                display: 'block',
-                                margin: '8px 0'
-                              }} 
-                            />
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div style={{ whiteSpace: 'pre-wrap', marginBottom: '8px' }}>
-                      {turn.content}
-                    </div>
-                  )}
+                  <div className={styles.turnContent}>
+                    {turn.content}
+                  </div>
                   
-                  {/* Backward compatibility */}
-                  {turn.drawing && !turn.parts && (
+                  {turn.image && (
                     <img 
-                      src={turn.drawing} 
+                      src={turn.image} 
                       alt="Drawing" 
-                      style={{ 
-                        maxWidth: '100%', 
-                        border: '2px solid #d1d5db', 
-                        borderRadius: '8px',
-                        background: 'white',
-                        padding: '4px'
-                      }} 
-                    />
+                      className={styles.turnImage}
+                    /> 
                   )}
                   
-                  <div style={{ 
-                    fontSize: '11px', 
-                    color: '#9ca3af', 
-                    textAlign: 'right' 
-                  }}>
+                  <div className={styles.turnTimestamp}>
                     {new Date(turn.timestamp).toLocaleTimeString()}
                   </div>
                 </div>
               ))}
             </div>
+          </div>
+        )}
 
-            {/* Fluid Input Interface */}
-            {!isComplete && (
-              <div>
-                {/* Current Transcript Preview */}
-                {currentTranscript && (
-                  <div style={{
-                    background: '#fffbeb',
-                    border: '1px solid #f59e0b',
-                    borderRadius: '6px',
-                    padding: '8px',
-                    marginBottom: '10px',
-                    fontSize: '14px',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}>
-                    <span><strong>🎤 Speaking:</strong> {currentTranscript}</span>
+        {/* Main Workspace */}
+        <div className={styles.mainWorkspace}>
+          
+          {/* Controls */}
+          {(!examStarted || !materialReady) && (
+            <div className={styles.controls}>
+              <button 
+                onClick={analyzeMaterial} 
+                disabled={isProcessing || materialReady}
+                className={materialReady ? styles.analyzeButtonReady : styles.analyzeButtonActive}
+              >
+                <FileText size={16} />
+                {materialReady ? '✔️ Material Ready' : '📄 Analyze PDF'}
+              </button>
+
+              <button 
+                onClick={startExam} 
+                disabled={isProcessing || !materialReady || examStarted}
+                className={examStarted ? styles.startButtonReady : (!materialReady ? styles.startButtonDisabled : styles.startButtonActive)}
+              >
+                <MessageSquare size={16} />
+                {examStarted ? '✔️ Exam Started' : '🎓 Start Exam'}
+              </button>
+            </div>
+          )}
+
+          {/* Sequential Response System */}
+          {examStarted && !isComplete && (
+            <div className={styles.sequentialWorkspace}>
+              
+              {/* Add Elements Toolbar */}
+              <div className={styles.addElementsToolbar}>
+                <button
+                  onClick={addTextElement}
+                  className={styles.addElementButton}
+                >
+                  <Type size={16} />
+                  Add Text
+                </button>
+                
+                <button
+                  onClick={addDrawingElement}
+                  className={styles.addElementButton}
+                >
+                  <Edit3 size={16} />
+                  Add Drawing
+                </button>
+
+                {/* Drawing Tools (showed only when there's an active canvas) */}
+                {activeCanvasId && (
+                  <div className={styles.drawingToolsCompact}>
                     <button
-                      onClick={useTranscript}
-                      style={{
-                        background: '#f59e0b',
-                        color: 'white',
-                        border: 'none',
-                        padding: '4px 8px',
-                        borderRadius: '4px',
-                        fontSize: '12px',
-                        cursor: 'pointer'
-                      }}
+                      onClick={() => setCurrentTool('pen')}
+                      className={currentTool === 'pen' ? styles.toolButtonActive : styles.toolButtonInactive}
                     >
-                      Add
+                      ✏️
                     </button>
+                    
+                    <button
+                      onClick={() => setCurrentTool('eraser')}
+                      className={currentTool === 'eraser' ? styles.toolButtonActive : styles.toolButtonInactive}
+                    >
+                      🗑️
+                    </button>
+
+                    <input
+                      type="color"
+                      value={strokeColor}
+                      onChange={(e) => setStrokeColor(e.target.value)}
+                      className={styles.colorPickerCompact}
+                    />
+                    
+                    <input
+                      type="range"
+                      min="1"
+                      max="10"
+                      value={strokeWidth}
+                      onChange={(e) => setStrokeWidth(parseInt(e.target.value))}
+                      className={styles.strokeSliderCompact}
+                    />
                   </div>
                 )}
 
-                {/* Manual Text Input with Voice */}
-                <div style={{ marginBottom: '15px' }}>
-                  <textarea
-                    value={currentTextPart}
-                    onChange={(e) => setCurrentTextPart(e.target.value)}
-                    placeholder="Type your response or use voice..."
-                    disabled={isProcessing}
-                    style={{ 
-                      width: '100%', 
-                      padding: '12px', 
-                      borderRadius: '6px', 
-                      border: '1px solid #d1d5db',
-                      minHeight: '80px',
-                      resize: 'vertical',
-                      fontFamily: 'inherit',
-                      marginBottom: '10px'
-                    }}
-                  />
-                  
-                  {/* Voice Controls positioned under and to the right */}
-                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                    {voiceEnabled && (
-                      <VoiceManager 
-                        onTranscriptUpdate={handleTranscriptUpdate}
-                        disabled={isProcessing || isComplete}
-                      />
-                    )}
-                  </div>
-                </div>
-
-                {/* Drawing Tools - Compact Version */}
-                <div style={{
-                  background: '#f8fafc',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '8px',
-                  padding: '15px',
-                  marginBottom: '15px'
-                }}>
-                  <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center',
-                    marginBottom: showCanvas ? '15px' : '0' 
-                  }}>
-                    <h4 style={{ margin: '0', display: 'flex', alignItems: 'center', fontSize: '14px' }}>
-                      <Palette size={16} style={{ marginRight: '8px' }} />
-                      Drawing Tools
-                    </h4>
-                    <button
-                      onClick={() => setShowCanvas(!showCanvas)}
-                      style={{
-                        background: showCanvas ? '#ef4444' : '#3b82f6',
-                        color: 'white',
-                        border: 'none',
-                        padding: '6px 12px',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        fontSize: '12px'
-                      }}
-                    >
-                      {showCanvas ? 'Hide' : 'Show'}
-                    </button>
-                  </div>
-
-                  {showCanvas && (
-                    <div>
-                      {/* Compact Tools */}
-                      <div style={{
-                        display: 'flex',
-                        gap: '10px',
-                        alignItems: 'center',
-                        marginBottom: '10px',
-                        flexWrap: 'wrap'
-                      }}>
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                          <button
-                            onClick={() => setCurrentTool('pen')}
-                            style={{
-                              background: currentTool === 'pen' ? '#3b82f6' : '#e5e7eb',
-                              color: currentTool === 'pen' ? 'white' : '#374151',
-                              border: 'none',
-                              padding: '6px 10px',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              fontSize: '12px'
-                            }}
-                          >
-                            ✏️
-                          </button>
-                          <button
-                            onClick={() => setCurrentTool('eraser')}
-                            style={{
-                              background: currentTool === 'eraser' ? '#3b82f6' : '#e5e7eb',
-                              color: currentTool === 'eraser' ? 'white' : '#374151',
-                              border: 'none',
-                              padding: '6px 10px',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              fontSize: '12px'
-                            }}
-                          >
-                            🗑️
-                          </button>
-                        </div>
-
-                        {currentTool !== 'eraser' && (
-                          <>
-                            <input
-                              type="color"
-                              value={strokeColor}
-                              onChange={(e) => setStrokeColor(e.target.value)}
-                              style={{
-                                width: '32px',
-                                height: '28px',
-                                border: 'none',
-                                borderRadius: '4px',
-                                cursor: 'pointer'
-                              }}
-                            />
-                            <input
-                              type="range"
-                              min="1"
-                              max="20"
-                              value={strokeWidth}
-                              onChange={(e) => setStrokeWidth(parseInt(e.target.value))}
-                              style={{ width: '60px' }}
-                            />
-                          </>
-                        )}
-
-                        <div style={{ display: 'flex', gap: '4px', marginLeft: 'auto' }}>
-                          <button
-                            onClick={undoCanvas}
-                            disabled={historyStep <= 0}
-                            style={{
-                              background: historyStep > 0 ? '#6b7280' : '#d1d5db',
-                              color: 'white',
-                              border: 'none',
-                              padding: '4px 8px',
-                              borderRadius: '4px',
-                              cursor: historyStep > 0 ? 'pointer' : 'not-allowed',
-                              fontSize: '10px'
-                            }}
-                          >
-                            ↶
-                          </button>
-                          <button
-                            onClick={redoCanvas}
-                            disabled={historyStep >= canvasHistory.length - 1}
-                            style={{
-                              background: historyStep < canvasHistory.length - 1 ? '#6b7280' : '#d1d5db',
-                              color: 'white',
-                              border: 'none',
-                              padding: '4px 8px',
-                              borderRadius: '4px',
-                              cursor: historyStep < canvasHistory.length - 1 ? 'pointer' : 'not-allowed',
-                              fontSize: '10px'
-                            }}
-                          >
-                            ↷
-                          </button>
-                          <button
-                            onClick={clearCanvas}
-                            style={{
-                              background: '#ef4444',
-                              color: 'white',
-                              border: 'none',
-                              padding: '4px 8px',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              fontSize: '10px'
-                            }}
-                          >
-                            <Trash2 size={10} />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Canvas */}
-                      <div style={{
-                        border: '2px solid #d1d5db',
-                        borderRadius: '6px',
-                        background: '#ffffff',
-                        marginBottom: '10px'
-                      }}>
-                        <canvas
-                          ref={canvasRef}
-                          onMouseDown={startDrawing}
-                          onMouseMove={draw}
-                          onMouseUp={stopDrawing}
-                          onMouseLeave={stopDrawing}
-                          style={{
-                            width: '100%',
-                            height: '200px',
-                            cursor: currentTool === 'pen' ? 'crosshair' : currentTool === 'eraser' ? 'not-allowed' : 'default',
-                            display: 'block',
-                            borderRadius: '4px'
-                          }}
-                        />
-                      </div>
-
-                      {/* Insert Drawing Button */}
-                      <div style={{ textAlign: 'center' }}>
-                        <button
-                          onClick={insertDrawingHere}
-                          disabled={!hasDrawing() || isProcessing}
-                          style={{
-                            background: hasDrawing() ? '#f59e0b' : '#d1d5db',
-                            color: 'white',
-                            border: 'none',
-                            padding: '8px 16px',
-                            borderRadius: '6px',
-                            cursor: hasDrawing() ? 'pointer' : 'not-allowed',
-                            fontSize: '12px',
-                            fontWeight: '500'
-                          }}
-                        >
-                          📌 Insert Formula Here
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Send Button */}
-                <div style={{ textAlign: 'center' }}>
-                  <button 
-                    onClick={sendCompleteResponse}
-                    disabled={isProcessing || (responseParts.length === 0 && !currentTextPart.trim())}
-                    style={{ 
-                      background: '#10b981', 
-                      color: 'white', 
-                      border: 'none', 
-                      padding: '14px 28px', 
-                      borderRadius: '8px', 
-                      cursor: (responseParts.length > 0 || currentTextPart.trim()) ? 'pointer' : 'not-allowed',
-                      opacity: (responseParts.length > 0 || currentTextPart.trim()) ? 1 : 0.5,
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      margin: '0 auto'
-                    }}
+                <div className={styles.actionButtonsRight}>
+                  <button
+                    onClick={clearAllElements}
+                    className={styles.clearButton}
                   >
-                    <Send size={18} />
+                    <Trash2 size={14} />
+                    Clear All
+                  </button>
+                  
+                  <button
+                    onClick={sendSequentialContent}
+                    disabled={isProcessing || !hasContent()}
+                    className={hasContent() ? styles.sendButtonActive : styles.sendButtonDisabled}
+                  >
+                    <Send size={14} />
                     Send Response
                   </button>
                 </div>
               </div>
-            )}
-          </div>
-        )}
 
-        {/* Completion */}
-        {isComplete && (
-          <div style={{ 
-            background: '#ecfdf5', 
-            border: '2px solid #22c55e', 
-            borderRadius: '8px', 
-            padding: '20px',
-            textAlign: 'center'
-          }}>
-            <div style={{ fontSize: '48px', marginBottom: '10px' }}>🎉</div>
-            <h3 style={{ color: '#15803d', margin: '0' }}>Examination Completed!</h3>
-            {autoSpeak && (
-              <div style={{ marginTop: '10px', fontSize: '14px', color: '#059669' }}>
-                🔊 Completion message will be spoken automatically
+              {/* Sequential Elements List */}
+              <div className={styles.sequentialElementsList}>
+                {sequentialElements.length === 0 && (
+                  <div className={styles.emptyState}>
+                    <p>Click "Add Text" or "Add Drawing" to start building your response</p>
+                  </div>
+                )}
+
+                {sequentialElements.map((element, index) => (
+                  <div 
+                    key={element.id} 
+                    className={`${styles.sequentialElement} ${activeElementId === element.id ? styles.activeElement : ''}`}
+                  >
+                    <div className={styles.elementHeader}>
+                      <span className={styles.elementNumber}>
+                        {index + 1}. {element.type === 'text' ? '📝 Text' : '🎨 Drawing'}
+                      </span>
+                      
+                      <div className={styles.elementControls}>
+                        {element.type === 'text' && voiceEnabled && (
+                          <button
+                            onClick={() => setVoiceActiveForElement(
+                              voiceActiveForElement === element.id ? null : element.id
+                            )}
+                            className={voiceActiveForElement === element.id ? styles.voiceControlActive : styles.voiceControlInactive}
+                          >
+                            <Mic size={12} />
+                          </button>
+                        )}
+                        
+                        {element.type === 'drawing' && (
+                          <button
+                            onClick={() => clearElementCanvas(element.id)}
+                            className={styles.clearCanvasButton}
+                          >
+                            Clear
+                          </button>
+                        )}
+                        
+                        <button
+                          onClick={() => deleteElement(element.id)}
+                          className={styles.deleteElementButton}
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className={styles.elementContent}>
+                      {element.type === 'text' ? (
+                        <textarea
+                          id={`element-${element.id}`}
+                          value={element.content}
+                          onChange={(e) => updateElementContent(element.id, e.target.value)}
+                          placeholder="Type your response here..."
+                          className={styles.textElementInput}
+                          onFocus={() => setActiveElementId(element.id)}
+                          rows={3}
+                        />
+                      ) : (
+                        <div className={styles.drawingElementContainer}>
+                          <div className={styles.canvasControls}>
+                            <label>Canvas Height: </label>
+                            <input
+                              type="range"
+                              min="200"
+                              max="600"
+                              value={canvasHeight}
+                              onChange={(e) => {
+                                setCanvasHeight(parseInt(e.target.value));
+                                // Reinizializza il canvas con la nuova altezza
+                                setTimeout(() => initializeElementCanvas(element.id), 100);
+                              }}
+                              className={styles.heightSlider}
+                            />
+                            <span>{canvasHeight}px</span>
+                          </div>
+                          
+                          <canvas 
+                            id={`canvas-${element.id}`} 
+                            className={styles.elementCanvas}
+                            onPointerDown={(e) => startDrawing(e, element.id)}
+                            onPointerMove={(e) => draw(e, element.id)}
+                            onPointerUp={() => stopDrawing(element.id)}
+                            onPointerLeave={() => stopDrawing(element.id)}
+                            onClick={() => setActiveElementId(element.id)}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
-            )}
-          </div>
-        )}
+
+              {/* Voice Manager - POSIZIONATO MEGLIO */}
+              {voiceActiveForElement && (
+                <div className={styles.voiceManagerFixed}>
+                  <div className={styles.voiceManagerContent}>
+                    <div className={styles.voiceManagerHeader}>
+                      🎤 Voice Recording Active
+                      <button
+                        onClick={() => {
+                          setVoiceActiveForElement(null);
+                          setCurrentTranscript('');
+                        }}
+                        className={styles.stopVoiceButton}
+                      >
+                        Stop
+                      </button>
+                    </div>
+                    
+                    <VoiceManager 
+                      onTranscriptUpdate={handleTranscriptUpdate}
+                      disabled={isProcessing}
+                    />
+                    
+                    {currentTranscript && (
+                      <div className={styles.transcriptDisplay}>
+                        <strong>Transcript:</strong> "{currentTranscript}"
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Completion Screen */}
+          {isComplete && (
+            <div className={styles.completionScreen}>
+              <div className={styles.completionCard}>
+                <div className={styles.completionIcon}>🎉</div>
+                <h2 className={styles.completionTitle}>Examination Completed!</h2>
+                <p className={styles.completionText}>
+                  Great job! You've successfully completed the AI physics examination.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* AI Response Overlay */}
+      {showAIResponse && (
+        <div className={showHistory ? styles.aiResponseOverlayWithHistory : styles.aiResponseOverlayWithoutHistory}>
+          <div className={styles.aiResponseHeader}>
+            <div className={styles.aiResponseTitle}>
+              🎓 Professor Response
+              {voiceEnabled && autoSpeak && (
+                <button
+                  onClick={() => voiceUtils.speak(currentAIResponse)}
+                  className={styles.repeatButton}
+                >
+                  🔊 Repeat
+                </button>
+              )}
+            </div>
+            <button
+              onClick={closeAIResponse}
+              className={styles.aiResponseCloseButton}
+            >
+              <X size={18} />
+            </button>
+          </div>
+          
+          <div className={styles.aiResponseContent}>
+            {currentAIResponse}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

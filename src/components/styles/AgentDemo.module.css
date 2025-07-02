@@ -1,0 +1,983 @@
+/* ==========================================
+// FILE: AgentDemo.module.css - OPTIMIZED FOR SEQUENTIAL SYSTEM
+// ========================================== */
+
+.container {
+  font-family: system-ui;
+  height: 100vh;
+  background-color: #f5f5f5;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  background-color: white;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 12px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.backButton {
+  background: transparent;
+  border: 1px solid #d1d5db;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e40af;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.progressBadge {
+  font-size: 14px;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 6px 12px;
+  border-radius: 20px;
+}
+
+.headerButton {
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.historyButton {
+  composes: headerButton;
+}
+
+.historyButtonActive {
+  composes: historyButton;
+  background: #3b82f6;
+  color: white;
+}
+
+.historyButtonInactive {
+  composes: historyButton;
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.voiceButton {
+  composes: headerButton;
+  color: white;
+}
+
+.voiceButtonEnabled {
+  composes: voiceButton;
+  background: #10b981;
+}
+
+.voiceButtonDisabled {
+  composes: voiceButton;
+  background: #6b7280;
+}
+
+.statusBar {
+  padding: 8px 20px;
+  font-size: 14px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.statusError {
+  composes: statusBar;
+  background-color: #fee2e2;
+}
+
+.statusSuccess {
+  composes: statusBar;
+  background-color: #dcfce7;
+}
+
+.statusComplete {
+  composes: statusBar;
+  background-color: #ecfdf5;
+}
+
+.statusDefault {
+  composes: statusBar;
+  background-color: #dbeafe;
+}
+
+.mainContent {
+  flex: 1;
+  display: flex;
+  position: relative;
+}
+
+.historySidebar {
+  width: 400px;
+  background-color: white;
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 2px 0 4px rgba(0,0,0,0.1);
+}
+
+.sidebarHeader {
+  padding: 16px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sidebarTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.closeButton {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.conversationContainer {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.conversationTurn {
+  margin-bottom: 16px;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.professorTurn {
+  composes: conversationTurn;
+  background: #dbeafe;
+}
+
+.studentTurn {
+  composes: conversationTurn;
+  background: #dcfce7;
+}
+
+.turnSpeaker {
+  font-weight: 600;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.professorSpeaker {
+  composes: turnSpeaker;
+  color: #1d4ed8;
+}
+
+.studentSpeaker {
+  composes: turnSpeaker;
+  color: #059669;
+}
+
+.turnContent {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.turnImage {
+  max-width: 100%;
+  margin-top: 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: white;
+}
+
+.turnTimestamp {
+  font-size: 11px;
+  color: #9ca3af;
+  text-align: right;
+  margin-top: 8px;
+}
+
+.mainWorkspace {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.controls {
+  background-color: white;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 16px 20px;
+  display: flex;
+  gap: 12px;
+}
+
+.controlButton {
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.analyzeButton {
+  composes: controlButton;
+  color: white;
+}
+
+.analyzeButtonReady {
+  composes: analyzeButton;
+  background: #10b981;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.analyzeButtonActive {
+  composes: analyzeButton;
+  background: #3b82f6;
+  cursor: pointer;
+}
+
+.startButton {
+  composes: controlButton;
+  color: white;
+}
+
+.startButtonReady {
+  composes: startButton;
+  background: #10b981;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.startButtonActive {
+  composes: startButton;
+  background: #8b5cf6;
+  cursor: pointer;
+}
+
+.startButtonDisabled {
+  composes: startButton;
+  background: #8b5cf6;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* ===============================================
+   SEQUENTIAL WORKSPACE STYLES - NUOVO SISTEMA
+   =============================================== */
+
+.sequentialWorkspace {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: white;
+}
+
+.addElementsToolbar {
+  background-color: white;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.addElementButton {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.addElementButton:hover {
+  background: #2563eb;
+}
+
+.drawingToolsCompact {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8fafc;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.toolButton {
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.toolButtonActive {
+  composes: toolButton;
+  background: #3b82f6;
+  color: white;
+}
+
+.toolButtonInactive {
+  composes: toolButton;
+  background: transparent;
+  color: #374151;
+}
+
+.colorPickerCompact {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.strokeSliderCompact {
+  width: 50px;
+}
+
+.actionButtonsRight {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+
+.clearButton {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.sendButton {
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.sendButtonActive {
+  composes: sendButton;
+  background: #10b981;
+  cursor: pointer;
+}
+
+.sendButtonDisabled {
+  composes: sendButton;
+  background: #d1d5db;
+  cursor: not-allowed;
+}
+
+.sequentialElementsList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  background: #f8fafc;
+}
+
+.emptyState {
+  text-align: center;
+  color: #6b7280;
+  padding: 60px 20px;
+  font-size: 16px;
+}
+
+.sequentialElement {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.activeElement {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.1);
+}
+
+.elementHeader {
+  background: #f1f5f9;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.elementNumber {
+  font-weight: 600;
+  color: #475569;
+  font-size: 14px;
+}
+
+.elementControls {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.voiceControlButton {
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: white;
+}
+
+.voiceControlActive {
+  composes: voiceControlButton;
+  background: #10b981;
+}
+
+.voiceControlInactive {
+  composes: voiceControlButton;
+  background: #3b82f6;
+}
+
+.clearCanvasButton {
+  background: #f59e0b;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.deleteElementButton {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+}
+
+.elementContent {
+  padding: 16px;
+}
+
+.textElementInput {
+  width: 100%;
+  border: none;
+  outline: none;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 60px;
+  background: transparent;
+}
+
+.drawingElementContainer {
+  display: flex;
+  flex-direction: column;
+  background: #fefefe;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 8px;
+  width: 100%;
+}
+
+.canvasControls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 8px;
+  background: #f8fafc;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.heightSlider {
+  width: 100px;
+}
+
+/* ===============================================
+   CANVAS OPTIMIZATION - ULTRA ANTI-LAG
+   =============================================== */
+
+.elementCanvas {
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: white;
+  display: block;
+  width: 100%;
+  cursor: crosshair;
+  
+  /* PROPRIETÀ CHIAVE PER PRESTAZIONI TOUCH/PAD */
+  /* Disabilita azioni default del browser come scroll/zoom durante il tocco */
+  touch-action: none; 
+  -ms-touch-action: none;
+  
+  /* FORZA ACCELERAZIONE GPU E ISOLAMENTO DEL LAYER DI RENDERING */
+  will-change: transform, contents; 
+  contain: strict; 
+  transform: translateZ(0);
+
+  /* PREVIENE SELEZIONI O AZIONI INDESIDERATE */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.elementCanvas:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: -2px;
+}
+
+/* ADDITIONAL PERFORMANCE OPTIMIZATIONS */
+.drawingElementContainer {
+  /* GPU LAYER SEPARATO */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  /* SMOOTH SCROLLING */
+  -webkit-overflow-scrolling: touch;
+  /* REDUCE REPAINTS - MASSIMO ISOLAMENTO */
+  contain: layout style paint;
+  isolation: isolate;
+  /* PRELOAD GPU LAYER */
+  will-change: transform;
+}
+
+.sequentialElementsList {
+  /* SMOOTH SCROLLING */
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  /* REDUCE REPAINTS */
+  contain: layout style;
+  /* HARDWARE ACCELERATION */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+.sequentialElement {
+  /* ISOLAMENTO GPU PER OGNI ELEMENTO */
+  will-change: border-color, box-shadow;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* ===============================================
+   VOICE MANAGER STYLES - IMPROVED
+   =============================================== */
+
+.voiceManagerFixed {
+  position: fixed;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1001;
+  background: white;
+  border: 2px solid #10b981;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  min-width: 300px;
+  max-width: 500px;
+}
+
+.voiceManagerContent {
+  padding: 16px;
+}
+
+.voiceManagerHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-weight: 600;
+  color: #10b981;
+}
+
+.stopVoiceButton {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 4px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.voiceManager {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  background: white;
+  border: 2px solid #3b82f6;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.transcriptDisplay {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #10b981;
+  color: white;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* ===============================================
+   COMPLETION SCREEN
+   =============================================== */
+
+.completionScreen {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: white;
+}
+
+.completionCard {
+  text-align: center;
+  background: #ecfdf5;
+  border: 2px solid #22c55e;
+  border-radius: 16px;
+  padding: 40px;
+  max-width: 500px;
+}
+
+.completionIcon {
+  font-size: 64px;
+  margin-bottom: 16px;
+}
+
+.completionTitle {
+  color: #15803d;
+  margin: 0 0 16px 0;
+}
+
+.completionText {
+  color: #059669;
+  margin: 0;
+}
+
+/* ===============================================
+   AI RESPONSE OVERLAY
+   =============================================== */
+
+.aiResponseOverlay {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: white;
+  border: 2px solid #3b82f6;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  max-width: 400px;
+  max-height: 300px;
+  overflow: auto;
+}
+
+.aiResponseOverlayWithHistory {
+  composes: aiResponseOverlay;
+  left: 420px;
+}
+
+.aiResponseOverlayWithoutHistory {
+  composes: aiResponseOverlay;
+  left: 20px;
+}
+
+.aiResponseHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.aiResponseTitle {
+  font-weight: 600;
+  color: #1d4ed8;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.repeatButton {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.aiResponseCloseButton {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: #6b7280;
+}
+
+.aiResponseContent {
+  line-height: 1.6;
+  color: #374151;
+}
+
+/* ===============================================
+   LEGACY STYLES (per compatibilità)
+   =============================================== */
+
+.workspace {
+  flex: 1;
+  position: relative;
+  background-color: white;
+}
+
+.toolbar {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  right: 20px;
+  z-index: 20;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.toolSelector {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 6px;
+  display: flex;
+  gap: 2px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.drawingControls {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.colorPicker {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.strokeSlider {
+  width: 60px;
+}
+
+.actionButtons {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 6px;
+  display: flex;
+  gap: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.workspaceArea {
+  position: absolute;
+  top: 70px;
+  left: 20px;
+  right: 20px;
+  bottom: 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fefefe;
+}
+
+.workspaceAreaPointer {
+  composes: workspaceArea;
+  cursor: text;
+}
+
+.workspaceAreaPen {
+  composes: workspaceArea;
+  cursor: crosshair;
+}
+
+.workspaceAreaEraser {
+  composes: workspaceArea;
+  cursor: grab;
+}
+
+.workspaceAreaDefault {
+  composes: workspaceArea;
+  cursor: default;
+}
+
+.drawingCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  /* ANTI-LAG OPTIMIZATIONS */
+  touch-action: none;
+  -ms-touch-action: none;
+  will-change: contents;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: optimize-contrast;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  pointer-events: auto;
+}
+
+.textBox {
+  width: 100%;
+  min-height: 24px;
+  height: auto;
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.4;
+  outline: none;
+  resize: none;
+  overflow: hidden;
+}
+
+.textBoxActive {
+  composes: textBox;
+  border: 1px solid #3b82f6;
+  background: white;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.1);
+}
+
+.textBoxInactive {
+  composes: textBox;
+  border: 1px solid transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.textBoxControls {
+  position: absolute;
+  top: -30px;
+  right: 0px;
+  display: flex;
+  gap: 4px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  padding: 2px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.helperText {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: #9ca3af;
+  font-size: 16px;
+  pointer-events: none;
+}
+
+/* ===============================================
+   RESPONSIVE DESIGN
+   =============================================== */
+
+@media (max-width: 768px) {
+  .historySidebar {
+    width: 300px;
+  }
+  
+  .addElementsToolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  
+  .drawingToolsCompact {
+    order: 2;
+  }
+  
+  .actionButtonsRight {
+    order: 3;
+    margin-left: 0;
+  }
+  
+  .elementCanvas {
+    max-width: 100%;
+    height: auto;
+  }
+}
