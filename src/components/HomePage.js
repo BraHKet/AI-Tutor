@@ -1,4 +1,4 @@
-// src/components/HomePage.js
+// src/components/HomePage.js - VERSIONE "DASHBOARD" PROFESSIONALE CON CSS MODULES
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -9,43 +9,22 @@ import NavBar from './NavBar';
 import SimpleLoading from './SimpleLoading';
 
 import { 
-  LogIn,
-  BookOpen, 
-  Calendar, 
-  CheckCircle, 
-  Smile, 
-  Meh, 
-  Frown, 
-  ThumbsUp,
-  Send,
-  MessageSquare,
-  Star,
-  FileText,
-  Target,
-  Zap,
-  Brain,
-  Users,
-  ArrowRight,
-  Lightbulb,
-  Play,
-  Download
+  Plus, BookOpen, CheckCircle, MessageSquare, ThumbsUp, Send, Frown, Meh, Smile, Star, Brain, LogIn
 } from 'lucide-react';
-import './styles/HomePage.css';
+import styles from './styles/HomePage.module.css'; // IMPORTAZIONE CHIAVE
 
 const HomePage = () => {
   const { user } = useGoogleAuth();
   const navigate = useNavigate();
 
-  // Stato per feedback
   const [feedbackRating, setFeedbackRating] = useState(null);
   const [feedbackText, setFeedbackText] = useState('');
   const [feedbackSent, setFeedbackSent] = useState(false);
   const [feedbackSending, setFeedbackSending] = useState(false);
 
-  // Stato per caricamento e statistiche
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [basicStats, setBasicStats] = useState({
+  const [stats, setStats] = useState({
     totalProjects: 0,
     completedTopics: 0,
     totalTopics: 0
@@ -57,7 +36,7 @@ const HomePage = () => {
       return;
     }
 
-    const fetchBasicStats = async () => {
+    const fetchStats = async () => {
       setIsLoading(true);
       setError(null);
       try {
@@ -65,10 +44,7 @@ const HomePage = () => {
         const q = query(projectsRef, where("userId", "==", user.uid));
         const querySnapshot = await getDocs(q);
         
-        const projects = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+        const projects = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
         let totalTopics = 0;
         let completedTopics = 0;
@@ -77,355 +53,168 @@ const HomePage = () => {
           const topicsRef = collection(db, "projects", project.id, "topics");
           const topicsSnapshot = await getDocs(topicsRef);
           
-          const topics = topicsSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }));
-          
-          totalTopics += topics.length;
-          completedTopics += topics.filter(topic => topic.isCompleted).length;
+          totalTopics += topicsSnapshot.size;
+          completedTopics += topicsSnapshot.docs.filter(doc => doc.data().isCompleted).length;
         }
 
-        setBasicStats({
+        setStats({
           totalProjects: projects.length,
           completedTopics,
           totalTopics
         });
         
-      } catch (error) {
-        console.error("Error fetching stats:", error);
-        setError("Impossibile caricare le statistiche. Riprova più tardi.");
+      } catch (err) {
+        console.error("Error fetching stats:", err);
+        setError("Impossibile caricare le tue statistiche.");
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchBasicStats();
+    fetchStats();
   }, [user]);
 
-  const handleFeedbackRating = (rating) => {
-    setFeedbackRating(rating);
-  };
-
   const submitFeedback = async () => {
-    if (feedbackRating === null) return;
+    if (feedbackRating === null || feedbackSending) return;
     
+    setFeedbackSending(true);
     try {
-      setFeedbackSending(true);
-      
       await addDoc(collection(db, "feedback"), {
-        userId: user?.uid || "anonymous",
-        userEmail: user?.email || "anonymous",
+        userId: user?.uid,
+        userEmail: user?.email,
         rating: feedbackRating,
         comment: feedbackText,
         createdAt: serverTimestamp()
       });
-      
       setFeedbackSent(true);
-      setFeedbackSending(false);
-      setFeedbackText('');
-      
       setTimeout(() => {
         setFeedbackSent(false);
         setFeedbackRating(null);
+        setFeedbackText('');
       }, 5000);
-      
-    } catch (error) {
-      console.error("Error submitting feedback:", error);
+    } catch (err) {
+      console.error("Error submitting feedback:", err);
+    } finally {
       setFeedbackSending(false);
     }
   };
+  
+  const renderDashboardContent = () => {
+    if (isLoading) {
+      return <SimpleLoading message="Caricamento dashboard..." fullScreen={false} />;
+    }
 
-  if (isLoading) {
+    if (error) {
+      return <div className={styles.errorMessageFull}>{error}</div>;
+    }
+
     return (
-      <div className="home-page-container">
-        <NavBar />
-        <div className="home-content">
-          <SimpleLoading 
-            message="Caricamento..." 
-            size="medium"
-            fullScreen={false}
-          />
+      <div className={styles.dashboardGrid}>
+        <div className={`${styles.mainCard} ${styles.ctaCard}`} onClick={() => navigate('/create-project')}>
+          <div className={styles.ctaIcon}><Plus size={32} /></div>
+          <h2>Crea un nuovo piano</h2>
+          <p>Trasforma un PDF nel tuo prossimo percorso di studio.</p>
+          <div className={styles.ctaArrow}>→</div>
         </div>
-      </div>
-    );
-  }
 
-  if (error) {
-    return (
-      <div className="home-page-container">
-        <NavBar />
-        <div className="home-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-          <div>
-            <h2>Oops! Qualcosa è andato storto.</h2>
-            <p style={{ color: '#64748b' }}>{error}</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="home-page-container">
-        <NavBar />
-        <div className="home-content">
-          <div className="unauthenticated-view">
-            <div className="unauthenticated-content">
-              <Brain size={48} className="unauthenticated-icon" />
-              <h1>Benvenuto in AI Tutor</h1>
-              <p>Il modo più intelligente per trasformare i tuoi documenti in piani di studio personalizzati. Accedi per iniziare.</p>
-              <button className="login-cta-btn" onClick={() => navigate('/')}>
-                <LogIn size={20} />
-                <span>Accedi per iniziare</span>
-              </button>
+        <div className={`${styles.mainCard} ${styles.statsCard}`}>
+          <h3>Il Tuo Progresso</h3>
+          <div className={styles.statsContainer}>
+            <div className={styles.statItem}>
+              <span className={styles.statValue}>{stats.totalProjects}</span>
+              <span className={styles.statLabel}><BookOpen size={14}/> Piani Creati</span>
+            </div>
+            <div className={styles.statItem}>
+              <span className={styles.statValue}>{stats.completedTopics}</span>
+              <span className={styles.statLabel}><CheckCircle size={14}/> Argomenti Completati</span>
             </div>
           </div>
+          <button className={styles.secondaryButton} onClick={() => navigate('/projects')}>
+            Vedi tutti i piani
+          </button>
         </div>
-      </div>
-    );
-  }
 
-  return (
-    <div className="home-page-container">
-      <NavBar />
-      
-      <div className="home-content">
-        {/* Hero Section */}
-        <section className="hero-section">
-          <div className="hero-content">
-            <h1>Ciao {user?.displayName?.split(' ')[0] || 'Studente'}!</h1>
-            <p className="hero-subtitle">Trasforma i tuoi PDF in piani di studio intelligenti</p>
-            
-            {basicStats.totalProjects > 0 && (
-              <div className="quick-stats">
-                <div className="stat-item">
-                  <BookOpen size={16} />
-                  <span>{basicStats.totalProjects} Piani</span>
-                </div>
-                <div className="stat-item">
-                  <CheckCircle size={16} />
-                  <span>{basicStats.completedTopics}/{basicStats.totalTopics} Completati</span>
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* Feedback Section */}
-        <section className="feedback-section">
-          <div className="feedback-header">
-            <MessageSquare size={20} />
-            <h2>Il tuo Feedback</h2>
-          </div>
-          
+        <div className={`${styles.mainCard} ${styles.feedbackCard}`}>
           {feedbackSent ? (
-            <div className="feedback-success">
-              <div className="success-icon">
-                <CheckCircle size={32} />
-              </div>
-              <div className="success-content">
-                <h3>Grazie per il feedback!</h3>
-                <p>Il tuo contributo ci aiuta a migliorare l'esperienza di studio.</p>
-              </div>
+            <div className={styles.feedbackSuccess}>
+              <div className={styles.successIcon}><ThumbsUp size={32}/></div>
+              <h3>Grazie!</h3>
+              <p>Il tuo contributo ci aiuta a migliorare.</p>
             </div>
           ) : (
-            <div className="feedback-form">
-              <p className="feedback-intro">
-                Come valuti la tua esperienza con AI Tutor?
-              </p>
-              
-              <div className="rating-buttons">
+            <>
+              <h3>Lascia un Feedback <MessageSquare size={18}/></h3>
+              <p>Come valuti la tua esperienza?</p>
+              <div className={styles.ratingButtons}>
+                {[
+                  { rating: 1, icon: <Frown size={20}/>, title: 'Insoddisfacente' },
+                  { rating: 2, icon: <Meh size={20}/>, title: 'Nella media' },
+                  { rating: 3, icon: <Smile size={20}/>, title: 'Buono' },
+                  { rating: 4, icon: <ThumbsUp size={20}/>, title: 'Ottimo' },
+                  { rating: 5, icon: <Star size={20}/>, title: 'Eccellente' },
+                ].map(item => (
                   <button 
-                    className={`rating-btn ${feedbackRating === 1 ? 'active negative' : ''}`}
-                    onClick={() => handleFeedbackRating(1)}
+                    key={item.rating}
+                    className={`${styles.ratingBtn} ${feedbackRating === item.rating ? styles.active : ''}`} 
+                    onClick={() => setFeedbackRating(item.rating)} 
+                    title={item.title}
                   >
-                    <Frown size={24} />
-                    <span>Insoddisfacente</span>
+                    {item.icon}
                   </button>
-                  
-                  <button 
-                    className={`rating-btn ${feedbackRating === 2 ? 'active neutral' : ''}`}
-                    onClick={() => handleFeedbackRating(2)}
-                  >
-                    <Meh size={24} />
-                    <span>Nella media</span>
-                  </button>
-                  
-                  <button 
-                    className={`rating-btn ${feedbackRating === 3 ? 'active good' : ''}`}
-                    onClick={() => handleFeedbackRating(3)}
-                  >
-                    <ThumbsUp size={24} />
-                    <span>Buono</span>
-                  </button>
-                  
-                  <button 
-                    className={`rating-btn ${feedbackRating === 4 ? 'active positive' : ''}`}
-                    onClick={() => handleFeedbackRating(4)}
-                  >
-                    <Smile size={24} />
-                    <span>Ottimo</span>
-                  </button>
-
-                  <button 
-                    className={`rating-btn ${feedbackRating === 5 ? 'active excellent' : ''}`}
-                    onClick={() => handleFeedbackRating(5)}
-                  >
-                    <Star size={24} />
-                    <span>Eccellente</span>
-                  </button>
+                ))}
               </div>
-              
               {feedbackRating && (
-                <div className="feedback-comment">
+                <div className={styles.feedbackComment}>
                   <textarea 
-                    placeholder="Condividi i tuoi suggerimenti (opzionale)..."
+                    placeholder="Dicci di più (opzionale)..."
                     value={feedbackText}
                     onChange={(e) => setFeedbackText(e.target.value)}
-                    rows="3"
-                  ></textarea>
-                  
+                  />
                   <button 
-                    className="submit-feedback-btn" 
+                    className={styles.submitFeedbackBtn} 
                     onClick={submitFeedback}
                     disabled={feedbackSending}
                   >
-                    {feedbackSending ? (
-                      <span className="sending-indicator">Invio...</span>
-                    ) : (
-                      <>
-                        <Send size={16} />
-                        <span>Invia Feedback</span>
-                      </>
-                    )}
+                    {feedbackSending ? <div className={styles.loader}></div> : <Send size={16}/>}
                   </button>
                 </div>
               )}
-            </div>
+            </>
           )}
-        </section>
-        
-        {/* Come Funziona Section */}
-        <section className="how-it-works-section">
-          <div className="section-header">
-            <Brain size={24} />
-            <h2>Come Funziona AI Tutor</h2>
-            <p>Un sistema intelligente per ottimizzare il tuo studio</p>
-          </div>
-
-          <div className="workflow-steps">
-            <div className="step-card">
-              <div className="step-number">1</div>
-              <div className="step-icon">
-                <FileText size={24} />
-              </div>
-              <h3>Carica PDF</h3>
-              <p>Inizia con <strong>un solo PDF</strong> del tuo materiale di studio. L'AI analizzerà il contenuto per identificare automaticamente gli argomenti.</p>
-            </div>
-
-            <div className="step-card">
-              <div className="step-number">2</div>
-              <div className="step-icon">
-                <Brain size={24} />
-              </div>
-              <h3>Analisi AI</h3>
-              <p>L'intelligenza artificiale divide automaticamente il materiale in argomenti e li distribuisce nei giorni di studio disponibili.</p>
-            </div>
-
-            <div className="step-card">
-              <div className="step-number">3</div>
-              <div className="step-icon">
-                <Target size={24} />
-              </div>
-              <h3>Personalizza</h3>
-              <p><strong>Verifica e seleziona</strong> le parti specifiche del PDF per ogni argomento. Riorganizza gli argomenti nei giorni come preferisci.</p>
-            </div>
-
-            <div className="step-card">
-              <div className="step-number">4</div>
-              <div className="step-icon">
-                <Play size={24} />
-              </div>
-              <h3>Studia</h3>
-              <p>Accedi alle sezioni PDF per ogni giorno, sottolinea, stampa, aggiungi approfondimenti e interagisci con l'AI per chiarimenti.</p>
-            </div>
-          </div>
-        </section>
-
-        {/* Funzionalità Section */}
-        <section className="features-section">
-          <h2>Cosa Puoi Fare</h2>
-          
-          <div className="features-grid">
-            <div className="feature-card">
-              <div className="feature-icon study">
-                <BookOpen size={24} />
-              </div>
-              <h3>Studio Mirato</h3>
-              <p>Accedi solo alle pagine specifiche per ogni argomento, senza distrazioni dal resto del materiale.</p>
-            </div>
-
-            <div className="feature-card">
-              <div className="feature-icon organize">
-                <Calendar size={24} />
-              </div>
-              <h3>Organizzazione Flessibile</h3>
-              <p>Sposta gli argomenti tra i giorni e riorganizza il piano secondo le tue esigenze e scadenze.</p>
-            </div>
-
-            <div className="feature-card">
-              <div className="feature-icon interact">
-                <MessageSquare size={24} />
-              </div>
-              <h3>AI Interattiva</h3>
-              <p>Chiedi chiarimenti all'AI, fatti interrogare sugli argomenti e ricevi feedback personalizzato.</p>
-            </div>
-
-            <div className="feature-card">
-              <div className="feature-icon tools">
-                <Zap size={24} />
-              </div>
-              <h3>Strumenti Avanzati</h3>
-              <p>Sottolinea, stampa, aggiungi note e approfondimenti direttamente sui materiali di studio.</p>
-            </div>
-          </div>
-        </section>
-
-        {/* Suggerimenti Section */}
-        <section className="tips-section">
-          <div className="tips-header">
-            <Lightbulb size={20} />
-            <h2>Suggerimenti per il Successo</h2>
-          </div>
-          
-          <div className="tips-grid">
-            <div className="tip-card primary">
-              <div className="tip-icon">
-                <FileText size={20} />
-              </div>
-              <h4>Inizia con un PDF</h4>
-              <p>Per risultati ottimali, carica <strong>un singolo PDF ben strutturato</strong> anziché multipli file frammentati.</p>
-            </div>
-
-            <div className="tip-card secondary">
-              <div className="tip-icon">
-                <CheckCircle size={20} />
-              </div>
-              <h4>Verifica le Selezioni</h4>
-              <p><strong>Controlla sempre</strong> le pagine selezionate per ogni argomento prima di confermare il piano di studio.</p>
-            </div>
-
-            <div className="tip-card accent">
-              <div className="tip-icon">
-                <Target size={20} />
-              </div>
-              <h4>Personalizza i Giorni</h4>
-              <p>Adatta la distribuzione degli argomenti ai tuoi impegni e alla difficoltà del materiale.</p>
-            </div>
-          </div>
-        </section>
+        </div>
       </div>
+    );
+  };
+  
+  if (!user && !isLoading) {
+    return (
+      <div className={styles.unauthenticatedContainer}>
+        <NavBar />
+        <div className={styles.unauthenticatedView}>
+          <div className={styles.unauthenticatedContent}>
+            <div className={styles.unauthenticatedIcon}><Brain size={48} /></div>
+            <h1>Benvenuto in AI Tutor</h1>
+            <p>Il tuo assistente personale per trasformare documenti in percorsi di studio efficaci. Accedi per iniziare.</p>
+            <button className={styles.loginCtaBtn} onClick={() => navigate('/')}>
+              <LogIn size={20} />
+              <span>Accedi con Google</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className={styles.homePageContainer}>
+      <NavBar />
+      <main className={styles.mainContent}>
+        <header className={styles.header}>
+          <h1>Bentornato, {user?.displayName?.split(' ')[0] || 'Studente'}!</h1>
+          <p>Pronto a conquistare il tuo prossimo esame?</p>
+        </header>
+        {renderDashboardContent()}
+      </main>
     </div>
   );
 };

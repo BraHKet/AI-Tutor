@@ -132,12 +132,15 @@
 }
 
 .historySidebar {
-  width: 400px;
+  width: 400px; /* Larghezza fissa */
+  flex-shrink: 0; /* IMPEDISCE ALLA SIDEBAR DI RESTRINGERSI */
   background-color: white;
   border-right: 1px solid #e5e7eb;
   display: flex;
   flex-direction: column;
   box-shadow: 2px 0 4px rgba(0,0,0,0.1);
+  position: relative; /* Necessario per il corretto layout */
+  z-index: 10;
 }
 
 .sidebarHeader {
@@ -531,22 +534,6 @@
   border-radius: 6px;
   padding: 8px;
   width: 100%;
-}
-
-.canvasControls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-  padding: 8px;
-  background: #f8fafc;
-  border-radius: 4px;
-  font-size: 12px;
-  color: #64748b;
-}
-
-.heightSlider {
-  width: 100px;
 }
 
 /* ===============================================
@@ -957,9 +944,7 @@
    =============================================== */
 
 @media (max-width: 768px) {
-  .historySidebar {
-    width: 300px;
-  }
+  
   
   .addElementsToolbar {
     flex-direction: column;

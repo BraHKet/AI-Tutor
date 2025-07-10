@@ -1,10 +1,27 @@
-/* src/components/styles/NavBar.module.css - Versione Dark Mode Originale */
+/* src/components/styles/NavBar.module.css - NUOVA VERSIONE "PREMIUM" */
+
+/* 
+  DESIGN SYSTEM:
+  - Palette "Deep Space" con accenti vibranti.
+  - Effetti "Glassmorphism" per un look moderno.
+  - Transizioni fluide e micro-interazioni per una UX premium.
+*/
+
+:root {
+  --nav-bg: linear-gradient(180deg, #1f2937 0%, #111827 100%);
+  --accent-color: #6366F1; /* Indigo 500 */
+  --accent-glow: rgba(99, 102, 241, 0.2);
+  --text-primary: #f9fafb; /* Grigio chiarissimo */
+  --text-secondary: #9ca3af; /* Grigio medio */
+  --nav-item-hover-bg: rgba(255, 255, 255, 0.05);
+  --border-color: rgba(255, 255, 255, 0.1);
+}
 
 .navbar {
   position: fixed;
   transition: all 0.3s ease;
   z-index: 1000;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+  font-family: 'Inter', sans-serif; /* Per un look più pulito, importa questo font nel tuo index.html */
 }
 
 .navbarContainer {
@@ -13,131 +30,152 @@
   height: 100%;
 }
 
-/* --- Desktop/Tablet Navbar (Verticale scura) --- */
+/* --- 1. DESKTOP/TABLET NAVBAR (Verticale) --- */
 .desktop {
   width: 200px;
   height: 100vh;
   left: 0;
   top: 0;
-  background: linear-gradient(180deg, #2d2d44 0%, #1a1a2e 100%);
-  color: white;
-  padding: 20px 0;
+  background: var(--nav-bg);
+  color: var(--text-primary);
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3);
 }
 
-.desktop .navbarLogo {
-  padding: 0 15px 15px;
-  margin-bottom: 15px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  text-align: center;
-}
-
-.desktop .navbarLogo h2 {
+.navbarLogo {
+  padding: 25px 20px;
   font-size: 1.5rem;
-  margin: 0; /* Aggiunto per rimuovere margini di default */
+  font-weight: 700;
+  text-align: center;
+  color: white;
+  letter-spacing: -0.02em;
 }
 
-.desktop .navbarLinks {
+.navbarLinks {
+  flex-grow: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: 20px 0;
-  width: 100%;
+  padding: 10px 12px;
 }
 
 .navItem {
   display: flex;
   align-items: center;
-  width: 85%;
-  padding: 10px 15px;
-  margin-bottom: 15px;
-  color: rgba(255, 255, 255, 0.7);
+  padding: 12px 18px;
+  margin-bottom: 8px;
+  color: var(--text-secondary);
   text-decoration: none;
   border-radius: 8px;
-  transition: all 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.desktop .navItem:hover {
-  color: white;
-  background-color: rgba(255, 255, 255, 0.1);
+.navItem:hover {
+  color: var(--text-primary);
+  background-color: var(--nav-item-hover-bg);
+  transform: translateX(3px);
 }
 
-.desktop .navItem.active {
+.navItem.active {
   color: white;
-  background: linear-gradient(90deg, rgba(138, 101, 255, 0.3) 0%, transparent 100%);
-  border-left: 3px solid #8a65ff;
+  font-weight: 500;
+  background: var(--accent-color);
+  box-shadow: 0 4px 14px 0 var(--accent-glow);
 }
 
 .navIcon {
-  margin-right: 12px;
+  margin-right: 16px;
   display: flex;
   align-items: center;
 }
 
-.desktop .navbarFooter {
-  padding: 15px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  margin-top: auto;
+.navLabel {
+  font-size: 0.9rem;
+  font-weight: 500;
 }
 
-/* --- Mobile Navbar (Orizzontale scura) --- */
+/* --- 2. MOBILE NAVBAR (Orizzontale) --- */
 .mobile {
   width: 100%;
-  height: 60px;
+  height: 65px;
   bottom: 0;
   left: 0;
-  background: linear-gradient(90deg, #2d2d44 0%, #1a1a2e 100%);
-  position: fixed;
-  display: flex;
-  align-items: center;
+  background: rgba(23, 30, 42, 0.85); /* Sfondo semi-trasparente */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border-color);
+  box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.2);
 }
 
 .mobile .navbarContainer {
-  width: 100%;
   flex-direction: row;
 }
 
 .mobile .navbarLinks {
-  display: flex;
+  flex-direction: row;
   justify-content: space-around;
   width: 100%;
-  height: 100%;
+  padding: 0;
 }
 
 .mobile .navItem {
+  flex: 1;
   flex-direction: column;
   justify-content: center;
+  align-items: center;
   padding: 8px 0;
   margin: 0;
-  flex: 1;
+  border-radius: 0;
+  gap: 4px;
 }
 
 .mobile .navItem:hover {
+  background: none;
   color: white;
+  transform: none;
 }
 
 .mobile .navItem.active {
-  color: #8a65ff;
+  background: none;
+  color: var(--accent-color);
+  box-shadow: none;
+}
+
+.mobile .navItem.active .navIcon {
+  transform: scale(1.1);
 }
 
 .mobile .navIcon {
-  margin-right: 0; /* Rimuove il margine per la vista mobile */
-  justify-content: center;
+  margin: 0;
 }
 
-/* --- Stili Utente --- */
+.mobile .navLabel {
+  font-size: 0.65rem; /* Testo più piccolo per mobile */
+  font-weight: 500;
+}
+
+/* --- 3. SEZIONE UTENTE (Footer Desktop) --- */
+.navbarFooter {
+  padding: 15px 12px;
+  border-top: 1px solid var(--border-color);
+  margin-top: auto;
+}
+
 .userInfo {
   display: flex;
   align-items: center;
-  margin-bottom: 15px;
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--nav-item-hover-bg);
+  margin-bottom: 12px;
 }
 
 .userAvatar {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   object-fit: cover;
-  margin-right: 8px;
-  border: 2px solid #8a65ff;
+  margin-right: 10px;
+  border: 2px solid var(--accent-color);
+  box-shadow: 0 0 10px var(--accent-glow);
 }
 
 .userDetails {
@@ -151,12 +189,13 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 14px;
+  font-size: 0.85rem;
+  color: var(--text-primary);
 }
 
 .userEmail {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.7rem;
+  color: var(--text-secondary);
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -165,16 +204,23 @@
 
 .logoutBtn {
   width: 100%;
-  padding: 8px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 5px;
-  color: white;
+  padding: 10px;
+  background: transparent;
+  border: 1px solid rgba(239, 68, 68, 0.4); /* Bordo rosso per logout */
+  border-radius: 8px;
+  color: #f87171; /* Colore rosso tenue */
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: 13px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .logoutBtn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444; /* Rosso più acceso */
+  border-color: #ef4444;
 }

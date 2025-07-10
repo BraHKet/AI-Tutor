@@ -1,0 +1,335 @@
+/* src/components/styles/HomePage.module.css - NUOVA VERSIONE "PREMIUM" CON CSS MODULES */
+
+/*
+  Design System Coerente con la NavBar
+  - Palette: Grigio ardesia scuro, bianco pulito e un viola/indaco vibrante come accento.
+  - Tipografia: Chiara e moderna.
+  - Spaziatura: Generosa per un look arioso e professionale.
+*/
+
+.homePageContainer {
+  display: flex;
+  min-height: 100vh;
+  /* Sfondo leggermente strutturato che non distrae */
+  background-color: #f8fafc;
+  background-image: radial-gradient(#eaf0f6 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.mainContent {
+  flex: 1;
+  padding: 2.5rem;
+  overflow-y: auto;
+  /* Adatta il padding per la navbar verticale su desktop */
+  margin-left: 200px;
+}
+
+/* --- Sezione Header --- */
+.header {
+  margin-bottom: 2.5rem;
+}
+
+.header h1 {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: #1e293b; /* Nero ardesia, più morbido del nero puro */
+  margin: 0 0 0.25rem 0;
+}
+
+.header p {
+  font-size: 1.125rem;
+  color: #64748b; /* Grigio ardesia */
+  margin: 0;
+}
+
+/* --- Griglia Dashboard --- */
+.dashboardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 1.5rem;
+}
+
+/* --- Stile Card Base --- */
+.mainCard {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+.mainCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.mainCard h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #334155;
+  margin: 0 0 0.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mainCard p {
+  font-size: 0.9rem;
+  color: #64748b;
+  line-height: 1.5;
+  flex-grow: 1;
+  margin-bottom: 1rem;
+}
+
+/* --- Card Principale CTA (Call To Action) --- */
+.ctaCard {
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%); /* Stesso gradiente della NavBar */
+  color: white;
+  cursor: pointer;
+  grid-column: span 1;
+  min-height: 250px;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Effetto glow che segue il mouse */
+.ctaCard::before {
+  content: '';
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.3), transparent 70%);
+  border-radius: 50%;
+  transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  pointer-events: none;
+}
+.ctaCard:hover::before {
+  transform: translate(-50%, -50%) scale(1.5);
+  opacity: 1;
+}
+/* JavaScript per posizionare il glow (da aggiungere se si vuole l'effetto dinamico) */
+
+.ctaIcon {
+  width: 56px;
+  height: 56px;
+  background: rgba(99, 102, 241, 0.2); /* Viola semi-trasparente */
+  border-radius: 12px;
+  border: 1px solid rgba(99, 102, 241, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  color: #c7d2fe;
+}
+
+.ctaCard h2 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0;
+  color: white;
+}
+
+.ctaCard p {
+  color: #9ca3af;
+  max-width: 350px;
+  margin-top: 0.5rem;
+}
+
+.ctaArrow {
+  font-size: 2rem;
+  align-self: flex-end;
+  color: #6366f1;
+  transition: transform 0.3s ease;
+}
+.ctaCard:hover .ctaArrow {
+  transform: translateX(10px);
+}
+
+/* --- Card Statistiche --- */
+.statsCard {
+  justify-content: space-between;
+}
+
+.statsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.statItem { display: flex; flex-direction: column; }
+
+.statValue {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #4f46e5;
+  line-height: 1;
+}
+
+.statLabel {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+}
+
+.secondaryButton {
+  background: #eef2ff;
+  color: #4f46e5;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+.secondaryButton:hover { background: #e0e7ff; }
+
+/* --- Card Feedback --- */
+.ratingButtons {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.ratingBtn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid #e2e8f0;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+}
+
+.ratingBtn:hover {
+  border-color: #cbd5e1;
+  transform: scale(1.1);
+}
+
+.ratingBtn.active {
+  border-color: #6366f1;
+  background: #eef2ff;
+  color: #6366f1;
+  transform: scale(1.1);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+.feedbackComment {
+  display: flex;
+  gap: 0.5rem;
+  animation: slideIn 0.3s ease-out;
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.feedbackComment textarea {
+  flex-grow: 1;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  resize: none;
+}
+.feedbackComment textarea:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.submitFeedbackBtn {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 8px;
+  background: #10b981;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.submitFeedbackBtn:hover:not(:disabled) { background: #059669; }
+.submitFeedbackBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.loader {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.feedbackSuccess {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; text-align: center; flex-grow: 1;
+  gap: 0.5rem; animation: successFadeIn 0.5s ease-out;
+}
+@keyframes successFadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+.successIcon { color: #10b981; }
+.feedbackSuccess h3 { color: #065f46; margin: 0.5rem 0 0 0; }
+.feedbackSuccess p { color: #047857; font-size: 0.85rem; margin: 0; }
+
+/* --- Vista Non Autenticato --- */
+.unauthenticatedContainer {
+  display: flex;
+  min-height: 100vh;
+}
+.unauthenticatedView {
+  width: 100%;
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; text-align: center; flex-grow: 1; padding: 2rem;
+  background: #f8fafc;
+}
+.unauthenticatedContent {
+  max-width: 550px;
+}
+.unauthenticatedIcon { color: #6366f1; margin-bottom: 1.5rem; }
+.unauthenticatedContent h1 { font-size: 2rem; color: #1e293b; margin-bottom: 1rem; }
+.unauthenticatedContent p { color: #64748b; margin-bottom: 2rem; }
+.loginCtaBtn {
+  display: inline-flex; align-items: center; gap: 0.75rem; padding: 0.8rem 1.75rem;
+  background: #4f46e5; color: white; border: none; border-radius: 8px;
+  cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.2s ease;
+}
+.loginCtaBtn:hover { background: #4338ca; }
+
+/* --- Responsive Design --- */
+@media (max-width: 992px) {
+  .ctaCard { grid-column: span 1; }
+}
+
+@media (max-width: 768px) {
+  .mainContent {
+    margin-left: 0;
+    padding: 1.5rem 1rem 80px 1rem;
+  }
+  .header {
+    text-align: center; margin-bottom: 1.5rem;
+  }
+  .header h1 { font-size: 1.75rem; }
+  .header p { font-size: 1rem; }
+  .dashboardGrid { grid-template-columns: 1fr; }
+}

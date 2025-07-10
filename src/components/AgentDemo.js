@@ -23,6 +23,7 @@ export default function AgentDemo() {
   const [agent, setAgent] = useState(null);
   const [status, setStatus] = useState('Initializing...');
   const [isProcessing, setIsProcessing] = useState(false);
+  const FIXED_CANVAS_HEIGHT = 600; // Altezza fissa del foglio di disegno
   
   // Exam states
   const [materialReady, setMaterialReady] = useState(false);
@@ -43,7 +44,6 @@ export default function AgentDemo() {
   const [strokeColor, setStrokeColor] = useState('#000000');
   const lastPointRef = useRef(null); // <-- MODIFICATO: Usa useRef per le coordinate
   const [activeCanvasId, setActiveCanvasId] = useState(null);
-  const [canvasHeight, setCanvasHeight] = useState(300); // Altezza ridimensionabile
   const drawingAnimationFrame = useRef(null);
 
   // Voice states
@@ -186,40 +186,62 @@ export default function AgentDemo() {
   // CANVAS FUNCTIONS per elementi di disegno
   // ===============================================
 
+
+  
   const initializeElementCanvas = useCallback((elementId) => {
     const canvas = document.getElementById(`canvas-${elementId}`);
     if (canvas) {
-      const container = canvas.parentElement;
-      const rect = container.getBoundingClientRect();
-      
-      // Canvas prende tutta la larghezza disponibile
-      const width = Math.max(600, rect.width - 32); // -32 per padding container
-      const height = canvasHeight;
-      
-      canvas.width = width;
-      canvas.height = height;
-      canvas.style.width = width + 'px';
-      canvas.style.height = height + 'px';
-      
-      const ctx = canvas.getContext('2d');
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.imageSmoothingEnabled = true;
-      
-      // Ottimizzazioni anti-lag
-      ctx.imageSmoothingQuality = 'high';
-      
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const container = canvas.parentElement;
+        if (!container) return;
+
+        const rect = container.getBoundingClientRect();
+        if (rect.width <= 0) return;
+
+        const width = rect.width;
+        const height = FIXED_CANVAS_HEIGHT; // Usa la costante
+        
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+        
+        const ctx = canvas.getContext('2d');
+        ctx.scale(dpr, dpr);
+
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
-  }, [canvasHeight]);
+}, []);
+
+const reinitializeAllCanvases = useCallback(() => {
+    sequentialElements.forEach(element => {
+        if (element.type === 'drawing') {
+            initializeElementCanvas(element.id);
+        }
+    });
+}, [sequentialElements, initializeElementCanvas]);
+
 
   const getEventCoords = useCallback((e, canvasId) => {
+    // Se l'evento non è valido, esci subito.
+    if (!e) return null;
+
     const canvas = document.getElementById(`canvas-${canvasId}`);
     if (!canvas) return null;
+    
     const rect = canvas.getBoundingClientRect();
-    const clientX = e.clientX || e.touches?.[0]?.clientX || 0; // <-- RIGA SBAGLIATA
-    const clientY = e.clientY || e.touches?.[0]?.clientY || 0; // <-- RIGA SBAGLIATA
-    return { x: clientX - rect.left, y: clientY - rect.top };
+    
+    // Un PointerEvent avrà sempre clientX e clientY.
+    return {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    };
 }, []);
 
   const startDrawing = useCallback((e, canvasId) => {
@@ -785,22 +807,7 @@ export default function AgentDemo() {
                         />
                       ) : (
                         <div className={styles.drawingElementContainer}>
-                          <div className={styles.canvasControls}>
-                            <label>Canvas Height: </label>
-                            <input
-                              type="range"
-                              min="200"
-                              max="600"
-                              value={canvasHeight}
-                              onChange={(e) => {
-                                setCanvasHeight(parseInt(e.target.value));
-                                // Reinizializza il canvas con la nuova altezza
-                                setTimeout(() => initializeElementCanvas(element.id), 100);
-                              }}
-                              className={styles.heightSlider}
-                            />
-                            <span>{canvasHeight}px</span>
-                          </div>
+                          
                           
                           <canvas 
                             id={`canvas-${element.id}`} 
