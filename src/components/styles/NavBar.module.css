@@ -11,9 +11,9 @@
   --nav-bg: linear-gradient(180deg, #1f2937 0%, #111827 100%);
   --accent-color: #6366F1; /* Indigo 500 */
   --accent-glow: rgba(99, 102, 241, 0.2);
-  --text-primary: #f9fafb; /* Grigio chiarissimo */
+  --text-primary: #103961; /* Grigio chiarissimo */
   --text-secondary: #9ca3af; /* Grigio medio */
-  --nav-item-hover-bg: rgba(255, 255, 255, 0.05);
+  --nav-item-hover-bg: rgba(255, 255, 255, 0.262);
   --border-color: rgba(255, 255, 255, 0.1);
 }
 
