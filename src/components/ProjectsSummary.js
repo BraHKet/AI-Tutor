@@ -122,6 +122,7 @@ const ProjectsSummary = () => {
   };
 
   return (
+    
     <div className={styles['wrapper']}>
     <div className={styles['projects-summary-container']}>
       <NavBar />
@@ -142,10 +143,7 @@ const ProjectsSummary = () => {
               />
             </div>
             
-            <button className={styles['create-project-button']} onClick={goToCreateProject}>
-              <PlusCircle size={16} />
-              <span>Nuovo Piano</span>
-            </button>
+            
           </div>
         </div>
 
@@ -238,9 +236,10 @@ const ProjectsSummary = () => {
           </div>
         )}
       </div>
+      
 
       {/* Modal di conferma eliminazione */}
-      {showDeleteModal && (
+      {showDeleteModal &&(
         <div className={styles['delete-modal-overlay']} onClick={closeDeleteModal}>
           <div className={styles['delete-modal']} onClick={(e) => e.stopPropagation()}>
             <h3>Elimina Piano</h3>
@@ -271,8 +270,10 @@ const ProjectsSummary = () => {
           </div>
         </div>
       )}
+      
     </div>
     </div>
+    
   );
 };
 
