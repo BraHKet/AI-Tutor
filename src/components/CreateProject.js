@@ -6,7 +6,7 @@ import { generateCompleteStudyPlanLocal } from '../utils/gemini';
 import { FilePlus, Upload, X, Calendar, BookOpen, Info, AlertCircle, Loader, BrainCircuit, Clock } from 'lucide-react';
 import NavBar from './NavBar';
 import LoadingOverlay from './LoadingOverlay';
-import './styles/CreateProject.css';
+import styles from './styles/CreateProject.module.css';
 
 const CreateProject = () => {
   const navigate = useNavigate();
@@ -181,7 +181,7 @@ const CreateProject = () => {
     navigate('/create-project');
   };
 
-  return (
+    return (
     <>
       <NavBar />
       
@@ -192,35 +192,35 @@ const CreateProject = () => {
         details="L'AI sta analizzando i contenuti dei tuoi PDF per creare un piano di studio personalizzato."
       />
       
-      <div className="create-project-wrapper">
-        <div className="create-project-container">
-          <div className="create-project-header">
-            <h1 className="page-title">Crea un nuovo piano di studio</h1>
+      <div className={styles['create-project-wrapper']}>
+        <div className={styles['create-project-container']}>
+          <div className={styles['create-project-header']}>
+            <h1 className={styles['page-title']}>Crea un nuovo piano di studio</h1>
           </div>
 
           {error && (
-            <div className="message error-message">
+            <div className={`${styles.message} ${styles['error-message']}`}>
               <AlertCircle size={20} /> <span>{error}</span>
             </div>
           )}
           {success && !loading && (
-            <div className="message success-message">
+            <div className={`${styles.message} ${styles['success-message']}`}>
               <Info size={20} /> <span>{success}</span>
             </div>
           )}
 
-          <form className="create-project-form" onSubmit={handleSubmit}>
+          <form className={styles['create-project-form']} onSubmit={handleSubmit}>
             <fieldset disabled={loading} style={{ border: 'none', padding: 0, margin: 0 }}>
-              <div className="form-grid">
-                <div className="form-section">
-                  <h2 className="section-title">Informazioni Base</h2>
-                  <div className="form-group">
+              <div className={styles['form-grid']}>
+                <div className={styles['form-section']}>
+                  <h2 className={styles['section-title']}>Informazioni Base</h2>
+                  <div className={styles['form-group']}>
                     <label htmlFor="title">
-                      <span className="label-text">Titolo Progetto</span>
-                      <span className="required-mark">*</span>
+                      <span className={styles['label-text']}>Titolo Progetto</span>
+                      <span className={styles['required-mark']}>*</span>
                     </label>
-                    <div className="input-wrapper">
-                      <BookOpen size={20} className="input-icon" />
+                    <div className={styles['input-wrapper']}>
+                      <BookOpen size={20} className={styles['input-icon']} />
                       <input 
                         type="text" 
                         id="title" 
@@ -232,13 +232,13 @@ const CreateProject = () => {
                       />
                     </div>
                   </div>
-                  <div className="form-group">
+                  <div className={styles['form-group']}>
                     <label htmlFor="examName">
-                      <span className="label-text">Nome Esame</span>
-                      <span className="required-mark">*</span>
+                      <span className={styles['label-text']}>Nome Esame</span>
+                      <span className={styles['required-mark']}>*</span>
                     </label>
-                    <div className="input-wrapper">
-                      <BookOpen size={20} className="input-icon" />
+                    <div className={styles['input-wrapper']}>
+                      <BookOpen size={20} className={styles['input-icon']} />
                       <input 
                         type="text" 
                         id="examName" 
@@ -250,13 +250,13 @@ const CreateProject = () => {
                       />
                     </div>
                   </div>
-                  <div className="form-group">
+                  <div className={styles['form-group']}>
                     <label htmlFor="totalDays">
-                      <span className="label-text">Giorni Totali</span>
-                      <span className="required-mark">*</span>
+                      <span className={styles['label-text']}>Giorni Totali</span>
+                      <span className={styles['required-mark']}>*</span>
                     </label>
-                    <div className="input-wrapper">
-                      <Calendar size={20} className="input-icon" />
+                    <div className={styles['input-wrapper']}>
+                      <Calendar size={20} className={styles['input-icon']} />
                       <input 
                         type="number" 
                         id="totalDays" 
@@ -271,47 +271,47 @@ const CreateProject = () => {
                   </div>
                 </div>
 
-                <div className="form-section">
-                  <h2 className="section-title">Caricamento File</h2>
-                  <div className="file-upload-area">
+                <div className={styles['form-section']}>
+                  <h2 className={styles['section-title']}>Caricamento File</h2>
+                  <div className={styles['file-upload-area']}>
                     <input 
                       type="file" 
                       id="fileInput" 
                       multiple 
                       accept=".pdf" 
                       onChange={handleFileChange} 
-                      className="hidden-file-input" 
+                      className={styles['hidden-file-input']} 
                       disabled={loading} 
                     />
-                    <div className="file-upload-container">
-                      <label htmlFor="fileInput" className={`file-upload-btn ${loading ? 'disabled' : ''}`}>
+                    <div className={styles['file-upload-container']}>
+                      <label htmlFor="fileInput" className={`${styles['file-upload-btn']} ${loading ? styles.disabled : ''}`}>
                         <Upload size={20} />
                         <span>Seleziona PDF</span>
                       </label>
                     </div>
-                    <div className="file-upload-info">
+                    <div className={styles['file-upload-info']}>
                       <p>Carica i PDF dei tuoi materiali di studio</p>
                     </div>
                   </div>
                   
                   {files.length > 0 && (
-                    <div className="file-list">
+                    <div className={styles['file-list']}>
                       <h3>File Selezionati ({files.length}):</h3>
                       <ul>
                         {files.map((file, index) => (
-                          <li key={`${file.name}-${index}`} className="file-item">
-                            <div className="file-info">
-                              <FilePlus size={16} className="file-icon" />
-                              <span className="file-name" title={file.name}>
+                          <li key={`${file.name}-${index}`} className={styles['file-item']}>
+                            <div className={styles['file-info']}>
+                              <FilePlus size={16} className={styles['file-icon']} />
+                              <span className={styles['file-name']} title={file.name}>
                                 {file.name.length > 35 ? file.name.substring(0, 32) + '...' : file.name}
                               </span>
-                              <span className="file-size">
+                              <span className={styles['file-size']}>
                                 {(file.size / (1024 * 1024)).toFixed(2)} MB
                               </span>
                             </div>
                             <button 
                               type="button" 
-                              className="remove-file-btn" 
+                              className={styles['remove-file-btn']} 
                               onClick={() => removeFile(index)} 
                               disabled={loading}
                             >
@@ -324,17 +324,17 @@ const CreateProject = () => {
                   )}
                   
                   {files.length === 0 && (
-                    <div className="no-files-message">
+                    <div className={styles['no-files-message']}>
                       Nessun file PDF selezionato.
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className="form-actions">
+              <div className={styles['form-actions']}>
                 <button 
                   type="button" 
-                  className="cancel-btn" 
+                  className={styles['cancel-btn']} 
                   onClick={handleCancel} 
                   disabled={loading}
                 >
@@ -342,12 +342,12 @@ const CreateProject = () => {
                 </button>
                 <button 
                   type="submit" 
-                  className="submit-btn" 
+                  className={styles['submit-btn']} 
                   disabled={files.length === 0 || loading}
                 >
                   {loading ? (
                     <>
-                      <Loader size={16} className="spin-icon" />
+                      <Loader size={16} className={styles['spin-icon']} />
                       Analisi in corso...
                     </>
                   ) : (

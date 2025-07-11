@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import useGoogleAuth from '../hooks/useGoogleAuth';
 import NavBar from './NavBar';
-import './styles/ProjectsSummary.css';
+import styles from './styles/ProjectsSummary.module.css';
 import SimpleLoading from './SimpleLoading';
 
 const ProjectsSummary = () => {
@@ -122,26 +122,27 @@ const ProjectsSummary = () => {
   };
 
   return (
-    <div className="projects-summary-container">
+    <div className={styles['wrapper']}>
+    <div className={styles['projects-summary-container']}>
       <NavBar />
       
-      <div className="projects-section">
-        <div className="projects-header">
+      <div className={styles['projects-section']}>
+        <div className={styles['projects-header']}>
           <h1>I tuoi piani</h1>
           
-          <div className="projects-actions">
-            <div className="search-container">
-              <Search size={16} className="search-icon" />
+          <div className={styles['projects-actions']}>
+            <div className={styles['search-container']}>
+              <Search size={16} className={styles['search-icon']} />
               <input
                 type="text"
                 placeholder="Cerca..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="search-input"
+                className={styles['search-input']}
               />
             </div>
             
-            <button className="create-project-button" onClick={goToCreateProject}>
+            <button className={styles['create-project-button']} onClick={goToCreateProject}>
               <PlusCircle size={16} />
               <span>Nuovo Piano</span>
             </button>
@@ -149,10 +150,10 @@ const ProjectsSummary = () => {
         </div>
 
         {error && (
-          <div className="error-banner">
+          <div className={styles['error-banner']}>
             <AlertCircle size={16} />
             <span>{error}</span>
-            <button onClick={() => setError(null)} className="dismiss-error">×</button>
+            <button onClick={() => setError(null)} className={styles['dismiss-error']}>×</button>
           </div>
         )}
 
@@ -163,7 +164,7 @@ const ProjectsSummary = () => {
             fullScreen={false}
           />
         ) : filteredProjects.length === 0 ? (
-          <div className="empty-projects">
+          <div className={styles['empty-projects']}>
             <BookOpen size={48} strokeWidth={1} />
             <h3>Nessun piano trovato</h3>
             {searchTerm ? (
@@ -171,20 +172,20 @@ const ProjectsSummary = () => {
             ) : (
               <p>Inizia creando il tuo primo piano di studio!</p>
             )}
-            <button className="start-button" onClick={goToCreateProject}>
+            <button className={styles['start-button']} onClick={goToCreateProject}>
               <PlusCircle size={16} />
               <span>Crea Piano</span>
             </button>
           </div>
         ) : (
-          <div className="projects-grid">
+          <div className={styles['projects-grid']}>
             {filteredProjects.map(project => (
               <div 
                 key={project.id} 
-                className="project-card"
+                className={styles['project-card']}
               >
                 <button 
-                  className="delete-btn"
+                  className={styles['delete-btn']}
                   onClick={(e) => {
                     e.stopPropagation();
                     openDeleteModal(project.id, project.title);
@@ -193,41 +194,41 @@ const ProjectsSummary = () => {
                   title="Elimina progetto"
                 >
                   {deletingProjectId === project.id ? (
-                    <Loader size={16} className="spin-icon" />
+                    <Loader size={16} className={styles['spin-icon']} />
                   ) : (
                     <X size={16} />
                   )}
                 </button>
 
                 <div 
-                  className="project-clickable"
+                  className={styles['project-clickable']}
                   onClick={() => goToStudyPlan(project.id)}
                 >
-                  <div className="project-header">
+                  <div className={styles['project-header']}>
                     <BookOpen size={18} />
-                    <h3 className="project-title">{project.title}</h3>
+                    <h3 className={styles['project-title']}>{project.title}</h3>
                   </div>
                   
-                  <div className="project-content">
-                    <div className="project-detail">
-                      <span className="detail-label">Esame:</span>
-                      <span className="detail-value">{project.examName}</span>
+                  <div className={styles['project-content']}>
+                    <div className={styles['project-detail']}>
+                      <span className={styles['detail-label']}>Esame:</span>
+                      <span className={styles['detail-value']}>{project.examName}</span>
                     </div>
                     
-                    <div className="project-detail">
+                    <div className={styles['project-detail']}>
                       <Calendar size={14} />
-                      <span className="detail-label">Giorni:</span>
-                      <span className="detail-value">{project.totalDays}</span>
+                      <span className={styles['detail-label']}>Giorni:</span>
+                      <span className={styles['detail-value']}>{project.totalDays}</span>
                     </div>
                     
-                    <div className="project-detail">
+                    <div className={styles['project-detail']}>
                       <Clock size={14} />
-                      <span className="detail-label">Creato:</span>
-                      <span className="detail-value">{formatDate(project.createdAt)}</span>
+                      <span className={styles['detail-label']}>Creato:</span>
+                      <span className={styles['detail-value']}>{formatDate(project.createdAt)}</span>
                     </div>
                   </div>
                   
-                  <div className="project-footer">
+                  <div className={styles['project-footer']}>
                     <span>Apri Piano</span>
                     <ChevronRight size={16} />
                   </div>
@@ -240,26 +241,26 @@ const ProjectsSummary = () => {
 
       {/* Modal di conferma eliminazione */}
       {showDeleteModal && (
-        <div className="delete-modal-overlay" onClick={closeDeleteModal}>
-          <div className="delete-modal" onClick={(e) => e.stopPropagation()}>
+        <div className={styles['delete-modal-overlay']} onClick={closeDeleteModal}>
+          <div className={styles['delete-modal']} onClick={(e) => e.stopPropagation()}>
             <h3>Elimina Piano</h3>
             <p>Sei sicuro di voler eliminare "<strong>{showDeleteModal.title}</strong>"?</p>
-            <p className="warning-text">Questa azione non può essere annullata.</p>
-            <div className="modal-actions">
+            <p className={styles['warning-text']}>Questa azione non può essere annullata.</p>
+            <div className={styles['modal-actions']}>
               <button 
-                className="cancel-btn"
+                className={styles['cancel-btn']}
                 onClick={closeDeleteModal}
               >
                 Annulla
               </button>
               <button 
-                className="delete-btn-modal"
+                className={styles['delete-btn-modal']}
                 onClick={() => handleDeleteProject(showDeleteModal.id)}
                 disabled={deletingProjectId === showDeleteModal.id}
               >
                 {deletingProjectId === showDeleteModal.id ? (
                   <>
-                    <Loader size={16} className="spin-icon" />
+                    <Loader size={16} className={styles['spin-icon']} />
                     Eliminazione...
                   </>
                 ) : (
@@ -270,6 +271,7 @@ const ProjectsSummary = () => {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 };

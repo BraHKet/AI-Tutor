@@ -1,0 +1,256 @@
+/* src/components/styles/ProjectsSummary.css - NUOVA VERSIONE "DARK CARD PREMIUM" */
+
+/* --- DESIGN SYSTEM GLOBALE --- */
+.wrapper {
+  --page-bg: #f1f5f9; /* Sfondo Grigio Ardesia molto chiaro, quasi bianco */
+  --card-bg: #111827; /* NERO PROFONDO - Il cuore del nuovo design */
+  --card-border: #374151; /* Bordo sottile per definire la card */
+  --card-hover-border: #6366F1; /* Bordo viola/indaco al passaggio del mouse */
+  
+  --accent-color: #6366F1; /* Viola/Indaco */
+  --accent-glow: rgba(99, 102, 241, 0.25);
+  
+  --text-on-dark-primary: #f9fafb; /* Bianco quasi puro per i titoli */
+  --text-on-dark-secondary: #9ca3af; /* Grigio chiaro per i dettagli */
+  
+  --text-on-light-primary: #111827; /* Nero per l'header della pagina */
+  --text-on-light-secondary: #4b5563; /* Grigio scuro per sottotitoli */
+}
+
+/* --- CONTAINER E LAYOUT PRINCIPALE --- */
+.projects-summary-container {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--page-bg);
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.projects-section {
+  flex: 1;
+  padding: 2.5rem;
+  margin-left: 200px;
+  overflow-y: auto;
+}
+
+/* --- HEADER DELLA PAGINA --- */
+.projects-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+
+.projects-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-on-light-primary);
+}
+
+.projects-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+/* --- Search & Create Button --- */
+.search-container {
+  display: flex;
+  align-items: center;
+  background: white;
+  border-radius: 8px;
+  padding: 8px 12px;
+  width: 280px;
+  border: 1px solid #d1d5db;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  transition: all 0.2s ease;
+}
+.search-container:focus-within {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+.search-icon { color: var(--text-on-light-secondary); margin-right: 8px; }
+.search-input {
+  background: none; border: none;
+  font-size: 0.9rem; width: 100%; outline: none;
+  color: var(--text-on-light-primary);
+}
+
+.create-project-button {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 10px 16px; border-radius: 8px; border: none;
+  background: var(--text-on-light-primary);
+  color: white;
+  font-weight: 600; cursor: pointer; transition: all 0.2s ease;
+}
+.create-project-button:hover {
+  background: var(--accent-color);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px 0 rgba(99, 102, 241, 0.3);
+}
+
+/* --- GRIGLIA PROGETTI - IL CUORE DEL RESTYLE --- */
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 2rem;
+}
+
+.project-card {
+  background: var(--card-bg);
+  border-radius: 16px;
+  border: 1px solid var(--card-border);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Effetto bordo luminoso al passaggio del mouse */
+.project-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  border-color: var(--card-hover-border);
+  box-shadow: 0 0 25px var(--accent-glow);
+}
+
+/* Area cliccabile della card */
+.project-clickable {
+  flex-grow: 1; display: flex; flex-direction: column;
+  cursor: pointer; padding: 1.5rem;
+}
+
+/* Header della card (Titolo) */
+.project-header {
+  padding: 0;
+  background: none;
+  border: none;
+  display: flex; align-items: center; gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+.project-header svg { color: var(--accent-color); }
+.project-title {
+  color: var(--text-on-dark-primary);
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* Contenuto della card (Dettagli) */
+.project-content {
+  padding: 0; flex-grow: 1;
+  display: flex; flex-direction: column; gap: 0.75rem;
+  border-left: 1px solid var(--card-border);
+  padding-left: calc(0.75rem + 8px); /* 8px è la metà larghezza dell'icona */
+  margin-left: 4px; /* Allinea con l'icona sopra */
+}
+
+.project-detail {
+  display: flex; align-items: center; gap: 0.75rem;
+  font-size: 0.9rem;
+  color: var(--text-on-dark-secondary);
+}
+.project-detail svg { flex-shrink: 0; }
+.detail-value {
+  color: var(--text-on-dark-primary);
+  font-weight: 500;
+}
+
+/* Footer (rimosso, l'intera card è cliccabile e più pulita) */
+.project-footer { display: none; }
+
+/* --- Bottone Elimina ridisegnato --- */
+.delete-btn {
+  position: absolute; top: 1rem; right: 1rem;
+  width: 32px; height: 32px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--card-border);
+  border-radius: 50%;
+  color: var(--text-on-dark-secondary);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s ease;
+}
+.delete-btn:hover {
+  background: #ef4444; color: white; border-color: transparent;
+  transform: scale(1.1);
+}
+
+/* --- STATI VUOTI E DI CARICAMENTO --- */
+.empty-projects {
+  grid-column: 1 / -1; /* Occupa tutta la larghezza della griglia */
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; padding: 4rem; text-align: center;
+  gap: 1rem;
+  border: 2px dashed #cbd5e1;
+  border-radius: 16px;
+  background: #fdfdff;
+}
+.empty-projects svg { color: var(--accent-color); }
+.empty-projects h3 { color: var(--text-on-light-primary); }
+.empty-projects p { color: var(--text-on-light-secondary); }
+.start-button {
+  margin-top: 1rem;
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  padding: 10px 20px; border-radius: 8px; border: none;
+  background: var(--text-on-light-primary); color: white;
+  font-weight: 600; cursor: pointer; transition: all 0.2s ease;
+}
+.start-button:hover { background: var(--accent-color); }
+
+/* --- Modal di Conferma Eliminazione --- */
+.delete-modal-overlay {
+  background-color: rgba(17, 24, 39, 0.8);
+  backdrop-filter: blur(8px);
+}
+.delete-modal {
+  background: #1f2937; /* Sfondo scuro per la modale */
+  border-radius: 16px; padding: 2rem;
+  color: var(--text-on-dark-primary);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+.delete-modal h3 { color: white; }
+.delete-modal p { color: var(--text-on-dark-secondary); }
+.warning-text { color: #f87171 !important; }
+.cancel-btn {
+  background: #374151; color: var(--text-on-dark-primary);
+}
+.cancel-btn:hover { background: #4b5563; }
+.delete-btn-modal { background: #ef4444; color: white; }
+.delete-btn-modal:hover:not(:disabled) { background: #dc2626; }
+
+/* --- RESPONSIVE DESIGN --- */
+@media (max-width: 768px) {
+  .projects-section {
+    margin-left: 0;
+    padding: 1.5rem 1rem 80px 1rem;
+  }
+  .projects-header {
+    flex-direction: column; align-items: stretch;
+  }
+  .projects-actions {
+    flex-direction: column; align-items: stretch;
+  }
+  .search-container { width: 100%; }
+}
+
+@media (max-width: 480px) {
+  .projects-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Animazione per l'icona di caricamento (se presente) */
+.spin-icon {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
