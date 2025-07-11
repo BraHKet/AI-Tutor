@@ -120,75 +120,63 @@ const StudyPlanViewer = () => {
   }
 
   return (
-    <div className={styles.studyPlanContainer}>
-      <NavBar />
-      <div className={styles.contentWrapper}>
-        <header className={styles.studyPlanHeader}>
-            <h1>{project?.title || 'Piano di Studio'}</h1>
-            <p className={styles.planSubtitle}>Il tuo percorso personalizzato verso il successo. Un passo alla volta.</p>
-        </header>
-        
-        <div className={styles.daysGrid}>
-          {daysData.map(day => (
-            <div 
-              key={`day-${day.day}`} 
-              className={`${styles.dayCard}`}
-            >
-              {/* MODIFICA: Rimosso completamente il lockOverlay */}
-              
-              <div className={styles.dayCardHeader}>
-                <h3>Giorno {day.day}</h3>
-                {day.isFullyCompleted && (
-                  <div className={styles.completedBadge}>
-                    <CheckCircle size={14} />
-                    <span>Completato</span>
+    <div className={styles.wrapper}> 
+      <div className={styles.studyPlanContainer}>
+        <NavBar />
+        <div className={styles.contentWrapper}>
+          <header className={styles.studyPlanHeader}>
+              <h1>{project?.title || 'Piano di Studio'}</h1>
+              <p className={styles.planSubtitle}>Il tuo percorso personalizzato verso il successo. Un passo alla volta.</p>
+          </header>
+          
+          <div className={styles.daysGrid}>
+            {daysData.map((day, index) => (
+              <div 
+                key={`day-${day.day}`}
+                className={`${styles.dayCard} ${styles[`gradient${(index % 4) + 1}`]}`}
+                onClick={() => day.topics.length > 0 && handleTopicClick(day.topics[0].id, day.isLocked, day.isCompleted)}
+              >
+                <div className={styles.cardPattern}></div>
+                <div className={styles.cardGlow}></div>
+                <div className={styles.cardContent}>
+                  
+                  <div className={styles.dayIdentity}>
+                    <span className={styles.dayLabel}>GIORNO</span>
+                    <span className={styles.dayNumber}>{day.day}</span>
                   </div>
-                )}
-              </div>
-              
-              <div className={styles.dayCardContent}>
-                {day.topics.length === 0 ? (
-                  <div className={styles.emptyDayMessage}>
-                    <Coffee size={24} />
-                    <p>Giorno di riposo. Ricarica le energie!</p>
+
+                  <div className={styles.topicsContainer}>
+                    {day.topics.length > 0 ? (
+                      day.topics.map(topic => (
+                        <div key={topic.id} className={styles.topicEntry}>
+                          <div className={styles.topicIndicator}></div>
+                          <p className={styles.topicTitle}>{topic.title}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <div className={styles.emptyDayMessage}>
+                        <Coffee size={28} />
+                        <span>Giorno di Riposo</span>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <ul className={styles.topicsList}>
-                    {day.topics.map(topic => (
-                      <li 
-                        key={topic.id} 
-                        className={`${styles.topicItem} ${topic.isCompleted ? styles.completed : ''}`}
-                        onClick={() => handleTopicClick(topic.id, day.isLocked, topic.isCompleted)}
-                        title={topic.isCompleted ? "Completato - clicca per rivedere" : "Clicca per studiare"}
-                      >
-                        <span className={styles.topicTitle}>{topic.title}</span>
-                        {/* MODIFICA: Mostra un'icona diversa se l'argomento è completato */}
-                        {topic.isCompleted ? (
-                           <Check size={20} className={styles.topicIcon} />
-                        ) : (
-                           <ChevronRight size={20} className={styles.topicIcon} />
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-              
-              {day.topics.length > 0 && (
-                <div className={styles.dayCardFooter}>
-                   <div className={styles.progressBar}>
+
+                  <div className={styles.cardBottom}>
+                    <span className={styles.progressText}>
+                      {day.completedCount} di {day.topicsCount} argomenti
+                    </span>
+                    <div className={styles.progressBar}>
                       <div 
-                          className={styles.progressFill}
-                          style={{ width: `${(day.completedCount / day.topicsCount) * 100}%` }}
+                        className={styles.progressFill}
+                        style={{ width: day.topicsCount > 0 ? `${(day.completedCount / day.topicsCount) * 100}%` : '0%' }}
                       ></div>
-                   </div>
-                   <span className={styles.progressText}>
-                      Progresso: {day.completedCount} di {day.topicsCount} argomenti
-                   </span>
+                    </div>
+                  </div>
+
                 </div>
-              )}
-            </div>
-          ))}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

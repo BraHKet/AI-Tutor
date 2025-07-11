@@ -1,305 +1,171 @@
-/* 
-  src/components/styles/StudyPlanViewer.module.css 
-  Stile "High Contrast" con Struttura Robusta e Totalmente Responsive
-*/
+/* src/components/styles/StudyPlanViewer.module.css - MODIFICATO CON HOVER SUGLI ARGOMENTI */
 
-/* 
-  ---------------------------------------------------------------------------
-  STILI DI BASE (Mobile First)
-  Questi stili si applicano a schermi piccoli (smartphone).
-  Il contenuto occupa il 100% della larghezza.
-  ---------------------------------------------------------------------------
-*/
+.wrapper {
+  --page-bg: #f4f7fa;
+  --text-on-light-primary: #111827;
+  --text-on-light-secondary: #4b5563;
+  --text-on-dark-primary: #ffffff;
+  --text-on-dark-secondary: rgba(255, 255, 255, 0.7);
+  --card-border: rgba(255, 255, 255, 0.1);
+  --accent-glow: rgba(99, 102, 241, 0.15);
+
+  /* Gradienti scuri e professionali */
+  --grad-1-start: #2c3e50; --grad-1-end: #000000;      /* Carbone -> Nero */
+  --grad-2-start: #485461; --grad-2-end: #28313b;      /* Grigio Ardesia */
+  --grad-3-start: #3A6073; --grad-3-end: #16222A;      /* Blu Notte */
+  --grad-4-start: #654ea3; --grad-4-end: #4a2c7a;      /* Viola Profondo */
+}
+
+/* --- LAYOUT DI BASE --- */
 .studyPlanContainer {
-  width: 100%;
   min-height: 100vh;
-  background-color: #f0f2f5;
-  background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
-  background-size: 20px 20px;
+  background-color: var(--page-bg);
 }
-
 .contentWrapper {
-  /* Padding per mobile, con 80px in basso per la eventuale nav bar mobile */
-  padding: 1.5rem 1rem 80px 1rem;
-  max-width: 1400px;
-  margin: 0 auto; /* Nessun margine laterale di base */
-  box-sizing: border-box;
+  padding: 2.5rem;
+  margin-left: 200px;
 }
+.studyPlanHeader { margin-bottom: 2.5rem; }
+.studyPlanHeader h1 { font-size: 2rem; font-weight: 600; color: var(--text-on-light-primary); }
+.planSubtitle { font-size: 1rem; color: var(--text-on-light-secondary); margin-top: 0.25rem; }
 
-/* --- Header della Pagina --- */
-.studyPlanHeader {
-  margin-bottom: 2rem;
-  padding-left: 0;
-  text-align: center; 
-}
-
-.studyPlanHeader h1 {
-  font-size: 2.25rem; /* Font più piccolo per mobile */
-  font-weight: 800;
-  color: #1a202c;
-  letter-spacing: -0.04em;
-  margin: 0;
-}
-
-.planSubtitle {
-  font-size: 1rem;
-  color: #718096;
-  margin-top: 0.25rem;
-}
-
-/* --- Griglia delle Card --- */
+/* --- GRIGLIA ADATTIVA --- */
 .daysGrid {
   display: grid;
-  grid-template-columns: 1fr; /* Una colonna su mobile */
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 2rem;
 }
 
-/* --- Stile della Day Card (Più contrasto) --- */
+/* --- CARD GIORNALIERA --- */
 .dayCard {
-  background: rgb(209, 191, 255);
-  border-radius: 18px;
-  border: 1px solid #e2e8f0; 
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.07), 0 5px 10px -5px rgba(0, 0, 0, 0.04);
-  display: flex;
-  flex-direction: column;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  border-radius: 20px;
+  color: var(--text-on-dark-primary);
   position: relative;
   overflow: hidden;
+  box-shadow: 0 10px 25px -10px rgba(0,0,0,0.2);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  cursor: pointer;
+  aspect-ratio: 1.5 / 1;
+  display: flex;
 }
-
 .dayCard:hover {
-  transform: translateY(-8px) scale(1.02);
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15); 
-  border-color: #c7d2fe;
+  transform: translateY(-8px);
+  box-shadow: 0 20px 35px -15px rgba(0,0,0,0.25);
 }
 
-.dayCard.locked {
-  background: #f8fafc;
-  border-color: #e2e8f0;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-}
-.dayCard.locked:hover {
-  transform: none;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+.gradient1 { background-image: linear-gradient(135deg, var(--grad-1-start) 0%, var(--grad-1-end) 100%); }
+.gradient2 { background-image: linear-gradient(135deg, var(--grad-2-start) 0%, var(--grad-2-end) 100%); }
+.gradient3 { background-image: linear-gradient(135deg, var(--grad-3-start) 0%, var(--grad-3-end) 100%); }
+.gradient4 { background-image: linear-gradient(135deg, var(--grad-4-start) 0%, var(--grad-4-end) 100%); }
+
+.cardPattern {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.03' fill-rule='evenodd'%3E%3Cpath d='M0 38.59l2.83-2.83 1.41 1.41L1.41 40H0v-1.41zM0 1.4l2.83 2.83 1.41-1.41L1.41 0H0v1.41zM38.59 40l-2.83-2.83 1.41-1.41L40 38.59V40h-1.41zM40 1.41l-2.83 2.83-1.41-1.41L38.59 0H40v1.41z'/%3E%3C/g%3E%3C/svg%3E");
+  z-index: 1;
 }
 
-.lockOverlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  color: #4a5568;
-  font-weight: 500;
-  text-align: center;
-  padding: 1rem;
+.cardGlow { /* Invariato, funziona bene */ }
+
+.cardContent {
+  position: relative; z-index: 3; padding: 1.5rem;
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
 }
 
-.dayCardHeader {
-  padding: 1.25rem 1.5rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #f1f5f9;
+/* --- SEZIONI INTERNE ALLA CARD --- */
+.dayIdentity {
+  display: flex; align-items: baseline; gap: 0.5rem;
+  color: var(--text-on-dark-secondary);
 }
+.dayLabel { font-size: 0.8rem; font-weight: 500; text-transform: uppercase; }
+.dayNumber { font-size: 1.5rem; font-weight: 600; color: var(--text-on-dark-primary); }
 
-.dayCardHeader h3 {
-  margin: 0;
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: #2d3748;
-}
-
-.completedBadge {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  background-color: #e6fef4;
-  color: #15803d;
-  padding: 0.3rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-.dayCardContent {
-  padding: 1rem 1.25rem;
+/* Contenitore centrale per argomenti */
+.topicsContainer {
   flex-grow: 1;
-  min-height: 140px;
-}
-
-.emptyDayMessage {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: #a0aec0;
-  font-style: italic;
-  padding: 1rem;
-}
-
-.topicsList {
-  list-style: none;
-  padding: 0;
-  margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  justify-content: center; /* Centra verticalmente gli argomenti */
+  padding: 1rem 0;
+  gap: 0.75rem; /* Spazio tra gli argomenti */
 }
 
-.topicItem {
+/* === MODIFICHE PER L'HOVER INIZIANO QUI === */
+
+.topicEntry {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.8rem 1rem;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.2s ease-out;
-  background-color: #f7f8ff;
-  border: 1px solid #e0e7ff;
+  align-items: flex-start; 
+  gap: 0.75rem;
+  /* Aggiunta di padding e margin negativo per un'area di hover più grande */
+  border-radius: 6px;
+  padding: 0.25rem 0.5rem;
+  margin: -0.25rem -0.5rem; 
+  transition: background-color 0.2s ease-in-out;
 }
 
-.topicItem:hover {
-  background-color: #eef2ff;
-  border-color: #c7d2fe;
-  transform: scale(1.03);
-  color: #4338ca;
+/* Aggiunta della regola per l'hover */
+.topicEntry:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.topicIndicator {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: var(--text-on-dark-secondary);
+  margin-top: 0.4em; 
+  flex-shrink: 0;
 }
 
 .topicTitle {
+  font-size: 0.95rem;
   font-weight: 500;
-  color: #4c51bf;
+  /* Modifica del colore di base per un miglior effetto hover */
+  color: var(--text-on-dark-secondary);
+  line-height: 1.5;
+  /* Aggiunta della transizione per il colore del testo */
+  transition: color 0.2s ease-in-out;
 }
 
-.topicItem.completed {
-  background-color: #f9fafb;
-  border-color: #e5e7eb;
-  cursor: default;
-}
-.topicItem.completed:hover {
-  transform: none;
-  background-color: #f9fafb;
-  border-color: #e5e7eb;
-}
-.topicItem.completed .topicTitle {
-  text-decoration: line-through;
-  color: #9ca3af;
+/* Aggiunta della regola per l'hover sul titolo */
+.topicEntry:hover .topicTitle {
+  color: var(--text-on-dark-primary);
 }
 
-.topicArrow {
-  color: #a5b4fc;
-  transition: transform 0.2s ease-out;
+/* === MODIFICHE PER L'HOVER FINISCONO QUI === */
+
+
+.emptyDayMessage {
+  width: 100%; text-align: center;
+  opacity: 0.7;
+  display: flex; flex-direction: column; align-items: center; gap: 0.75rem;
 }
-.topicItem:hover .topicArrow {
-  color: #6366f1;
-  transform: translateX(3px);
-}
-.topicItem.completed .topicArrow {
-  display: none;
+.emptyDayMessage span {
+  font-size: 1rem;
+  font-weight: 500;
 }
 
-.dayCard.locked .topicItem {
-  cursor: not-allowed;
-  background-color: #f9fafb !important;
-  border-color: #f3f4f6 !important;
-  transform: none !important;
+.cardBottom {
+  display: flex; align-items: center; gap: 0.75rem;
 }
-.dayCard.locked .topicTitle {
-  color: #d1d5db;
-}
-.dayCard.locked .topicItem:hover {
-  color: #d1d5db;
-}
-.dayCard.locked .topicItem .topicArrow {
-  display: none;
-}
-
-.dayCardFooter {
-  padding: 1rem 1.5rem;
-  border-top: 1px solid #f1f5f9;
-}
-
-.progressBar {
-  width: 100%;
-  height: 6px;
-  background-color: #e2e8f0;
-  border-radius: 3px;
-  overflow: hidden;
-  margin-bottom: 0.5rem;
-}
-
-.progressFill {
-  height: 100%;
-  background: linear-gradient(90deg, #818cf8, #6366f1);
-  border-radius: 3px;
-  transition: width 0.5s ease-out;
-}
-.dayCard.locked .progressFill {
-  background: #cbd5e1;
-}
-
 .progressText {
-  font-size: 0.8rem;
-  color: #718096;
+  font-size: 0.8rem; font-weight: 500;
+  color: var(--text-on-dark-secondary);
+}
+.progressBar {
+  flex-grow: 1; height: 4px;
+  background: rgba(0,0,0,0.4);
+  border-radius: 2px;
+}
+.progressFill {
+  height: 100%; background: var(--text-on-dark-primary);
+  border-radius: 2px; transition: width 0.5s ease-out;
 }
 
-.errorContainer {
-  text-align: center;
-  padding: 2rem;
-  color: #ef4444;
-}
-
-.backButton {
-  padding: 0.5rem 1rem;
-  border: none;
-  background: #6366f1;
-  color: white;
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-
-/* 
-  ---------------------------------------------------------------------------
-  MEDIA QUERY PER TABLET E DESKTOP (da 768px in su)
-  Da questa larghezza in poi, la sidebar è visibile, quindi il contenuto
-  DEVE avere un margine a sinistra.
-  ---------------------------------------------------------------------------
-*/
-@media (min-width: 768px) {
+/* --- RESPONSIVE --- */
+@media (max-width: 768px) {
   .contentWrapper {
-    /* LA SOLUZIONE CHIAVE: Applichiamo il margine per fare spazio alla sidebar */
-    margin-left: 200px;
-    /* Ripristiniamo il padding per schermi più grandi */
-    padding: 2rem;
-  }
-
-  .studyPlanHeader {
-    text-align: left;
-    padding-left: 0.5rem;
-    margin-bottom: 2.5rem;
-  }
-
-  .studyPlanHeader h1 {
-    /* Ripristiniamo la dimensione originale del font */
-    font-size: 2.75rem;
-  }
-
-  .planSubtitle {
-    font-size: 1.125rem;
-  }
-
-  .daysGrid {
-    /* Ripristiniamo il layout a griglia */
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 2rem;
+    margin-left: 0;
+    padding: 1.5rem 1rem 80px 1rem;
   }
 }
