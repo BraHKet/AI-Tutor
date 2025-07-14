@@ -129,73 +129,64 @@ const StudyPlanViewer = () => {
           </header>
           
           <div className={styles.daysGrid}>
-            {daysData.map((day, index) => {
-              // Definiamo quanti argomenti mostrare al massimo
-              const maxTopicsVisible = 3;
-
-              return (
-                <div 
-                  key={`day-${day.day}`}
-                  className={`${styles.dayCard} ${styles[`gradient${(index % 4) + 1}`]}`}
-                >
-                  <div className={styles.cardPattern}></div>
-                  <div className={styles.cardGlow}></div>
-                  <div className={styles.cardContent}>
-                    
-                    <div className={styles.dayIdentity}>
-                      <span className={styles.dayLabel}>GIORNO</span>
-                      <span className={styles.dayNumber}>{day.day}</span>
-                    </div>
-
-                    <div className={styles.topicsContainer}>
-                      {day.topics.length > 0 ? (
-                        <>
-                          {/* 1. Mappiamo solo i primi 'maxTopicsVisible' argomenti */}
-                          {day.topics.slice(0, maxTopicsVisible).map(topic => (
-                            <div 
-                              key={topic.id} 
-                              className={styles.topicEntry}
-                              onClick={() => handleTopicClick(topic.id)}
-                            >
-                              <div className={styles.topicIndicator}></div>
-                              <p className={styles.topicTitle} title={topic.title}>{topic.title}</p>
-                            </div>
-                          ))}
-                          
-                          {/* 2. Se ci sono più argomenti di quelli visibili, mostriamo l'indicatore */}
-                          {day.topics.length > maxTopicsVisible && (
-                            <div className={styles.moreTopicsIndicator}>
-                              ... e altri {day.topics.length - maxTopicsVisible} argomenti
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <div className={styles.emptyDayMessage}>
-                          <Coffee size={28} />
-                          <span>Giorno di Riposo</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className={styles.cardBottom}>
-                      <span className={styles.progressText}>
-                        {day.completedCount} di {day.topicsCount} argomenti
-                      </span>
-                      <div className={styles.progressBar}>
-                        <div 
-                          className={styles.progressFill}
-                          style={{ width: day.topicsCount > 0 ? `${(day.completedCount / day.topicsCount) * 100}%` : '0%' }}
-                        ></div>
-                      </div>
-                    </div>
-
+            {daysData.map((day, index) => (
+              <div 
+                key={`day-${day.day}`}
+                // L'onClick è stato rimosso da questa card principale
+                className={`${styles.dayCard} ${styles[`gradient${(index % 4) + 1}`]}`}
+              >
+                <div className={styles.cardPattern}></div>
+                <div className={styles.cardGlow}></div>
+                <div className={styles.cardContent}>
+                  
+                  <div className={styles.dayIdentity}>
+                    <span className={styles.dayLabel}>GIORNO</span>
+                    <span className={styles.dayNumber}>{day.day}</span>
                   </div>
+
+                  <div className={styles.topicsContainer}>
+                    {day.topics.length > 0 ? (
+                      day.topics.map(topic => (
+                        // L'onClick è stato aggiunto a questo elemento, che rappresenta il singolo argomento
+                        <div 
+                          key={topic.id} 
+                          className={styles.topicEntry}
+                          onClick={() => handleTopicClick(topic.id)}
+                        >
+                          <div className={styles.topicIndicator}></div>
+                          {/* Aggiunto l'attributo 'title' per vedere il testo completo in hover */}
+                          <p className={styles.topicTitle} title={topic.title}>{topic.title}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <div className={styles.emptyDayMessage}>
+                        <Coffee size={28} />
+                        <span>Giorno di Riposo</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Questa è la parte finale della card, che include la barra di progresso */}
+                  <div className={styles.cardBottom}>
+                    <span className={styles.progressText}>
+                      {day.completedCount} di {day.topicsCount} argomenti
+                    </span>
+                    <div className={styles.progressBar}>
+                      <div 
+                        className={styles.progressFill}
+                        style={{ width: day.topicsCount > 0 ? `${(day.completedCount / day.topicsCount) * 100}%` : '0%' }}
+                      ></div>
+                    </div>
+                  </div>
+
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         </div>
       </div>
     </div>
-  );};
+  );
+};
+
 export default StudyPlanViewer;

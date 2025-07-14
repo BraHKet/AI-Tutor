@@ -85,22 +85,16 @@
   flex-grow: 1;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start; /* Allinea all'inizio per un flusso naturale */
-  padding: 1rem 0;
+  justify-content: flex-start;
+  padding-top: 1rem; /* Manteniamo il padding sopra */
   gap: 0.75rem;
-  overflow: hidden; /* Sicurezza: nasconde tutto ciò che potrebbe comunque sbordare */
-}
+  overflow: hidden;
 
-/* NUOVA CLASSE DA AGGIUNGERE alla fine del file */
-.moreTopicsIndicator {
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--text-on-dark-secondary);
-  text-align: left;
-  /* Spazio a sinistra per allinearsi con il testo degli argomenti (gap + larghezza pallino) */
-  padding-left: calc(0.75rem + 5px); 
-  margin-top: 0.25rem; /* Un po' di spazio dalla lista */
-  opacity: 0.9;
+  /* 
+    MODIFICA: Aumenta questo valore per aumentare lo spazio.
+    Prova con 1.5rem, 2rem, o il valore che ti sembra migliore.
+  */
+  padding-bottom: 1.5rem; 
 }
 
 /* === MODIFICHE PER L'HOVER INIZIANO QUI === */
@@ -133,11 +127,20 @@
 .topicTitle {
   font-size: 0.95rem;
   font-weight: 500;
-  /* Modifica del colore di base per un miglior effetto hover */
   color: var(--text-on-dark-secondary);
   line-height: 1.5;
-  /* Aggiunta della transizione per il colore del testo */
   transition: color 0.2s ease-in-out;
+
+  /* --- AGGIUNTE PER LIMITARE IL TESTO A UNA RIGA --- */
+
+  /* 1. Impedisce al testo di andare a capo */
+  white-space: nowrap;
+
+  /* 2. Nasconde il testo che esce dai bordi del contenitore */
+  overflow: hidden;
+
+  /* 3. Mostra i puntini "..." quando il testo viene nascosto */
+  text-overflow: ellipsis;
 }
 
 /* Aggiunta della regola per l'hover sul titolo */
