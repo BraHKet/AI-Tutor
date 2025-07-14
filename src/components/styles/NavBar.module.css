@@ -7,7 +7,7 @@
   - Transizioni fluide e micro-interazioni per una UX premium.
 */
 
-:root {
+.wrapper {
   --nav-bg: linear-gradient(180deg, #1f2937 0%, #111827 100%);
   --accent-color: #6366F1; /* Indigo 500 */
   --accent-glow: rgba(99, 102, 241, 0.2);

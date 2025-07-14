@@ -333,3 +333,104 @@
   .header p { font-size: 1rem; }
   .dashboardGrid { grid-template-columns: 1fr; }
 }
+
+
+/* --- Header della Home Page (da aggiungere) --- */
+.homeHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2.5rem;
+  flex-wrap: wrap; /* Per gestire meglio gli schermi piccoli */
+  gap: 1.5rem;
+}
+
+.headerWelcome h1 {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 0.25rem 0;
+}
+
+.headerWelcome p {
+  font-size: 1.125rem;
+  color: #64748b;
+  margin: 0;
+}
+
+/* --- Card Utente (da aggiungere) --- */
+.userCard {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem; /* 12px */
+  background: white;
+  padding: 0.75rem;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  min-width: 280px; /* Larghezza minima per evitare che si stringa troppo */
+}
+
+.userAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover; /* Evita che l'immagine si deformi */
+  border: 2px solid white;
+  box-shadow: 0 0 0 2px #6366f1; /* Bordo colorato per richiamare l'accento */
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1; /* Fa in modo che questa sezione occupi lo spazio disponibile */
+}
+
+.userName {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #334155;
+  line-height: 1.2;
+}
+
+.userEmail {
+  font-size: 0.8rem;
+  color: #64748b;
+  line-height: 1.2;
+}
+
+.logoutButton {
+  flex-shrink: 0; /* Impedisce al bottone di rimpicciolirsi */
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  /* MODIFICA: Colore rosso di base per l'icona, per renderla sempre visibile */
+  color: #ef4444; 
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease-in-out;
+}
+
+.logoutButton:hover {
+  /* MODIFICA: Sfondo rosso molto chiaro per il feedback su desktop */
+  background-color: #fee2e2; 
+  /* MODIFICA: Opzionale, scurisce leggermente l'icona al passaggio del mouse */
+  color: #dc2626; 
+}
+
+/* Aggiungi questa media query per gestire meglio l'header su mobile */
+@media (max-width: 768px) {
+  .homeHeader {
+    flex-direction: column;
+    align-items: stretch; /* Allunga gli elementi a tutta larghezza */
+    text-align: center;
+  }
+  
+  .headerWelcome {
+    margin-bottom: 1rem;
+  }
+}

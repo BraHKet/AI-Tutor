@@ -22,14 +22,6 @@ const NavBar = () => {
     };
   }, []);
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
 
   const navItems = [
     { path: '/homepage', icon: <Home size={22} />, label: 'Home' },
@@ -38,6 +30,7 @@ const NavBar = () => {
   ];
 
   return (
+    <div className={styles.wrapper}>
     <nav className={`${styles.navbar} ${isMobile ? styles.mobile : styles.desktop}`}>
       <div className={styles.navbarContainer}>
         
@@ -64,30 +57,10 @@ const NavBar = () => {
             </NavLink>
           ))}
         </div>
-        
-        {/* Sezione Utente e Logout (solo desktop) */}
-        {!isMobile && user && (
-          <div className={styles.navbarFooter}>
-            <div className={styles.userInfo}>
-              <img 
-                src={user.photoURL || 'https://via.placeholder.com/40'} 
-                alt="User profile" 
-                className={styles.userAvatar}
-              />
-              <div className={styles.userDetails}>
-                <p className={styles.userName}>{user.displayName || 'Utente'}</p>
-                <p className={styles.userEmail}>{user.email}</p>
-              </div>
-            </div>
-            <button className={styles.logoutBtn} onClick={handleLogout} title="Effettua il Logout">
-              <LogOut size={18} />
-              <span>Logout</span>
-            </button>
-          </div>
-        )}
 
       </div>
     </nav>
+    </div>
   );
 };
 
