@@ -1,4 +1,4 @@
-/* src/components/styles/TopicViewer.module.css - Versione Finale 2.0 */
+/* src/components/styles/TopicViewer.module.css (Versione Definitiva) */
 
 .topicContainer {
     width: 100%;
@@ -7,7 +7,7 @@
     background-image: radial-gradient(#eaf0f6 1px, transparent 1px);
     background-size: 20px 20px;
     display: flex;
-    align-items: center;
+    flex-direction: column;
     padding-top: 2rem;
     padding-bottom: 2rem;
     box-sizing: border-box;
@@ -19,6 +19,9 @@
     margin: 0 auto;
     padding: 1rem;
     position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 @media (min-width: 769px) {
@@ -30,7 +33,7 @@
 .topicHeader {
     text-align: center;
     margin-bottom: 1rem;
-    /* NUOVO: Rimosso il padding-top, l'header si posizionerà naturalmente */
+    width: 100%;
 }
 
 .backButton {
@@ -48,15 +51,13 @@
     transition: all 0.2s ease;
     box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     position: absolute;
-    /* NUOVO: Spaziatura minima dall'alto */
-    top: 0rem; 
+    top: 1rem; 
     left: 1rem;
     z-index: 20;
 }
 
 @media (min-width: 769px) {
-    /* Ora si allinea con l'inizio del padding del wrapper */
-    .backButton { left: 2rem; }
+    .backButton { left: 2rem; top: 2rem; }
 }
 
 .backButton:hover {
@@ -69,9 +70,9 @@
     font-weight: 700;
     color: #1e293b;
     margin: 0;
-    /* NUOVO: Aggiunto padding per evitare che il testo vada sotto il pulsante */
-    padding-top: 3rem;
+    padding-top: 3.5rem;
 }
+
 .topicDescription {
     font-size: clamp(0.85rem, 3vw, 1rem);
     color: #64748b;
@@ -81,7 +82,19 @@
     margin-right: auto;
 }
 
-/* --- Canvas Orbitale sempre circolare --- */
+.inlineError {
+    color: #ef4444;
+    font-size: 0.9rem;
+    margin-top: 1rem;
+    background-color: #fee2e2;
+    border: 1px solid #fca5a5;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    max-width: 550px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 .orbitalCanvas {
     position: relative;
     width: 100%;
@@ -98,17 +111,13 @@
 
 .connectionsContainer {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    top: 0; left: 0; width: 100%; height: 100%;
     z-index: 1;
 }
 
 .connectionLine {
     position: absolute;
-    top: 50%;
-    left: 50%;
+    top: 50%; left: 50%;
     width: calc(var(--radius) - (var(--satellite-size) / 2));
     height: 1.5px;
     background-color: #d1d5db;
@@ -138,8 +147,7 @@
     box-shadow: 0 10px 25px -5px rgba(30, 41, 59, 0.3);
 }
 .mainNode svg { 
-    width: 45%;
-    height: 45%;
+    width: 45%; height: 45%;
 }
 
 .mainNodeTitle {
@@ -150,12 +158,16 @@
 
 .satelliteWrapper {
     position: absolute;
-    top: 50%;
-    left: 50%;
+    top: 50%; left: 50%;
     width: var(--satellite-size);
     height: var(--satellite-size);
     z-index: 10;
     transform-origin: 0 0;
+}
+.satelliteWrapper a {
+    display: block;
+    width: 100%;
+    height: 100%;
 }
 
 .satellite1 { transform: rotate(0deg)   translateX(var(--radius)) rotate(0deg)   translate(-50%, -50%); }
@@ -177,6 +189,7 @@
 }
 
 .satelliteNode {
+    position: relative;
     background: #1e293b;
     box-shadow: 0 8px 16px rgba(30,41,59,0.15);
     color: white;
@@ -184,25 +197,61 @@
 .satelliteNode:hover {
     transform: scale(1.1);
     background: #334155;
-    box-shadow: 0 12px 24px rgba(30,41,59,0.2);
 }
-.satelliteNode .nodeIcon {
-    width: 50%;
-    height: 50%;
-}
-.satelliteNode .nodeTitle { display: none; }
 
+.deleteButton {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    width: 28px;
+    height: 28px;
+    background-color: #ef4444;
+    color: white;
+    border: 2px solid #f8fafc;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 15;
+    transition: transform 0.2s ease;
+    opacity: 1;
+    transform: scale(1);
+}
+
+.deleteButton:hover {
+    transform: scale(1.15);
+    background-color: #dc2626;
+}
+
+.loadingNode {
+    background: #e2e8f0;
+    cursor: wait;
+}
+
+.spinIcon {
+    animation: spin 1.5s linear infinite;
+    color: #475569;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* --- MODIFICA CHIAVE: Pulsante Aggiungi sempre blu --- */
 .satelliteNodePlaceholder {
-    border: 1.5px dashed #d1d5db;
-    color: #9ca3af;
-    background: #fdfdfd;
+    /* Stile di base + stile hover combinati */
+    border: 1.5px dashed #6366f1; /* Colore del bordo blu */
+    color: #6366f1;              /* Colore del testo e icona blu */
+    background: #f7f8ff;         /* Sfondo leggermente blu */
     flex-direction: column;
 }
-.satelliteNodePlaceholder:hover {
-    border-color: #6366f1;
-    background: #f7f8ff;
-    color: #6366f1;
-}
+
+/* Rimuoviamo la regola :hover separata perché non è più necessaria */
+/* .satelliteNodePlaceholder:hover { ... } */
+
+
 .satelliteNodePlaceholder span {
     font-size: clamp(0.6rem, 2vw, 0.75rem);
     font-weight: 500;
@@ -213,7 +262,6 @@
     height: 35%;
 }
 
-/* --- Sezione AI --- */
 .aiSection {
     background: white;
     border-radius: 16px;
@@ -225,7 +273,7 @@
     box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
     border: 1px solid #e2e8f0;
     max-width: 700px;
-    /* NUOVO: Aggiunto margine inferiore per dare spazio su mobile */
+    width: 100%;
     margin-bottom: 2rem;
 }
 @media (max-width: 768px) {
@@ -242,6 +290,9 @@
     align-items: center;
     justify-content: center;
     color: white;
+}
+.aiContent {
+    flex-grow: 1;
 }
 .aiContent h2 {
     font-size: 1.25rem;
@@ -271,7 +322,7 @@
     margin-left: auto;
 }
 @media (max-width: 768px) {
-    .aiButton { margin-left: 0; }
+    .aiButton { margin-left: 0; margin-top: 1rem; }
 }
 .aiButton:hover {
     background: #334155;
@@ -285,4 +336,14 @@
     color: #ef4444;
 }
 
+@media (max-width: 420px) {
+    .orbitalCanvas {
+        --main-node-size: clamp(70px, 18vw, 90px);
+        --satellite-size: clamp(50px, 12vw, 60px);
+        --radius: clamp(90px, 35vw, 140px);
+    }
 
+    .topicHeader h1 {
+        font-size: 1.5rem;
+    }
+}
