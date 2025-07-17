@@ -9,9 +9,9 @@ import SimpleLoading from './SimpleLoading';
 import styles from './styles/TopicViewer.module.css';
 import { ArrowLeft, FileText, Plus, BrainCircuit, Bot, FileImage, Link as LinkIcon, File, X, Loader } from 'lucide-react';
 
-// --- Componente SatelliteNode: Gestisce la visualizzazione di ogni satellite ---
+// --- Componente SatelliteNode ---
+// Questo componente rimane puramente visuale, la logica di click viene gestita dal genitore.
 const SatelliteNode = ({ resource, onAdd, onDelete, isLoading }) => {
-    // 1. Stato di Caricamento: Mostra un loader
     if (isLoading) {
         return (
             <div className={`${styles.satelliteNode} ${styles.loadingNode}`}>
@@ -20,7 +20,6 @@ const SatelliteNode = ({ resource, onAdd, onDelete, isLoading }) => {
         );
     }
     
-    // 2. Stato Vuoto (Placeholder): Mostra il pulsante per aggiungere
     if (!resource) {
         return (
             <div className={styles.satelliteNodePlaceholder} onClick={onAdd}>
@@ -30,7 +29,6 @@ const SatelliteNode = ({ resource, onAdd, onDelete, isLoading }) => {
         );
     }
     
-    // Funzione per ottenere l'icona corretta in base al tipo di file
     const getIcon = (type) => {
         const fileType = type || '';
         if (fileType.startsWith('image')) return <FileImage size={24} />;
@@ -38,15 +36,14 @@ const SatelliteNode = ({ resource, onAdd, onDelete, isLoading }) => {
         return <File size={24} />;
     };
     
-    // 3. Stato con Risorsa: Mostra l'icona del file e il pulsante per eliminare
-    const NodeContent = () => (
-        <div className={styles.satelliteNode}>
+    return (
+        <div className={styles.satelliteNode} title={resource.name}>
             {getIcon(resource.type)}
             <button 
                 className={styles.deleteButton} 
                 onClick={(e) => {
-                    e.preventDefault(); // Impedisce al link di aprirsi se si clicca sulla X
-                    e.stopPropagation(); // Ferma la propagazione dell'evento
+                    e.preventDefault();
+                    e.stopPropagation(); // Previene il trigger del click sul genitore
                     onDelete(resource);
                 }}
                 aria-label={`Elimina ${resource.name}`}
@@ -54,15 +51,6 @@ const SatelliteNode = ({ resource, onAdd, onDelete, isLoading }) => {
                 <X size={16} />
             </button>
         </div>
-    );
-    
-    // Rende l'intera icona un link cliccabile se ha un webViewLink
-    return resource.webViewLink ? (
-        <a href={resource.webViewLink} target="_blank" rel="noopener noreferrer" title={resource.name}>
-            <NodeContent />
-        </a>
-    ) : (
-        <NodeContent />
     );
 };
 
@@ -136,7 +124,7 @@ const TopicViewer = () => {
             const uploadedFile = await googleDriveService.uploadFile(file);
             
             const newResource = {
-                type: file.type, // Salva il mimetype completo per un'icona più precisa
+                type: file.type,
                 driveId: uploadedFile.driveFileId,
                 name: uploadedFile.name,
                 webViewLink: uploadedFile.webViewLink,
@@ -200,14 +188,46 @@ const TopicViewer = () => {
         }
     };
 
-    const handleStartExam = () => navigate(`/projects/${projectId}/topic/${topicId}/exam`);
+    // --- NUOVA FUNZIONALITÀ ---
+    // Gestisce il click su un satellite per aprirlo in StudySession
+    const handleSatelliteClick = (resource) => {
+        if (!resource || !resource.driveId) return;
+
+        // Controlla se il file è un PDF, l'unico formato supportato da StudySession
+        const isPdf = resource.type === 'application/pdf' || resource.name?.toLowerCase().endsWith('.pdf');
+
+        if (isPdf) {
+            // Naviga a StudySession passando i dati della risorsa selezionata nello stato
+            navigate(`/projects/${projectId}/study/${topicId}`, {
+                state: {
+                    selectedResource: {
+                        driveId: resource.driveId,
+                        name: resource.name,
+                    }
+                }
+            });
+        } else {
+            // Per altri tipi di file, apri il link di Google Drive in una nuova scheda
+            if (resource.webViewLink) {
+                window.open(resource.webViewLink, '_blank', 'noopener,noreferrer');
+            } else {
+                alert("Questo tipo di file non può essere visualizzato direttamente. Prova a scaricarlo da Google Drive.");
+            }
+        }
+    };
+    
+    // Gestisce il click sul NODO PRINCIPALE
     const handleMainPdfClick = () => {
         if (topic?.sources?.some(s => s.type === 'pdf_chunk')) {
+            // Naviga a StudySession senza stato, così caricherà il PDF principale di default
             navigate(`/projects/${projectId}/study/${topicId}`);
         } else {
             alert("Nessun PDF principale associato a questo argomento.");
         }
     };
+
+    const handleStartExam = () => navigate(`/projects/${projectId}/topic/${topicId}/exam`);
+
 
     if (loading) return <SimpleLoading message="Caricamento argomento..." fullScreen={true}/>;
     if (error && !topic) return <div className={styles.errorContainer}>{error}</div>;
@@ -225,7 +245,7 @@ const TopicViewer = () => {
                     </button>
                     <h1>{topic?.title}</h1>
                     <p className={styles.topicDescription}>
-                        Questo è il tuo centro di comando. Clicca sul PDF principale per studiare o aggiungi file di approfondimento.
+                        Questo è il tuo centro di comando. Clicca sul PDF principale per studiare o esplora le risorse collegate.
                     </p>
                     {error && <p className={styles.inlineError}>{error}</p>}
                 </header>
@@ -243,7 +263,12 @@ const TopicViewer = () => {
                     </div>
 
                     {satelliteResources.map((resource, index) => (
-                        <div key={resource?.id || index} className={`${styles.satelliteWrapper} ${styles[`satellite${index + 1}`]}`}>
+                        <div 
+                            key={resource?.id || index} 
+                            className={`${styles.satelliteWrapper} ${styles[`satellite${index + 1}`]}`}
+                            // Aggiunto il gestore di click qui
+                            onClick={() => handleSatelliteClick(resource)}
+                        >
                             <SatelliteNode 
                                 resource={resource}
                                 isLoading={uploadingIndex === index}
@@ -265,6 +290,34 @@ const TopicViewer = () => {
                     </button>
                 </section>
             </div>
+            {/* 
+                NOTA PER LO SVILUPPATORE:
+                Per far funzionare questa logica, il componente 'StudySession.jsx'
+                deve essere aggiornato per leggere lo stato della rotta.
+
+                Esempio di come modificare 'StudySession.jsx':
+
+                import { useLocation } from 'react-router-dom';
+
+                const StudySession = () => {
+                    const location = useLocation();
+                    const selectedResource = location.state?.selectedResource;
+
+                    useEffect(() => {
+                        const loadPdf = async () => {
+                            if (selectedResource?.driveId) {
+                                // Carica il PDF del satellite usando selectedResource.driveId
+                                // Esempio: const blob = await googleDriveService.downloadPdfChunk(selectedResource.driveId, token);
+                            } else {
+                                // Logica esistente: carica il PDF principale del topic
+                            }
+                        };
+                        loadPdf();
+                    }, [topicId, selectedResource]); // Aggiungi selectedResource alle dipendenze
+                    
+                    // ... resto del componente
+                }
+            */}
         </div>
     );
 };

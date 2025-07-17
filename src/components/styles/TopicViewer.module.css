@@ -1,4 +1,4 @@
-/* src/components/styles/TopicViewer.module.css */
+/* src/components/styles/TopicViewer.module.css (Versione Definitiva) */
 
 .topicContainer {
     width: 100%;
@@ -164,7 +164,7 @@
     z-index: 10;
     transform-origin: 0 0;
 }
-.satelliteWrapper a { /* Stile per il link che wrappa il nodo */
+.satelliteWrapper a {
     display: block;
     width: 100%;
     height: 100%;
@@ -194,19 +194,17 @@
     box-shadow: 0 8px 16px rgba(30,41,59,0.15);
     color: white;
 }
-.satelliteWrapper a:hover .satelliteNode,
 .satelliteNode:hover {
     transform: scale(1.1);
     background: #334155;
-    box-shadow: 0 12px 24px rgba(30,41,59,0.2);
 }
 
 .deleteButton {
     position: absolute;
     top: -5px;
     right: -5px;
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     background-color: #ef4444;
     color: white;
     border: 2px solid #f8fafc;
@@ -215,21 +213,15 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    opacity: 0; /* Nascosto di default */
-    transform: scale(0.8);
-    transition: opacity 0.2s ease, transform 0.2s ease;
     z-index: 15;
-}
-
-/* Mostra il pulsante di eliminazione quando si passa sopra al nodo satellite */
-.satelliteNode:hover .deleteButton {
+    transition: transform 0.2s ease;
     opacity: 1;
     transform: scale(1);
 }
 
 .deleteButton:hover {
+    transform: scale(1.15);
     background-color: #dc2626;
-    transform: scale(1.15) !important; /* Forza lo scale anche durante l'hover del parent */
 }
 
 .loadingNode {
@@ -247,17 +239,19 @@
     to { transform: rotate(360deg); }
 }
 
+/* --- MODIFICA CHIAVE: Pulsante Aggiungi sempre blu --- */
 .satelliteNodePlaceholder {
-    border: 1.5px dashed #d1d5db;
-    color: #9ca3af;
-    background: #fdfdfd;
+    /* Stile di base + stile hover combinati */
+    border: 1.5px dashed #6366f1; /* Colore del bordo blu */
+    color: #6366f1;              /* Colore del testo e icona blu */
+    background: #f7f8ff;         /* Sfondo leggermente blu */
     flex-direction: column;
 }
-.satelliteNodePlaceholder:hover {
-    border-color: #6366f1;
-    background: #f7f8ff;
-    color: #6366f1;
-}
+
+/* Rimuoviamo la regola :hover separata perché non è più necessaria */
+/* .satelliteNodePlaceholder:hover { ... } */
+
+
 .satelliteNodePlaceholder span {
     font-size: clamp(0.6rem, 2vw, 0.75rem);
     font-weight: 500;
@@ -340,4 +334,16 @@
     padding: 2rem;
     text-align: center;
     color: #ef4444;
+}
+
+@media (max-width: 420px) {
+    .orbitalCanvas {
+        --main-node-size: clamp(70px, 18vw, 90px);
+        --satellite-size: clamp(50px, 12vw, 60px);
+        --radius: clamp(90px, 35vw, 140px);
+    }
+
+    .topicHeader h1 {
+        font-size: 1.5rem;
+    }
 }
