@@ -23,6 +23,7 @@ const StudySession = () => {
   const location = useLocation();
   const selectedResource = location.state?.selectedResource;
 
+  // Stati del componente
   const [topic, setTopic] = useState(null);
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -30,44 +31,61 @@ const StudySession = () => {
   const [pdfDocument, setPdfDocument] = useState(null);
   const [numPages, setNumPages] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [scale, setScale] = useState(1.5);
   const [renderingPage, setRenderingPage] = useState(false);
+
+  // Nuovi stati per gestire la trasformazione (zoom + pan)
+  const [scale, setScale] = useState(1);
+  const [translateX, setTranslateX] = useState(0);
+  const [translateY, setTranslateY] = useState(0);
   
+  // Riferimenti (Refs)
   const containerRef = useRef(null);
   const pageRefs = useRef([]);
-  const isScrollingProgrammatically = useRef(false);
-  // Refs per il pinch-to-zoom performante
-  const initialDistance = useRef(0);
-  const lastScale = useRef(1);
   const allPagesContainerRef = useRef(null);
-  const currentGestureScale = useRef(1);
+  const isScrollingProgrammatically = useRef(false);
+  
+  // Nuovo Ref per memorizzare lo stato del gesto in corso
+  const gestureState = useRef({
+    initialDistance: 0,
+    initialScale: 1,
+    initialTranslate: { x: 0, y: 0 },
+    initialMidpoint: { x: 0, y: 0 },
+  });
 
+  // Effetto per il recupero dati iniziale
   useEffect(() => {
     const fetchData = async () => {
       try {
         await googleDriveService.initialize();
         await fetchTopicData();
-      } catch (error) { setError(error); setLoading(false); }
+      } catch (error) {
+        setError(error);
+        setLoading(false);
+      }
     };
     fetchData();
   }, [projectId, topicId, selectedResource]);
 
+  // Effetto per renderizzare le pagine (ora non dipende più da 'scale')
   useEffect(() => {
-    if (!pdfDocument || !scale || !numPages) return;
+    if (!pdfDocument || !numPages) return;
+
     const renderAllPages = async () => {
       setRenderingPage(true);
-      const promises = Array.from({ length: numPages }, (_, i) => renderPage(i + 1));
+      // Usiamo lo 'scale' dallo stato per il rendering ad alta qualità
+      const promises = Array.from({ length: numPages }, (_, i) => renderPage(i + 1, scale));
       await Promise.all(promises);
       setRenderingPage(false);
     };
-    const renderPage = async (pageNumber) => {
+
+    const renderPage = async (pageNumber, renderScale) => {
       try {
         const page = await pdfDocument.getPage(pageNumber);
         const canvas = document.getElementById(`page-canvas-${pageNumber}`);
         if (!canvas) return;
         const devicePixelRatio = window.devicePixelRatio || 1;
-        const viewport = page.getViewport({ scale });
-        const hiDpiViewport = page.getViewport({ scale: scale * devicePixelRatio });
+        const viewport = page.getViewport({ scale: renderScale });
+        const hiDpiViewport = page.getViewport({ scale: renderScale * devicePixelRatio });
         const context = canvas.getContext('2d');
         canvas.width = hiDpiViewport.width;
         canvas.height = hiDpiViewport.height;
@@ -75,11 +93,15 @@ const StudySession = () => {
         canvas.style.height = `${viewport.height}px`;
         const renderContext = { canvasContext: context, viewport: hiDpiViewport };
         await page.render(renderContext).promise;
-      } catch (err) { console.error(`Errore nel rendering della pagina ${pageNumber}:`, err); }
+      } catch (err) {
+        console.error(`Errore nel rendering della pagina ${pageNumber}:`, err);
+      }
     };
+    
     renderAllPages();
-  }, [pdfDocument, scale, numPages]);
+  }, [pdfDocument, numPages, scale]); // Aggiungiamo 'scale' qui, così il re-render ad alta qualità parte dopo lo zoom
 
+  // Effetto per l'IntersectionObserver (invariato)
   useEffect(() => {
     if (pageRefs.current.length === 0 || !containerRef.current) return;
     const observerCallback = (entries) => {
@@ -103,6 +125,7 @@ const StudySession = () => {
     };
   }, [numPages]);
 
+  // Funzioni di fetch (invariate)
   const downloadPdfChunk = async (driveFileId) => {
     try {
       const accessToken = await googleDriveService.ensureAuthenticated();
@@ -148,6 +171,7 @@ const StudySession = () => {
     } catch (err) { console.error("StudySession: Errore nel recupero dati:", err); setError(err); } finally { setLoading(false); }
   };
   
+  // Funzioni di navigazione (invariate)
   const handleNavigation = (pageNumber) => {
     const pageElement = pageRefs.current[pageNumber - 1];
     if (pageElement) {
@@ -160,10 +184,21 @@ const StudySession = () => {
 
   const goToPrevPage = () => { if (currentPage > 1) handleNavigation(currentPage - 1); };
   const goToNextPage = () => { if (currentPage < numPages) handleNavigation(currentPage + 1); };
-  const zoomIn = () => setScale(s => Math.min(s + 0.25, 4));
-  const zoomOut = () => setScale(s => Math.max(s - 0.25, 0.5));
+  
+  // Funzioni di zoom con i pulsanti
+  const zoomWithButtons = (newScale) => {
+    const clampedScale = Math.max(0.5, Math.min(newScale, 4));
+    setScale(clampedScale);
+  };
+  const zoomIn = () => zoomWithButtons(scale + 0.25);
+  const zoomOut = () => zoomWithButtons(scale - 0.25);
 
-  // Logica per il pinch-to-zoom ad alte prestazioni
+  // --- Nuova logica per pinch-to-zoom e pan ---
+  const getMidpoint = (touches) => ({
+    x: (touches[0].clientX + touches[1].clientX) / 2,
+    y: (touches[0].clientY + touches[1].clientY) / 2,
+  });
+
   const getDistance = (touches) => {
     return Math.sqrt(Math.pow(touches[1].clientX - touches[0].clientX, 2) + Math.pow(touches[1].clientY - touches[0].clientY, 2));
   };
@@ -171,34 +206,51 @@ const StudySession = () => {
   const handleTouchStart = useCallback((event) => {
     if (event.touches.length === 2 && allPagesContainerRef.current) {
       event.preventDefault();
-      document.body.style.overflow = 'hidden';
-      initialDistance.current = getDistance(event.touches);
-      lastScale.current = scale;
+      const midpoint = getMidpoint(event.touches);
+      gestureState.current = {
+        initialDistance: getDistance(event.touches),
+        initialScale: scale,
+        initialTranslate: { x: translateX, y: translateY },
+        initialMidpoint: midpoint,
+      };
+      allPagesContainerRef.current.style.transition = 'none';
     }
-  }, [scale]);
+  }, [scale, translateX, translateY]);
 
   const handleTouchMove = useCallback((event) => {
-    if (event.touches.length === 2 && initialDistance.current > 0 && allPagesContainerRef.current) {
+    if (event.touches.length === 2 && allPagesContainerRef.current && gestureState.current.initialDistance > 0) {
       event.preventDefault();
-      const currentDistance = getDistance(event.touches);
-      const zoomFactor = currentDistance / initialDistance.current;
-      const newScale = Math.max(0.5, Math.min(lastScale.current * zoomFactor, 4));
       
-      allPagesContainerRef.current.style.transform = `scale(${newScale})`;
-      currentGestureScale.current = newScale;
+      const scaleFactor = getDistance(event.touches) / gestureState.current.initialDistance;
+      const newScale = Math.max(0.5, Math.min(gestureState.current.initialScale * scaleFactor, 4));
+
+      const currentMidpoint = getMidpoint(event.touches);
+      const newTranslateX = currentMidpoint.x - (gestureState.current.initialMidpoint.x - gestureState.current.initialTranslate.x) * (newScale / gestureState.current.initialScale);
+      const newTranslateY = currentMidpoint.y - (gestureState.current.initialMidpoint.y - gestureState.current.initialTranslate.y) * (newScale / gestureState.current.initialScale);
+      
+      allPagesContainerRef.current.style.transform = `translate(${newTranslateX}px, ${newTranslateY}px) scale(${newScale})`;
     }
   }, []);
 
   const handleTouchEnd = useCallback(() => {
-    if (initialDistance.current > 0 && allPagesContainerRef.current) {
-      document.body.style.overflow = '';
-      allPagesContainerRef.current.style.transform = '';
-      setScale(currentGestureScale.current);
-      initialDistance.current = 0;
+    if (allPagesContainerRef.current && gestureState.current.initialDistance > 0) {
+      allPagesContainerRef.current.style.transition = '';
+      
+      const finalTransform = allPagesContainerRef.current.style.transform;
+      if (finalTransform) {
+        try {
+            const matrix = new DOMMatrixReadOnly(finalTransform);
+            setScale(matrix.a);
+            setTranslateX(matrix.e);
+            setTranslateY(matrix.f);
+        } catch(e) {
+            console.error("Impossibile analizzare la matrice di trasformazione:", e);
+        }
+      }
+      gestureState.current.initialDistance = 0; // Resetta lo stato del gesto
     }
-  }, [setScale]);
+  }, [setScale, setTranslateX, setTranslateY]);
 
-  // Effetto per collegare gli event listener
   useEffect(() => {
     const viewer = containerRef.current;
     if (viewer) {
@@ -216,8 +268,8 @@ const StudySession = () => {
       }
     };
   }, [handleTouchStart, handleTouchMove, handleTouchEnd]);
-
-
+  
+  // JSX del componente
   if (loading) return <SimpleLoading message="Caricamento sessione di studio..." fullScreen={true} />;
   if (error) return ( <div className="error-container"> <X size={48} /> <h2>Errore nel caricamento</h2> <p>{typeof error === 'string' ? error : error.message}</p> <button onClick={() => navigate(-1)} className="btn btn-primary"> Torna indietro </button> </div> );
   
@@ -234,6 +286,9 @@ const StudySession = () => {
           <div
             className="all-pages-container"
             ref={allPagesContainerRef}
+            style={{
+              transform: `translate(${translateX}px, ${translateY}px) scale(${scale})`,
+            }}
           >
             {Array.from({ length: numPages }, (_, i) => (
               <div

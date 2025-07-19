@@ -70,27 +70,30 @@
 /* --- Area di Visualizzazione del PDF --- */
 .pdf-viewer {
   flex: 1;
-  overflow-y: auto;
-  overflow-x: auto; /* Permette lo scroll orizzontale */
-  padding: 2rem;
+  overflow: hidden;
+  padding: 0;
   display: flex;
   justify-content: center;
+  align-items: center;
   background-color: #d3d9e3;
+  position: relative;
+  touch-action: none;
 }
 
 .all-pages-container {
   display: flex;
   flex-direction: column;
   gap: 4rem;
+  transform-origin: 0 0;
+  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .pdf-page-container {
-  scroll-margin-top: 2rem;
+  scroll-margin-top: 2rem; /* Questa regola ora non è più utilizzata, ma non fa danno */
 }
 
 .pdf-page-container canvas {
   display: block;
-  /* 'max-width: 100%' rimosso per prevenire la distorsione */
   height: auto;
   background: white;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -123,24 +126,11 @@
   margin-bottom: 2rem;
 }
 
-/* --- Animazioni e Dettagli --- */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.all-pages-container {
-  animation: fadeIn 0.4s ease-out;
-}
-
 /* --- Stili per Schermi Piccoli (Responsive) --- */
 @media (max-width: 1024px) {
   .study-toolbar {
     padding: 0.75rem 1.5rem;
     gap: 1.5rem;
-  }
-  .pdf-viewer {
-    padding: 1.5rem;
   }
   .all-pages-container {
     gap: 3rem;
@@ -153,14 +143,8 @@
     gap: 1rem;
     justify-content: space-around; 
   }
-  .pdf-viewer {
-    padding: 1rem;
-  }
   .all-pages-container {
     gap: 2rem;
-  }
-  .pdf-page-container {
-    scroll-margin-top: 1.5rem;
   }
 }
 
@@ -181,9 +165,6 @@
   .zoom-info {
     font-size: 0.75rem;
     min-width: 55px;
-  }
-  .pdf-viewer {
-    padding: 0.5rem;
   }
   .all-pages-container {
     gap: 1.5rem;
