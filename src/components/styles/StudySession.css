@@ -1,394 +1,102 @@
 /* src/components/styles/StudySession.css */
 
+/* --- Layout Principale --- */
 .study-session-container {
-  min-height: 100vh;
+  height: 100vh;
   background: #f8fafc;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
-.study-session-container.fullscreen {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 9999;
-  background: #1e293b;
-}
-
-/* Header rimosso completamente */
-.study-header {
-  display: none;
-}
-
-.header-left {
-  display: none;
-}
-
-.header-right {
-  display: none;
-}
-
-.topic-info {
-  display: none;
-}
-
-.project-name {
-  display: none;
-}
-
-.complete-button {
-  display: none;
-}
-
-/* Back button integrato nella toolbar */
-.back-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #ef4444;
-  border: 1px solid #dc2626;
-  border-radius: 8px;
-  padding: 0;
-  color: white;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-decoration: none;
-  width: 40px;
-  height: 40px;
-}
-
-.back-button:hover {
-  background: #dc2626;
-  color: white;
-  border-color: #b91c1c;
-  transform: translateY(-1px);
-}
-
-/* Toolbar con back button integrato */
+/* --- Toolbar Fissa a Tema Scuro --- */
 .study-toolbar {
-  background: white;
-  border-bottom: 1px solid #e2e8f0;
+  flex-shrink: 0;
+  background: #1f2937; /* Sfondo grigio scuro */
+  border-bottom: 1px solid #374151; /* Bordo leggermente più chiaro */
   padding: 0.75rem 2rem;
   display: flex;
   align-items: center;
-  gap: 2rem;
   justify-content: center;
-  flex-wrap: wrap;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-/* Prima sezione con back button */
-.toolbar-section.back-section {
-  border-right: 1px solid #e2e8f0;
-  padding: 0 1rem 0 0;
-  margin-right: 1rem;
+  gap: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 10;
 }
 
 .toolbar-section {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0 1rem;
-  border-right: 1px solid #e2e8f0;
 }
 
-.toolbar-section:last-child {
-  border-right: none;
-}
-
-/* Miglioramento evidenziazione */
-.pdf-page-container {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  user-select: none;
-}
-
-.pdf-page-container.highlighting {
-  cursor: crosshair !important;
-}
-
-.pdf-page-container.noting {
-  cursor: copy !important;
-}
-
-/* Evidenziazioni migliorate */
-.highlight {
-  cursor: pointer;
-  pointer-events: auto;
-  border: 2px dashed transparent;
-  transition: all 0.2s ease;
-}
-
-.highlight:hover {
-  border-color: #fbbf24;
-  opacity: 0.6 !important;
-  transform: scale(1.02);
-}
-
-.highlight.selected {
-  border-color: #ef4444;
-  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
-}
-
-/* Overlay per evidenziazione in tempo reale */
-.highlight-preview {
-  position: absolute;
-  background: #fbbf24;
-  opacity: 0.4;
-  border: 2px dashed #f59e0b;
-  pointer-events: none;
-  z-index: 10;
-}
-
+/* --- Stile dei Pulsanti (Tema Scuro) --- */
+.back-button,
 .study-toolbar button {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 40px;
   height: 40px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: #374151;
+  border: 1px solid #4b5563;
   border-radius: 8px;
-  color: #64748b;
+  color: #d1d5db;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
+.back-button:hover,
 .study-toolbar button:hover:not(:disabled) {
-  background: #f1f5f9;
-  color: #475569;
-  border-color: #cbd5e1;
+  background: #4b5563;
+  color: #ffffff;
 }
 
 .study-toolbar button:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
+  background: #374151;
 }
 
-.study-toolbar button.active {
-  background: #6366f1;
-  color: white;
-  border-color: #6366f1;
-}
-
-.page-info, .zoom-info {
+/* --- Testo Informativo (Tema Scuro) --- */
+.page-info,
+.zoom-info {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #475569;
-  min-width: 60px;
+  color: #d1d5db;
+  min-width: 70px;
   text-align: center;
 }
 
-/* PDF Viewer - Centrato e zoom 100% di default */
+/* --- Area di Visualizzazione del PDF --- */
 .pdf-viewer {
   flex: 1;
+  overflow-y: auto;
+  padding: 2rem;
   display: flex;
   justify-content: center;
-  align-items: center; /* Centra verticalmente */
-  padding: 2rem;
-  overflow: auto;
-  background: #f8fafc;
+  background-color: #d3d9e3;
 }
 
-.pdf-container {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
+.all-pages-container {
   display: flex;
-  justify-content: center;
-  align-items: center;
+  flex-direction: column;
+  gap: 4rem;
 }
 
 .pdf-page-container {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  scroll-margin-top: 2rem;
 }
 
-/* Canvas del PDF centrato */
-.react-pdf__Page__canvas {
-  display: block !important;
-  margin: 0 auto;
+.pdf-page-container canvas {
+  display: block;
   max-width: 100%;
   height: auto;
-}
-
-.annotations-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  pointer-events: none;
-}
-
-/* Evidenziazioni */
-.highlight {
-  cursor: pointer;
-  pointer-events: auto;
-}
-
-.highlight:hover {
-  opacity: 0.5 !important;
-}
-
-/* Note */
-.note-marker {
-  cursor: pointer;
-  pointer-events: auto;
-  background: #fbbf24;
-  color: white;
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  position: relative;
-}
-
-.note-marker:hover .note-tooltip {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-}
-
-.note-tooltip {
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%) translateY(-10px);
-  background: #1e293b;
-  color: white;
-  padding: 0.75rem;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  line-height: 1.4;
-  white-space: nowrap;
-  max-width: 200px;
-  white-space: normal;
-  word-wrap: break-word;
-  opacity: 0;
-  visibility: hidden;
-  transition: all 0.2s ease;
-  z-index: 1000;
-}
-
-.note-tooltip::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 6px solid transparent;
-  border-top-color: #1e293b;
-}
-
-/* Modal per note */
-.note-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10000;
-}
-
-.note-modal {
   background: white;
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-  max-width: 500px;
-  width: 90%;
-  max-height: 80vh;
-  overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
 }
 
-.note-modal h3 {
-  margin: 0 0 1rem 0;
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.note-modal textarea {
-  width: 100%;
-  min-height: 120px;
-  padding: 0.75rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  resize: vertical;
-  margin-bottom: 1.5rem;
-  font-family: inherit;
-  line-height: 1.5;
-}
-
-.note-modal textarea:focus {
-  outline: none;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-}
-
-.note-modal-buttons {
-  display: flex;
-  gap: 0.75rem;
-  justify-content: flex-end;
-}
-
-.note-modal-buttons button {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 0.875rem;
-}
-
-.note-modal-buttons button:first-child {
-  background: #f8fafc;
-  color: #64748b;
-  border: 1px solid #e2e8f0;
-}
-
-.note-modal-buttons button:first-child:hover {
-  background: #f1f5f9;
-  color: #475569;
-}
-
-.note-modal-buttons button:last-child {
-  background: #6366f1;
-  color: white;
-}
-
-.note-modal-buttons button:last-child:hover:not(:disabled) {
-  background: #5b52f0;
-  transform: translateY(-1px);
-}
-
-.note-modal-buttons button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none !important;
-}
-
-/* Error container */
+/* --- Container per Messaggi di Errore --- */
 .error-container {
   display: flex;
   flex-direction: column;
@@ -405,212 +113,32 @@
 }
 
 .error-container h2 {
-  margin: 0 0 1rem 0;
   color: #1e293b;
   font-size: 1.5rem;
-  font-weight: 700;
 }
 
 .error-container p {
-  margin: 0 0 2rem 0;
   color: #64748b;
-  line-height: 1.5;
-  max-width: 500px;
+  margin-bottom: 2rem;
 }
 
-/* Responsive design */
+/* --- Stili per Schermi Piccoli (Responsive) --- */
 @media (max-width: 768px) {
-  .study-header {
-    padding: 0.5rem;
-  }
-
   .study-toolbar {
     padding: 0.5rem 1rem;
     gap: 1rem;
-    justify-content: flex-start;
-    overflow-x: auto;
   }
-
-  .toolbar-section {
-    padding: 0 0.5rem;
-    flex-shrink: 0;
-  }
-
   .pdf-viewer {
     padding: 1rem;
   }
-
-  .note-modal {
-    padding: 1.5rem;
-    margin: 1rem;
-  }
-
-  .note-modal-buttons {
-    flex-direction: column;
-  }
-
-  .note-modal-buttons button {
-    width: 100%;
-  }
 }
 
-@media (max-width: 480px) {
-  .study-header {
-    padding: 0.5rem;
-  }
-
-  .study-toolbar {
-    padding: 0.5rem;
-    gap: 0.5rem;
-  }
-
-  .study-toolbar button {
-    width: 36px;
-    height: 36px;
-  }
-
-  .toolbar-section {
-    padding: 0 0.25rem;
-  }
-
-  .pdf-viewer {
-    padding: 0.5rem;
-  }
-
-  .pdf-container {
-    border-radius: 6px;
-  }
-}
-
-/* Fullscreen styles aggiornati */
-.study-session-container.fullscreen .back-button {
-  background: #ef4444;
-  border-color: #dc2626;
-  color: white;
-}
-
-.study-session-container.fullscreen .back-button:hover {
-  background: #dc2626;
-  color: white;
-  border-color: #b91c1c;
-}
-
-.study-session-container.fullscreen .study-toolbar {
-  background: #374151;
-  border-bottom-color: #4b5563;
-  color: white;
-}
-
-.study-session-container.fullscreen .study-toolbar button {
-  background: #4b5563;
-  border-color: #6b7280;
-  color: #d1d5db;
-}
-
-.study-session-container.fullscreen .study-toolbar button:hover:not(:disabled) {
-  background: #6b7280;
-  color: white;
-}
-
-.study-session-container.fullscreen .study-toolbar button.active {
-  background: #6366f1;
-  border-color: #6366f1;
-  color: white;
-}
-
-.study-session-container.fullscreen .page-info,
-.study-session-container.fullscreen .zoom-info {
-  color: #d1d5db;
-}
-
-.study-session-container.fullscreen .pdf-viewer {
-  background: #1e293b;
-  padding: 1rem;
-}
-
-.study-session-container.fullscreen .pdf-container {
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-}
-
-/* Print styles */
-@media print {
-  .study-header,
-  .study-toolbar {
-    display: none !important;
-  }
-
-  .study-session-container {
-    background: white !important;
-  }
-
-  .pdf-viewer {
-    padding: 0 !important;
-  }
-
-  .pdf-container {
-    box-shadow: none !important;
-    border-radius: 0 !important;
-  }
-
-  .annotations-overlay {
-    display: none !important;
-  }
-}
-
-/* Cursori per strumenti */
-.study-session-container.fullscreen .pdf-page-container {
-  cursor: default;
-}
-
-.study-session-container .pdf-page-container[data-tool="highlighter"] {
-  cursor: crosshair;
-}
-
-.study-session-container .pdf-page-container[data-tool="note"] {
-  cursor: copy;
-}
-
-/* Animazioni */
+/* --- Animazioni e Dettagli --- */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-.pdf-container {
-  animation: fadeIn 0.3s ease-out;
-}
-
-.note-modal {
-  animation: fadeIn 0.2s ease-out;
-}
-
-/* Accessibilità */
-.study-toolbar button:focus {
-  outline: 2px solid #6366f1;
-  outline-offset: 2px;
-}
-
-.note-modal textarea:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-}
-
-/* Loading state per PDF */
-.react-pdf__Page__canvas {
-  display: block !important;
-  margin: 0 auto;
-}
-
-.react-pdf__Page__textContent {
-  display: none; /* Nascondi il testo selezionabile per evitare conflitti con le annotazioni */
-}
-
-.react-pdf__Page__annotations {
-  display: none; /* Nascondi le annotazioni PDF native */
+.all-pages-container {
+  animation: fadeIn 0.4s ease-out;
 }
