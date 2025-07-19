@@ -12,8 +12,8 @@
 /* --- Toolbar Fissa a Tema Scuro --- */
 .study-toolbar {
   flex-shrink: 0;
-  background: #1f2937; /* Sfondo grigio scuro */
-  border-bottom: 1px solid #374151; /* Bordo leggermente più chiaro */
+  background: #1f2937;
+  border-bottom: 1px solid #374151;
   padding: 0.75rem 2rem;
   display: flex;
   align-items: center;
@@ -71,6 +71,7 @@
 .pdf-viewer {
   flex: 1;
   overflow-y: auto;
+  overflow-x: auto; /* Permette lo scroll orizzontale */
   padding: 2rem;
   display: flex;
   justify-content: center;
@@ -89,7 +90,7 @@
 
 .pdf-page-container canvas {
   display: block;
-  max-width: 100%;
+  /* 'max-width: 100%' rimosso per prevenire la distorsione */
   height: auto;
   background: white;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -122,17 +123,6 @@
   margin-bottom: 2rem;
 }
 
-/* --- Stili per Schermi Piccoli (Responsive) --- */
-@media (max-width: 768px) {
-  .study-toolbar {
-    padding: 0.5rem 1rem;
-    gap: 1rem;
-  }
-  .pdf-viewer {
-    padding: 1rem;
-  }
-}
-
 /* --- Animazioni e Dettagli --- */
 @keyframes fadeIn {
   from { opacity: 0; }
@@ -141,4 +131,61 @@
 
 .all-pages-container {
   animation: fadeIn 0.4s ease-out;
+}
+
+/* --- Stili per Schermi Piccoli (Responsive) --- */
+@media (max-width: 1024px) {
+  .study-toolbar {
+    padding: 0.75rem 1.5rem;
+    gap: 1.5rem;
+  }
+  .pdf-viewer {
+    padding: 1.5rem;
+  }
+  .all-pages-container {
+    gap: 3rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .study-toolbar {
+    padding: 0.75rem 1rem;
+    gap: 1rem;
+    justify-content: space-around; 
+  }
+  .pdf-viewer {
+    padding: 1rem;
+  }
+  .all-pages-container {
+    gap: 2rem;
+  }
+  .pdf-page-container {
+    scroll-margin-top: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .study-toolbar {
+    padding: 0.5rem;
+    gap: 0.5rem;
+  }
+  .toolbar-section {
+    gap: 0.25rem;
+  }
+  .back-button,
+  .study-toolbar button {
+    width: 38px;
+    height: 38px;
+  }
+  .page-info,
+  .zoom-info {
+    font-size: 0.75rem;
+    min-width: 55px;
+  }
+  .pdf-viewer {
+    padding: 0.5rem;
+  }
+  .all-pages-container {
+    gap: 1.5rem;
+  }
 }
