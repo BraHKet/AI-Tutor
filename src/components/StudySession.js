@@ -36,9 +36,11 @@ const StudySession = () => {
   const containerRef = useRef(null);
   const pageRefs = useRef([]);
   const isScrollingProgrammatically = useRef(false);
-  // Refs per il pinch-to-zoom
+  // Refs per il pinch-to-zoom performante
   const initialDistance = useRef(0);
   const lastScale = useRef(1);
+  const allPagesContainerRef = useRef(null);
+  const currentGestureScale = useRef(1);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -161,32 +163,40 @@ const StudySession = () => {
   const zoomIn = () => setScale(s => Math.min(s + 0.25, 4));
   const zoomOut = () => setScale(s => Math.max(s - 0.25, 0.5));
 
-  // Logica per il pinch-to-zoom
+  // Logica per il pinch-to-zoom ad alte prestazioni
   const getDistance = (touches) => {
     return Math.sqrt(Math.pow(touches[1].clientX - touches[0].clientX, 2) + Math.pow(touches[1].clientY - touches[0].clientY, 2));
   };
 
   const handleTouchStart = useCallback((event) => {
-    if (event.touches.length === 2) {
+    if (event.touches.length === 2 && allPagesContainerRef.current) {
       event.preventDefault();
+      document.body.style.overflow = 'hidden';
       initialDistance.current = getDistance(event.touches);
       lastScale.current = scale;
     }
   }, [scale]);
 
   const handleTouchMove = useCallback((event) => {
-    if (event.touches.length === 2 && initialDistance.current > 0) {
+    if (event.touches.length === 2 && initialDistance.current > 0 && allPagesContainerRef.current) {
       event.preventDefault();
       const currentDistance = getDistance(event.touches);
       const zoomFactor = currentDistance / initialDistance.current;
       const newScale = Math.max(0.5, Math.min(lastScale.current * zoomFactor, 4));
-      setScale(newScale);
+      
+      allPagesContainerRef.current.style.transform = `scale(${newScale})`;
+      currentGestureScale.current = newScale;
     }
-  }, [setScale]);
+  }, []);
 
   const handleTouchEnd = useCallback(() => {
-    initialDistance.current = 0;
-  }, []);
+    if (initialDistance.current > 0 && allPagesContainerRef.current) {
+      document.body.style.overflow = '';
+      allPagesContainerRef.current.style.transform = '';
+      setScale(currentGestureScale.current);
+      initialDistance.current = 0;
+    }
+  }, [setScale]);
 
   // Effetto per collegare gli event listener
   useEffect(() => {
@@ -207,6 +217,7 @@ const StudySession = () => {
     };
   }, [handleTouchStart, handleTouchMove, handleTouchEnd]);
 
+
   if (loading) return <SimpleLoading message="Caricamento sessione di studio..." fullScreen={true} />;
   if (error) return ( <div className="error-container"> <X size={48} /> <h2>Errore nel caricamento</h2> <p>{typeof error === 'string' ? error : error.message}</p> <button onClick={() => navigate(-1)} className="btn btn-primary"> Torna indietro </button> </div> );
   
@@ -220,7 +231,10 @@ const StudySession = () => {
       <div className="pdf-viewer" ref={containerRef}>
         {renderingPage && !pdfDocument && <SimpleLoading message="Caricamento PDF..." />}
         {pdfDocument && (
-          <div className="all-pages-container">
+          <div
+            className="all-pages-container"
+            ref={allPagesContainerRef}
+          >
             {Array.from({ length: numPages }, (_, i) => (
               <div
                 key={`page-container-${i + 1}`}
