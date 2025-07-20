@@ -42,7 +42,13 @@ const StudySession = () => {
   const allPagesContainerRef = useRef(null);
 
   // Ref per la gestione del pinch-to-zoom
-  const pinchState = useRef({ initialDistance: 0, initialScale: 1, isPinching: false });
+  const pinchState = useRef({
+    isPinching: false,
+    initialDistance: 0,
+    initialScale: 1,
+    lastScale: 1, // Aggiunto per il nuovo approccio
+    initialScroll: { left: 0, top: 0 } // Aggiunto per il nuovo approccio
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -163,7 +169,7 @@ const StudySession = () => {
   const goToPrevPage = () => { if (currentPage > 1) handleNavigation(currentPage - 1); };
   const goToNextPage = () => { if (currentPage < numPages) handleNavigation(currentPage + 1); };
 
-  // --- NUOVA LOGICA DI ZOOM ---
+  // --- LOGICA DI ZOOM OTTIMIZZATA ---
   const applyZoom = useCallback((newScale, zoomOrigin) => {
     const container = containerRef.current;
     if (!container) return;
@@ -187,9 +193,9 @@ const StudySession = () => {
       left: contentPoint.x * newScale - origin.x,
       top: contentPoint.y * newScale - origin.y,
     };
-
-    // Applica la nuova scala e poi imposta la posizione dello scroll
+    
     setScale(newScale);
+    
     requestAnimationFrame(() => {
       container.scrollLeft = newScroll.left;
       container.scrollTop = newScroll.top;
@@ -198,19 +204,13 @@ const StudySession = () => {
 
   const zoomIn = () => {
     const container = containerRef.current;
-    const origin = {
-      x: container.clientWidth / 2,
-      y: container.clientHeight / 2,
-    };
+    const origin = { x: container.clientWidth / 2, y: container.clientHeight / 2 };
     applyZoom(scale + 0.25, origin);
   };
 
   const zoomOut = () => {
     const container = containerRef.current;
-    const origin = {
-      x: container.clientWidth / 2,
-      y: container.clientHeight / 2,
-    };
+    const origin = { x: container.clientWidth / 2, y: container.clientHeight / 2 };
     applyZoom(scale - 0.25, origin);
   };
 
@@ -218,11 +218,16 @@ const StudySession = () => {
 
   const handleTouchStart = useCallback((event) => {
     if (event.touches.length === 2) {
-      event.preventDefault(); // Previene lo scroll del browser durante il pinch
+      event.preventDefault();
+      const container = containerRef.current;
+      allPagesContainerRef.current.style.transition = 'none'; // Disabilita transizioni durante il pinch
+
       pinchState.current = {
         isPinching: true,
         initialDistance: getDistance(event.touches),
         initialScale: scale,
+        lastScale: scale,
+        initialScroll: { left: container.scrollLeft, top: container.scrollTop },
       };
     }
   }, [scale]);
@@ -230,22 +235,51 @@ const StudySession = () => {
   const handleTouchMove = useCallback((event) => {
     if (pinchState.current.isPinching && event.touches.length === 2) {
       event.preventDefault();
+      const { initialDistance, initialScale, initialScroll } = pinchState.current;
+      const container = containerRef.current;
+      const content = allPagesContainerRef.current;
+
       const currentDistance = getDistance(event.touches);
-      const newScale = pinchState.current.initialScale * (currentDistance / pinchState.current.initialDistance);
-      
+      const newScale = Math.max(MIN_SCALE, Math.min(initialScale * (currentDistance / initialDistance), MAX_SCALE));
+      pinchState.current.lastScale = newScale;
+
+      const rect = container.getBoundingClientRect();
       const midpoint = {
-        x: (event.touches[0].clientX + event.touches[1].clientX) / 2,
-        y: (event.touches[0].clientY + event.touches[1].clientY) / 2,
+        x: (event.touches[0].clientX + event.touches[1].clientX) / 2 - rect.left,
+        y: (event.touches[0].clientY + event.touches[1].clientY) / 2 - rect.top,
       };
+
+      const contentPoint = {
+        x: (midpoint.x + initialScroll.left) / initialScale,
+        y: (midpoint.y + initialScroll.top) / initialScale,
+      };
+
+      const translateX = - (contentPoint.x * newScale - midpoint.x - initialScroll.left);
+      const translateY = - (contentPoint.y * newScale - midpoint.y - initialScroll.top);
       
-      // Chiamiamo la logica di zoom ad ogni movimento per un feedback live e corretto
-      applyZoom(newScale, midpoint);
+      content.style.transform = `translate(${translateX}px, ${translateY}px) scale(${newScale / initialScale})`;
+
     }
-  }, [applyZoom]);
+  }, []);
   
   const handleTouchEnd = useCallback(() => {
-    pinchState.current = { isPinching: false, initialDistance: 0, initialScale: 1 };
-  }, []);
+    if (pinchState.current.isPinching) {
+      const { lastScale } = pinchState.current;
+      const content = allPagesContainerRef.current;
+      
+      // Calcola l'origine dello zoom per la funzione applyZoom finale
+      const rect = content.getBoundingClientRect();
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const origin = { x: (rect.left + rect.right)/2, y: (rect.top+rect.bottom)/2 };
+      
+      // Resetta la transform e lascia che applyZoom faccia il resto
+      content.style.transform = 'none';
+      content.style.transition = ''; // Riabilita le transizioni se presenti
+
+      applyZoom(lastScale, origin);
+      pinchState.current.isPinching = false;
+    }
+  }, [applyZoom]);
 
   useEffect(() => {
     const viewer = containerRef.current;
@@ -279,9 +313,16 @@ const StudySession = () => {
         {renderingPage && !pdfDocument && <SimpleLoading message="Caricamento PDF..." />}
         {pdfDocument && (
           <div className="all-pages-container-wrapper">
+            {/* 
+              Modifica: ho rimosso 'ref={allPagesContainerRef}' da qui 
+              e l'ho messo nel contenitore figlio, che è quello che viene scalato
+            */}
             <div
               className="all-pages-container"
               ref={allPagesContainerRef}
+              style={{
+                transformOrigin: '0 0' // L'origine della trasformazione è in alto a sinistra
+              }}
             >
               {Array.from({ length: numPages }, (_, i) => (
                 <div
