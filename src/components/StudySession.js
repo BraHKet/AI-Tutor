@@ -41,13 +41,14 @@ const StudySession = () => {
   const isScrollingProgrammatically = useRef(false);
   const allPagesContainerRef = useRef(null);
 
-  // Ref per la gestione del pinch-to-zoom
+  // Ref pulita per la gestione del pinch-to-zoom
   const pinchState = useRef({
     isPinching: false,
     initialDistance: 0,
     initialScale: 1,
-    lastScale: 1, // Aggiunto per il nuovo approccio
-    initialScroll: { left: 0, top: 0 } // Aggiunto per il nuovo approccio
+    lastScale: 1,
+    lastMidpoint: null, // Memorizza l'ultimo punto focale del pinch
+    initialScroll: { left: 0, top: 0 }
   });
 
   useEffect(() => {
@@ -169,13 +170,13 @@ const StudySession = () => {
   const goToPrevPage = () => { if (currentPage > 1) handleNavigation(currentPage - 1); };
   const goToNextPage = () => { if (currentPage < numPages) handleNavigation(currentPage + 1); };
 
-  // --- LOGICA DI ZOOM OTTIMIZZATA ---
   const applyZoom = useCallback((newScale, zoomOrigin) => {
     const container = containerRef.current;
     if (!container) return;
 
     const oldScale = scale;
     newScale = Math.max(MIN_SCALE, Math.min(newScale, MAX_SCALE));
+    if (newScale === oldScale) return;
 
     const rect = container.getBoundingClientRect();
     const scroll = { left: container.scrollLeft, top: container.scrollTop };
@@ -220,13 +221,14 @@ const StudySession = () => {
     if (event.touches.length === 2) {
       event.preventDefault();
       const container = containerRef.current;
-      allPagesContainerRef.current.style.transition = 'none'; // Disabilita transizioni durante il pinch
+      allPagesContainerRef.current.style.transition = 'none';
 
       pinchState.current = {
         isPinching: true,
         initialDistance: getDistance(event.touches),
         initialScale: scale,
         lastScale: scale,
+        lastMidpoint: null,
         initialScroll: { left: container.scrollLeft, top: container.scrollTop },
       };
     }
@@ -236,47 +238,50 @@ const StudySession = () => {
     if (pinchState.current.isPinching && event.touches.length === 2) {
       event.preventDefault();
       const { initialDistance, initialScale, initialScroll } = pinchState.current;
-      const container = containerRef.current;
       const content = allPagesContainerRef.current;
 
       const currentDistance = getDistance(event.touches);
       const newScale = Math.max(MIN_SCALE, Math.min(initialScale * (currentDistance / initialDistance), MAX_SCALE));
       pinchState.current.lastScale = newScale;
 
-      const rect = container.getBoundingClientRect();
       const midpoint = {
-        x: (event.touches[0].clientX + event.touches[1].clientX) / 2 - rect.left,
-        y: (event.touches[0].clientY + event.touches[1].clientY) / 2 - rect.top,
+        x: (event.touches[0].clientX + event.touches[1].clientX) / 2,
+        y: (event.touches[0].clientY + event.touches[1].clientY) / 2,
+      };
+      pinchState.current.lastMidpoint = midpoint; // Memorizza l'ultimo punto focale
+
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const relativeMidpoint = {
+        x: midpoint.x - containerRect.left,
+        y: midpoint.y - containerRect.top,
       };
 
       const contentPoint = {
-        x: (midpoint.x + initialScroll.left) / initialScale,
-        y: (midpoint.y + initialScroll.top) / initialScale,
+        x: (relativeMidpoint.x + initialScroll.left) / initialScale,
+        y: (relativeMidpoint.y + initialScroll.top) / initialScale,
       };
 
-      const translateX = - (contentPoint.x * newScale - midpoint.x - initialScroll.left);
-      const translateY = - (contentPoint.y * newScale - midpoint.y - initialScroll.top);
+      const translateX = - (contentPoint.x * newScale - relativeMidpoint.x - initialScroll.left);
+      const translateY = - (contentPoint.y * newScale - relativeMidpoint.y - initialScroll.top);
       
       content.style.transform = `translate(${translateX}px, ${translateY}px) scale(${newScale / initialScale})`;
-
     }
   }, []);
   
   const handleTouchEnd = useCallback(() => {
     if (pinchState.current.isPinching) {
-      const { lastScale } = pinchState.current;
+      const { lastScale, lastMidpoint } = pinchState.current;
       const content = allPagesContainerRef.current;
       
-      // Calcola l'origine dello zoom per la funzione applyZoom finale
-      const rect = content.getBoundingClientRect();
-      const containerRect = containerRef.current.getBoundingClientRect();
-      const origin = { x: (rect.left + rect.right)/2, y: (rect.top+rect.bottom)/2 };
-      
-      // Resetta la transform e lascia che applyZoom faccia il resto
       content.style.transform = 'none';
-      content.style.transition = ''; // Riabilita le transizioni se presenti
+      content.style.transition = '';
 
-      applyZoom(lastScale, origin);
+      // Se c'è stato un movimento, usa l'ultimo punto focale come origine.
+      // Altrimenti (solo un tap a due dita), non fare nulla.
+      if (lastMidpoint) {
+        applyZoom(lastScale, lastMidpoint);
+      }
+      
       pinchState.current.isPinching = false;
     }
   }, [applyZoom]);
@@ -313,16 +318,10 @@ const StudySession = () => {
         {renderingPage && !pdfDocument && <SimpleLoading message="Caricamento PDF..." />}
         {pdfDocument && (
           <div className="all-pages-container-wrapper">
-            {/* 
-              Modifica: ho rimosso 'ref={allPagesContainerRef}' da qui 
-              e l'ho messo nel contenitore figlio, che è quello che viene scalato
-            */}
             <div
               className="all-pages-container"
               ref={allPagesContainerRef}
-              style={{
-                transformOrigin: '0 0' // L'origine della trasformazione è in alto a sinistra
-              }}
+              style={{ transformOrigin: '0 0' }}
             >
               {Array.from({ length: numPages }, (_, i) => (
                 <div
