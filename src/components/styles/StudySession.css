@@ -68,19 +68,23 @@
 /* --- Area di Visualizzazione del PDF --- */
 .pdf-viewer {
   flex: 1;
-  overflow-y: auto;
-  overflow-x: auto; /* Permette lo scroll orizzontale */
+  overflow: auto; /* Permette lo scroll nativo */
   padding: 2rem;
-  display: block; /* Modificato per uno scroll orizzontale affidabile */
   background-color: #d3d9e3;
+  text-align: left; /* Assicura che il contenuto parta da sinistra */
+}
+
+/* Wrapper per consentire il corretto calcolo dello scroll e centratura */
+.all-pages-container-wrapper {
+  display: inline-block;
+  min-width: 100%;
+  text-align: center;
 }
 
 .all-pages-container {
-  display: flex;
+  display: inline-flex; /* Usa inline-flex per centrare */
   flex-direction: column;
   gap: 4rem;
-  /* Centra il contenitore e permette l'espansione per lo scroll */
-  margin: 0 auto;
 }
 
 .pdf-page-container {
@@ -89,7 +93,6 @@
 
 .pdf-page-container canvas {
   display: block;
-  /* 'max-width: 100%' rimosso per prevenire la distorsione */
   height: auto;
   background: white;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);

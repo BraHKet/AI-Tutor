@@ -17,6 +17,9 @@ if (typeof window !== 'undefined') {
   pdfjsLib.GlobalWorkerOptions.workerPort = null;
 }
 
+const MIN_SCALE = 0.5;
+const MAX_SCALE = 4;
+
 const StudySession = () => {
   const { projectId, topicId } = useParams();
   const navigate = useNavigate();
@@ -36,11 +39,10 @@ const StudySession = () => {
   const containerRef = useRef(null);
   const pageRefs = useRef([]);
   const isScrollingProgrammatically = useRef(false);
-  // Refs per il pinch-to-zoom performante
-  const initialDistance = useRef(0);
-  const lastScale = useRef(1);
   const allPagesContainerRef = useRef(null);
-  const currentGestureScale = useRef(1);
+
+  // Ref per la gestione del pinch-to-zoom
+  const pinchState = useRef({ initialDistance: 0, initialScale: 1, isPinching: false });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -83,7 +85,7 @@ const StudySession = () => {
   useEffect(() => {
     if (pageRefs.current.length === 0 || !containerRef.current) return;
     const observerCallback = (entries) => {
-      if (isScrollingProgrammatically.current) return;
+      if (isScrollingProgrammatically.current || pinchState.current.isPinching) return;
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           const pageIndex = pageRefs.current.indexOf(entry.target);
@@ -160,45 +162,91 @@ const StudySession = () => {
 
   const goToPrevPage = () => { if (currentPage > 1) handleNavigation(currentPage - 1); };
   const goToNextPage = () => { if (currentPage < numPages) handleNavigation(currentPage + 1); };
-  const zoomIn = () => setScale(s => Math.min(s + 0.25, 4));
-  const zoomOut = () => setScale(s => Math.max(s - 0.25, 0.5));
 
-  // Logica per il pinch-to-zoom ad alte prestazioni
-  const getDistance = (touches) => {
-    return Math.sqrt(Math.pow(touches[1].clientX - touches[0].clientX, 2) + Math.pow(touches[1].clientY - touches[0].clientY, 2));
+  // --- NUOVA LOGICA DI ZOOM ---
+  const applyZoom = useCallback((newScale, zoomOrigin) => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const oldScale = scale;
+    newScale = Math.max(MIN_SCALE, Math.min(newScale, MAX_SCALE));
+
+    const rect = container.getBoundingClientRect();
+    const scroll = { left: container.scrollLeft, top: container.scrollTop };
+    const origin = {
+      x: zoomOrigin.x - rect.left,
+      y: zoomOrigin.y - rect.top,
+    };
+
+    const contentPoint = {
+      x: (origin.x + scroll.left) / oldScale,
+      y: (origin.y + scroll.top) / oldScale,
+    };
+
+    const newScroll = {
+      left: contentPoint.x * newScale - origin.x,
+      top: contentPoint.y * newScale - origin.y,
+    };
+
+    // Applica la nuova scala e poi imposta la posizione dello scroll
+    setScale(newScale);
+    requestAnimationFrame(() => {
+      container.scrollLeft = newScroll.left;
+      container.scrollTop = newScroll.top;
+    });
+  }, [scale]);
+
+  const zoomIn = () => {
+    const container = containerRef.current;
+    const origin = {
+      x: container.clientWidth / 2,
+      y: container.clientHeight / 2,
+    };
+    applyZoom(scale + 0.25, origin);
   };
 
+  const zoomOut = () => {
+    const container = containerRef.current;
+    const origin = {
+      x: container.clientWidth / 2,
+      y: container.clientHeight / 2,
+    };
+    applyZoom(scale - 0.25, origin);
+  };
+
+  const getDistance = (touches) => Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
+
   const handleTouchStart = useCallback((event) => {
-    if (event.touches.length === 2 && allPagesContainerRef.current) {
-      event.preventDefault();
-      document.body.style.overflow = 'hidden';
-      initialDistance.current = getDistance(event.touches);
-      lastScale.current = scale;
+    if (event.touches.length === 2) {
+      event.preventDefault(); // Previene lo scroll del browser durante il pinch
+      pinchState.current = {
+        isPinching: true,
+        initialDistance: getDistance(event.touches),
+        initialScale: scale,
+      };
     }
   }, [scale]);
 
   const handleTouchMove = useCallback((event) => {
-    if (event.touches.length === 2 && initialDistance.current > 0 && allPagesContainerRef.current) {
+    if (pinchState.current.isPinching && event.touches.length === 2) {
       event.preventDefault();
       const currentDistance = getDistance(event.touches);
-      const zoomFactor = currentDistance / initialDistance.current;
-      const newScale = Math.max(0.5, Math.min(lastScale.current * zoomFactor, 4));
+      const newScale = pinchState.current.initialScale * (currentDistance / pinchState.current.initialDistance);
       
-      allPagesContainerRef.current.style.transform = `scale(${newScale})`;
-      currentGestureScale.current = newScale;
+      const midpoint = {
+        x: (event.touches[0].clientX + event.touches[1].clientX) / 2,
+        y: (event.touches[0].clientY + event.touches[1].clientY) / 2,
+      };
+      
+      // Chiamiamo la logica di zoom ad ogni movimento per un feedback live e corretto
+      applyZoom(newScale, midpoint);
     }
+  }, [applyZoom]);
+  
+  const handleTouchEnd = useCallback(() => {
+    pinchState.current = { isPinching: false, initialDistance: 0, initialScale: 1 };
   }, []);
 
-  const handleTouchEnd = useCallback(() => {
-    if (initialDistance.current > 0 && allPagesContainerRef.current) {
-      document.body.style.overflow = '';
-      allPagesContainerRef.current.style.transform = '';
-      setScale(currentGestureScale.current);
-      initialDistance.current = 0;
-    }
-  }, [setScale]);
-
-  // Effetto per collegare gli event listener
   useEffect(() => {
     const viewer = containerRef.current;
     if (viewer) {
@@ -217,7 +265,6 @@ const StudySession = () => {
     };
   }, [handleTouchStart, handleTouchMove, handleTouchEnd]);
 
-
   if (loading) return <SimpleLoading message="Caricamento sessione di studio..." fullScreen={true} />;
   if (error) return ( <div className="error-container"> <X size={48} /> <h2>Errore nel caricamento</h2> <p>{typeof error === 'string' ? error : error.message}</p> <button onClick={() => navigate(-1)} className="btn btn-primary"> Torna indietro </button> </div> );
   
@@ -225,25 +272,27 @@ const StudySession = () => {
     <div className="study-session-container">
       <div className="study-toolbar">
         <div className="toolbar-section"> <button onClick={() => navigate(-1)} className="back-button"> <ArrowLeft size={20} /> </button> </div>
-        <div className="toolbar-section"> <button onClick={goToPrevPage} disabled={currentPage <= 1} title="Pagina precedente"> <ChevronLeft size={18} /> </button> <span className="page-info"> {currentPage} / {numPages || '...'} </span> <button onClick={goToNextPage} disabled={currentPage >= numPages} title="Pagina successiva"> <ChevronRight size={18} /> </button> </div>
+        <div className="toolbar-section"> <button onClick={goToPrevPage} disabled={currentPage <= 1} title="Pagina precedente"> <ChevronLeft size={18} /> </button> <span className="page-info"> {currentPage} / {numPages || '...'} </span> <button onClick={goToNextPage} disabled={!numPages || currentPage >= numPages} title="Pagina successiva"> <ChevronRight size={18} /> </button> </div>
         <div className="toolbar-section"> <button onClick={zoomOut} title="Riduci zoom"> <ZoomOut size={18} /> </button> <span className="zoom-info"> {Math.round(scale * 100)}% </span> <button onClick={zoomIn} title="Aumenta zoom"> <ZoomIn size={18} /> </button> </div>
       </div>
       <div className="pdf-viewer" ref={containerRef}>
         {renderingPage && !pdfDocument && <SimpleLoading message="Caricamento PDF..." />}
         {pdfDocument && (
-          <div
-            className="all-pages-container"
-            ref={allPagesContainerRef}
-          >
-            {Array.from({ length: numPages }, (_, i) => (
-              <div
-                key={`page-container-${i + 1}`}
-                ref={(el) => (pageRefs.current[i] = el)}
-                className="pdf-page-container"
-              >
-                <canvas id={`page-canvas-${i + 1}`} />
-              </div>
-            ))}
+          <div className="all-pages-container-wrapper">
+            <div
+              className="all-pages-container"
+              ref={allPagesContainerRef}
+            >
+              {Array.from({ length: numPages }, (_, i) => (
+                <div
+                  key={`page-container-${i + 1}`}
+                  ref={(el) => (pageRefs.current[i] = el)}
+                  className="pdf-page-container"
+                >
+                  <canvas id={`page-canvas-${i + 1}`} />
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
