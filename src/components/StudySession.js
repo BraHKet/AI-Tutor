@@ -31,17 +31,16 @@ const StudySession = () => {
   const [numPages, setNumPages] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [scale, setScale] = useState(1.5);
-  const [offset, setOffset] = useState({ x: 0, y: 0 }); // Stato per il panning
   const [renderingPage, setRenderingPage] = useState(false);
   
   const containerRef = useRef(null);
   const pageRefs = useRef([]);
   const isScrollingProgrammatically = useRef(false);
+  // Refs per il pinch-to-zoom performante
+  const initialDistance = useRef(0);
+  const lastScale = useRef(1);
   const allPagesContainerRef = useRef(null);
-
-  // Refs per la gestione delle gesture (pan e zoom)
-  const startGestureState = useRef(null);
-  const liveTransform = useRef({ scale: 1.5, offset: { x: 0, y: 0 } });
+  const currentGestureScale = useRef(1);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -164,83 +163,42 @@ const StudySession = () => {
   const zoomIn = () => setScale(s => Math.min(s + 0.25, 4));
   const zoomOut = () => setScale(s => Math.max(s - 0.25, 0.5));
 
-  // --- Nuova Logica per Pan & Zoom ---
+  // Logica per il pinch-to-zoom ad alte prestazioni
   const getDistance = (touches) => {
     return Math.sqrt(Math.pow(touches[1].clientX - touches[0].clientX, 2) + Math.pow(touches[1].clientY - touches[0].clientY, 2));
   };
 
   const handleTouchStart = useCallback((event) => {
-    if (!allPagesContainerRef.current) return;
-    const touches = event.touches;
-    if (touches.length > 2) return;
-    
-    event.preventDefault();
-    document.body.style.overflow = 'hidden';
-
-    let midpoint, distance = 0;
-    if (touches.length === 1) { // Pan
-      midpoint = { x: touches[0].clientX, y: touches[0].clientY };
-    } else { // Pinch
-      midpoint = { x: (touches[0].clientX + touches[1].clientX) / 2, y: (touches[0].clientY + touches[1].clientY) / 2 };
-      distance = getDistance(touches);
+    if (event.touches.length === 2 && allPagesContainerRef.current) {
+      event.preventDefault();
+      document.body.style.overflow = 'hidden';
+      initialDistance.current = getDistance(event.touches);
+      lastScale.current = scale;
     }
-    
-    startGestureState.current = {
-      initialScale: scale,
-      initialOffset: offset,
-      initialDistance: distance,
-      initialMidpoint: midpoint,
-      isPanning: touches.length === 1,
-    };
-    liveTransform.current = { scale, offset };
-
-  }, [scale, offset]);
+  }, [scale]);
 
   const handleTouchMove = useCallback((event) => {
-    if (!startGestureState.current || !allPagesContainerRef.current) return;
-    event.preventDefault();
-    const touches = event.touches;
-    const { initialScale, initialOffset, initialDistance, initialMidpoint, isPanning } = startGestureState.current;
-
-    let newScale = liveTransform.current.scale;
-    let newOffset = liveTransform.current.offset;
-
-    if (isPanning && touches.length === 1) {
-      const currentPoint = { x: touches[0].clientX, y: touches[0].clientY };
-      newOffset = {
-        x: initialOffset.x + (currentPoint.x - initialMidpoint.x),
-        y: initialOffset.y + (currentPoint.y - initialMidpoint.y)
-      };
-    } else if (!isPanning && touches.length === 2) {
-      const currentDistance = getDistance(touches);
-      newScale = Math.max(0.5, Math.min(initialScale * (currentDistance / initialDistance), 4));
+    if (event.touches.length === 2 && initialDistance.current > 0 && allPagesContainerRef.current) {
+      event.preventDefault();
+      const currentDistance = getDistance(event.touches);
+      const zoomFactor = currentDistance / initialDistance.current;
+      const newScale = Math.max(0.5, Math.min(lastScale.current * zoomFactor, 4));
       
-      const currentMidpoint = { x: (touches[0].clientX + touches[1].clientX) / 2, y: (touches[0].clientY + touches[1].clientY) / 2 };
-      
-      newOffset = {
-        x: currentMidpoint.x - (initialMidpoint.x - initialOffset.x) * (newScale / initialScale),
-        y: currentMidpoint.y - (initialMidpoint.y - initialOffset.y) * (newScale / initialScale),
-      };
+      allPagesContainerRef.current.style.transform = `scale(${newScale})`;
+      currentGestureScale.current = newScale;
     }
-    
-    liveTransform.current = { scale: newScale, offset: newOffset };
-    allPagesContainerRef.current.style.transform = `translate(${newOffset.x}px, ${newOffset.y}px) scale(${newScale})`;
-
   }, []);
 
   const handleTouchEnd = useCallback(() => {
-    if (!startGestureState.current) return;
-    
-    document.body.style.overflow = '';
-    setScale(liveTransform.current.scale);
-    setOffset(liveTransform.current.offset);
-    
-    if(allPagesContainerRef.current) {
-      allPagesContainerRef.current.style.transform = ''; // Lascia che React gestisca lo stile
+    if (initialDistance.current > 0 && allPagesContainerRef.current) {
+      document.body.style.overflow = '';
+      allPagesContainerRef.current.style.transform = '';
+      setScale(currentGestureScale.current);
+      initialDistance.current = 0;
     }
-    startGestureState.current = null;
-  }, []);
+  }, [setScale]);
 
+  // Effetto per collegare gli event listener
   useEffect(() => {
     const viewer = containerRef.current;
     if (viewer) {
@@ -276,9 +234,6 @@ const StudySession = () => {
           <div
             className="all-pages-container"
             ref={allPagesContainerRef}
-            style={{
-                transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
-            }}
           >
             {Array.from({ length: numPages }, (_, i) => (
               <div

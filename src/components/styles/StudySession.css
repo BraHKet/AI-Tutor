@@ -68,11 +68,10 @@
 /* --- Area di Visualizzazione del PDF --- */
 .pdf-viewer {
   flex: 1;
-  overflow: hidden; /* Disabilita lo scroll nativo per usare pan/zoom */
-  touch-action: none; /* Previene gesti del browser come pull-to-refresh */
+  overflow-y: auto;
+  overflow-x: auto; /* Permette lo scroll orizzontale */
   padding: 2rem;
-  display: flex;
-  justify-content: center;
+  display: block; /* Modificato per uno scroll orizzontale affidabile */
   background-color: #d3d9e3;
 }
 
@@ -80,8 +79,8 @@
   display: flex;
   flex-direction: column;
   gap: 4rem;
-  /* L'origine della trasformazione è in alto a sinistra per calcoli più semplici */
-  transform-origin: 0 0;
+  /* Centra il contenitore e permette l'espansione per lo scroll */
+  margin: 0 auto;
 }
 
 .pdf-page-container {
@@ -90,6 +89,7 @@
 
 .pdf-page-container canvas {
   display: block;
+  /* 'max-width: 100%' rimosso per prevenire la distorsione */
   height: auto;
   background: white;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
