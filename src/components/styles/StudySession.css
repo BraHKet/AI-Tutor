@@ -85,6 +85,7 @@
   display: inline-flex; /* Usa inline-flex per centrare */
   flex-direction: column;
   gap: 4rem;
+  /* La trasformazione (scale, translate) viene applicata inline dallo script */
 }
 
 .pdf-page-container {
