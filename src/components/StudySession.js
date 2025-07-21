@@ -19,6 +19,7 @@ if (typeof window !== 'undefined') {
 
 const MIN_SCALE = 0.5;
 const MAX_SCALE = 4;
+const PAGE_RENDER_BUFFER = 2; // Renderizza 2 pagine extra prima e dopo quelle visibili
 
 const StudySession = () => {
   const { projectId, topicId } = useParams();
@@ -34,83 +35,122 @@ const StudySession = () => {
   const [numPages, setNumPages] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [scale, setScale] = useState(1.5);
-  const [renderingPage, setRenderingPage] = useState(false);
-  
+
+  // NUOVO: Stato per tenere traccia delle pagine da renderizzare (quelle visibili + buffer)
+  const [visiblePages, setVisiblePages] = useState(new Set());
+
   const containerRef = useRef(null);
   const pageRefs = useRef([]);
-  const isScrollingProgrammatically = useRef(false);
   const allPagesContainerRef = useRef(null);
+  const isScrollingProgrammatically = useRef(false);
+  const observer = useRef(null);
 
-  // Ref per la gestione del pinch-to-zoom con il metodo "GPU"
   const pinchState = useRef({
     isPinching: false,
     initialDistance: 0,
     initialScale: 1,
     lastScale: 1,
     lastMidpoint: null,
-    initialScroll: { left: 0, top: 0 }
+    initialScroll: { left: 0, top: 0 },
   });
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        await googleDriveService.initialize();
-        await fetchTopicData();
-      } catch (error) { setError(error); setLoading(false); }
-    };
-    fetchData();
-  }, [projectId, topicId, selectedResource]);
+  // Funzione di rendering per una singola pagina
+  const renderPage = useCallback(async (pageNumber, currentPdf, currentScale) => {
+    try {
+      if (!currentPdf) return;
+      const page = await currentPdf.getPage(pageNumber);
+      const canvas = document.getElementById(`page-canvas-${pageNumber}`);
+      if (!canvas) return; // Se il canvas non è nel DOM (perché non più visibile), esci
 
-  useEffect(() => {
-    if (!pdfDocument || !scale || !numPages) return;
-    const renderAllPages = async () => {
-      setRenderingPage(true);
-      const promises = Array.from({ length: numPages }, (_, i) => renderPage(i + 1));
-      await Promise.all(promises);
-      setRenderingPage(false);
-    };
-    const renderPage = async (pageNumber) => {
-      try {
-        const page = await pdfDocument.getPage(pageNumber);
-        const canvas = document.getElementById(`page-canvas-${pageNumber}`);
-        if (!canvas) return;
-        const devicePixelRatio = window.devicePixelRatio || 1;
-        const viewport = page.getViewport({ scale });
-        const hiDpiViewport = page.getViewport({ scale: scale * devicePixelRatio });
-        const context = canvas.getContext('2d');
-        canvas.width = hiDpiViewport.width;
-        canvas.height = hiDpiViewport.height;
-        canvas.style.width = `${viewport.width}px`;
-        canvas.style.height = `${viewport.height}px`;
-        const renderContext = { canvasContext: context, viewport: hiDpiViewport };
-        await page.render(renderContext).promise;
-      } catch (err) { console.error(`Errore nel rendering della pagina ${pageNumber}:`, err); }
-    };
-    renderAllPages();
-  }, [pdfDocument, scale, numPages]);
+      const devicePixelRatio = window.devicePixelRatio || 1;
+      const viewport = page.getViewport({ scale: currentScale });
+      const hiDpiViewport = page.getViewport({ scale: currentScale * devicePixelRatio });
+      const context = canvas.getContext('2d');
 
+      if (canvas.width === hiDpiViewport.width && canvas.height === hiDpiViewport.height) {
+        return; // Dimensione già corretta, non serve ri-renderizzare
+      }
+
+      canvas.width = hiDpiViewport.width;
+      canvas.height = hiDpiViewport.height;
+      canvas.style.width = `${viewport.width}px`;
+      canvas.style.height = `${viewport.height}px`;
+
+      const renderContext = { canvasContext: context, viewport: hiDpiViewport };
+      await page.render(renderContext).promise;
+
+    } catch (err) {
+      console.error(`Errore nel rendering della pagina ${pageNumber}:`, err);
+    }
+  }, []);
+
+  // NUOVO: useEffect per renderizzare SOLO le pagine visibili quando cambiano o cambia lo scale
   useEffect(() => {
-    if (pageRefs.current.length === 0 || !containerRef.current) return;
-    const observerCallback = (entries) => {
-      if (isScrollingProgrammatically.current || pinchState.current.isPinching) return;
+    if (!pdfDocument || !scale || visiblePages.size === 0) return;
+
+    visiblePages.forEach(pageNumber => {
+      renderPage(pageNumber, pdfDocument, scale);
+    });
+  }, [pdfDocument, scale, visiblePages, renderPage]);
+
+  // NUOVO: useEffect per impostare l'IntersectionObserver che popola `visiblePages`
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || numPages === 0) return;
+
+    if (observer.current) observer.current.disconnect();
+
+    const options = {
+      root: container,
+      rootMargin: '100px', // Inizia a caricare le pagine un po' prima che entrino nel viewport
+      threshold: 0,
+    };
+
+    observer.current = new IntersectionObserver((entries) => {
+      const newVisiblePages = new Set(visiblePages);
+      let centralVisiblePage = -1;
+      let maxIntersectionRatio = -1;
+
       entries.forEach(entry => {
+        const pageNumber = parseInt(entry.target.dataset.pageNumber, 10);
+        
+        // Aggiungi o rimuovi pagine dal set di rendering
         if (entry.isIntersecting) {
-          const pageIndex = pageRefs.current.indexOf(entry.target);
-          if (pageIndex !== -1) setCurrentPage(pageIndex + 1);
+            newVisiblePages.add(pageNumber);
+            // Aggiungi buffer
+            for(let i=1; i <= PAGE_RENDER_BUFFER; i++) {
+                if(pageNumber - i > 0) newVisiblePages.add(pageNumber - i);
+                if(pageNumber + i <= numPages) newVisiblePages.add(pageNumber + i);
+            }
+        } else {
+            // Non rimuoviamo subito per evitare sfarfallii durante lo scroll veloce
+        }
+
+        // Trova la pagina più "centrale" per aggiornare il contatore
+        if (entry.intersectionRatio > maxIntersectionRatio) {
+            maxIntersectionRatio = entry.intersectionRatio;
+            centralVisiblePage = pageNumber;
         }
       });
-    };
-    const observer = new IntersectionObserver(observerCallback, {
-      root: containerRef.current,
-      rootMargin: '-50% 0px -50% 0px',
-      threshold: 0,
+      
+      if(!isScrollingProgrammatically.current && centralVisiblePage !== -1) {
+          setCurrentPage(centralVisiblePage);
+      }
+
+      setVisiblePages(newVisiblePages);
+    }, options);
+
+    pageRefs.current.forEach(pageEl => {
+      if (pageEl) observer.current.observe(pageEl);
     });
-    pageRefs.current.forEach(pageEl => { if (pageEl) observer.observe(pageEl); });
+
     return () => {
-      pageRefs.current.forEach(pageEl => { if (pageEl) observer.unobserve(pageEl); });
-      observer.disconnect();
+      if (observer.current) observer.current.disconnect();
     };
-  }, [numPages]);
+  }, [numPages]); // Si riattiva solo se il numero di pagine cambia
+
+
+  // --- Logica di caricamento e gestione dati (invariata) ---
 
   const downloadPdfChunk = async (driveFileId) => {
     try {
@@ -127,16 +167,17 @@ const StudySession = () => {
       const pdf = await loadingTask.promise;
       setPdfDocument(pdf);
       setNumPages(pdf.numPages);
-      pageRefs.current = Array.from({ length: pdf.numPages });
+      pageRefs.current = Array(pdf.numPages).fill(null).map(() => React.createRef());
     } catch (error) { console.error('Errore nel caricamento del PDF:', error); setError('Errore nel caricamento del PDF'); }
   };
-
+  
   const fetchTopicData = async () => {
     if (!projectId || !topicId) {
       setError(new Error("Parametri mancanti nell'URL.")); setLoading(false); return;
     }
     setLoading(true); setError(null);
     try {
+      await googleDriveService.initialize();
       const projectRef = doc(db, 'projects', projectId);
       const projectSnap = await getDoc(projectRef);
       if (!projectSnap.exists()) throw new Error("Progetto non trovato.");
@@ -157,12 +198,19 @@ const StudySession = () => {
     } catch (err) { console.error("StudySession: Errore nel recupero dati:", err); setError(err); } finally { setLoading(false); }
   };
   
+  useEffect(() => {
+    fetchTopicData();
+  }, [projectId, topicId, selectedResource]);
+
+
+  // --- Logica di navigazione e zoom (invariata o con piccole modifiche) ---
+
   const handleNavigation = (pageNumber) => {
     const pageElement = pageRefs.current[pageNumber - 1];
     if (pageElement) {
       setCurrentPage(pageNumber);
       isScrollingProgrammatically.current = true;
-      pageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      pageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
       setTimeout(() => { isScrollingProgrammatically.current = false; }, 1000);
     }
   };
@@ -195,7 +243,9 @@ const StudySession = () => {
       top: contentPoint.y * newScale - origin.y,
     };
     
-    setScale(newScale);
+    // Questo è l'unico punto che causa il re-rendering.
+    // Ora, grazie alla virtualizzazione, sarà un'operazione leggera.
+    setScale(newScale); 
     
     requestAnimationFrame(() => {
       container.scrollLeft = newScroll.left;
@@ -215,6 +265,9 @@ const StudySession = () => {
     applyZoom(scale - 0.25, origin);
   };
 
+  // --- Logica di gestione del tocco (invariata) ---
+  // Questa parte è già ottimale perché manipola solo la trasformazione del contenitore.
+  
   const getDistance = (touches) => Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
 
   const handleTouchStart = useCallback((event) => {
@@ -237,11 +290,12 @@ const StudySession = () => {
   const handleTouchMove = useCallback((event) => {
     if (pinchState.current.isPinching && event.touches.length === 2) {
       event.preventDefault();
-      const { initialDistance, initialScale, initialScroll } = pinchState.current;
+      const { initialDistance, initialScale } = pinchState.current;
       const content = allPagesContainerRef.current;
 
       const currentDistance = getDistance(event.touches);
-      const newScale = Math.max(MIN_SCALE, Math.min(initialScale * (currentDistance / initialDistance), MAX_SCALE));
+      let newScale = initialScale * (currentDistance / initialDistance);
+      
       pinchState.current.lastScale = newScale;
 
       const midpoint = {
@@ -249,24 +303,9 @@ const StudySession = () => {
         y: (event.touches[0].clientY + event.touches[1].clientY) / 2,
       };
       pinchState.current.lastMidpoint = midpoint;
-
-      const containerRect = containerRef.current.getBoundingClientRect();
-      const relativeMidpoint = {
-        x: midpoint.x - containerRect.left,
-        y: midpoint.y - containerRect.top,
-      };
-
-      const contentPoint = {
-        x: (relativeMidpoint.x + initialScroll.left) / initialScale,
-        y: (relativeMidpoint.y + initialScroll.top) / initialScale,
-      };
-      
-      // Calcola la traslazione per mantenere il punto focale sotto le dita
-      const translateX = - (contentPoint.x * newScale - relativeMidpoint.x - initialScroll.left);
-      const translateY = - (contentPoint.y * newScale - relativeMidpoint.y - initialScroll.top);
       
       // Applica la trasformazione visiva via GPU, senza chiamare setState
-      content.style.transform = `translate(${translateX}px, ${translateY}px) scale(${newScale / initialScale})`;
+      content.style.transform = `scale(${newScale})`;
     }
   }, []);
   
@@ -275,12 +314,12 @@ const StudySession = () => {
       const { lastScale, lastMidpoint } = pinchState.current;
       const content = allPagesContainerRef.current;
       
-      // Rimuovi la trasformazione temporanea
-      content.style.transform = 'none';
+      content.style.transform = 'none'; // Rimuovi la trasformazione temporanea
       content.style.transition = '';
 
-      // Consolida lo zoom: chiama applyZoom che usa setState e fa il re-render
       if (lastMidpoint) {
+        // Consolida lo zoom: chiama applyZoom che usa setState.
+        // ORA questo sarà veloce perché ri-renderizza solo le pagine visibili.
         applyZoom(lastScale, lastMidpoint);
       }
       
@@ -309,6 +348,7 @@ const StudySession = () => {
   if (loading) return <SimpleLoading message="Caricamento sessione di studio..." fullScreen={true} />;
   if (error) return ( <div className="error-container"> <X size={48} /> <h2>Errore nel caricamento</h2> <p>{typeof error === 'string' ? error : error.message}</p> <button onClick={() => navigate(-1)} className="btn btn-primary"> Torna indietro </button> </div> );
   
+  // MODIFICATO: JSX per la virtualizzazione
   return (
     <div className="study-session-container">
       <div className="study-toolbar">
@@ -317,23 +357,41 @@ const StudySession = () => {
         <div className="toolbar-section"> <button onClick={zoomOut} title="Riduci zoom"> <ZoomOut size={18} /> </button> <span className="zoom-info"> {Math.round(scale * 100)}% </span> <button onClick={zoomIn} title="Aumenta zoom"> <ZoomIn size={18} /> </button> </div>
       </div>
       <div className="pdf-viewer" ref={containerRef}>
-        {renderingPage && !pdfDocument && <SimpleLoading message="Caricamento PDF..." />}
+        {!pdfDocument && <SimpleLoading message="Caricamento PDF..." />}
         {pdfDocument && (
           <div className="all-pages-container-wrapper">
             <div
               className="all-pages-container"
               ref={allPagesContainerRef}
-              style={{ transformOrigin: '0 0' }}
+              style={{
+                // Applica lo scale direttamente qui, che sarà controllato da React
+                transform: `scale(${scale})`,
+                transformOrigin: 'top left'
+              }}
             >
-              {Array.from({ length: numPages }, (_, i) => (
-                <div
-                  key={`page-container-${i + 1}`}
-                  ref={(el) => (pageRefs.current[i] = el)}
-                  className="pdf-page-container"
-                >
-                  <canvas id={`page-canvas-${i + 1}`} />
-                </div>
-              ))}
+              {Array.from({ length: numPages }, (_, i) => {
+                const pageNumber = i + 1;
+                // Renderizza il contenitore vuoto per tutte le pagine
+                return (
+                  <div
+                    key={`page-container-${pageNumber}`}
+                    ref={(el) => (pageRefs.current[i] = el)}
+                    className="pdf-page-container"
+                    data-page-number={pageNumber}
+                    style={{
+                        // Calcoliamo un'altezza stimata per il placeholder
+                        // per evitare che lo scroll "salti" mentre le pagine caricano.
+                        // Questo può essere migliorato salvando le dimensioni della pagina.
+                        height: pdfDocument ? (pdfDocument.getPage(1).then(p => p.getViewport({scale: 1}).height) * 1.33) + 'px' : '1000px',
+                    }}
+                  >
+                    {/* Renderizza il canvas solo se la pagina è visibile */}
+                    {visiblePages.has(pageNumber) && (
+                      <canvas id={`page-canvas-${pageNumber}`} />
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
