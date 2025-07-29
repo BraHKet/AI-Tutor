@@ -281,7 +281,7 @@ const CreateProject = () => {
                       accept=".pdf" 
                       onChange={handleFileChange} 
                       className={styles['hidden-file-input']} 
-                      disabled={loading} 
+                      disabled={loading || files.length > 0}
                     />
                     <div className={styles['file-upload-container']}>
                       <label htmlFor="fileInput" className={`${styles['file-upload-btn']} ${loading ? styles.disabled : ''}`}>

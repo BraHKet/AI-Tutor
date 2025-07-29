@@ -37,7 +37,7 @@ const NavBar = () => {
         {/* Logo visibile solo su desktop */}
         {!isMobile && (
           <div className={styles.navbarLogo}>
-            AI Tutor
+            Mentora
           </div>
         )}
         

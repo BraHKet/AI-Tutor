@@ -372,7 +372,7 @@ export async function executeAIRequest(input) {
       logPhase(phaseName, `Errore tentativo ${attempt}/${maxRetries} (PAGINATO): ${error.message}`);
       
       if (attempt < maxRetries) {
-        const delayMs = 2000 * attempt;
+        const delayMs = 50000 * attempt;
         progressCallback?.({ type: 'processing', message: `Ritentando ${phaseName} (paginato)...` });
         logPhase(phaseName, `Ritento tra ${delayMs}ms...`);
         await new Promise(resolve => setTimeout(resolve, delayMs));
