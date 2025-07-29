@@ -45,7 +45,7 @@ const CreateProject = () => {
       console.log('CreateProject: Component unmounted');
       isMounted.current = false;
     };
-  }, [resetAllState]);
+  }, [location, resetAllState, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -168,11 +168,14 @@ const CreateProject = () => {
 
     } catch (error) {
       console.error('CreateProject: Error during local analysis:', error);
-      setError(`Errore durante l'analisi: ${error.message}`);
+
+      //setError(`Errore durante l'analisi: ${error.message}`);   //togliere commento solo per capire errore più a fondo
+      setError(`Errore durante l'analisi. Riprova più tardi!`);
       setSuccess('');
       setLoading(false); 
       setLoadingMessage(''); 
     }
+      
   };
   
   const handleCancel = () => {
@@ -187,7 +190,7 @@ const CreateProject = () => {
       
       <LoadingOverlay 
         isVisible={loading}
-        message={loadingMessage || 'Analisi in corso...'}
+        message={'Analisi in corso...'}
         phase={loadingPhase}
         details="L'AI sta analizzando i contenuti dei tuoi PDF per creare un piano di studio personalizzato."
       />
