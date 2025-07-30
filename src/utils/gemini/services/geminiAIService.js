@@ -268,6 +268,11 @@ export async function executeAIRequest(input) {
   logPhase(phaseName, `Esecuzione AI (modalità ${analysisMode} PAGINATA)`);
   progressCallback?.({ type: 'processing', message: `Esecuzione ${phaseName} (${analysisMode} paginato)...` });
 
+  console.log(
+    `%c[GEMINI CALL] Sto per avviare la richiesta per: "${phaseName}". ORA: ${new Date().toISOString()}`,
+    'color: yellow; font-weight: bold; font-size: 14px;'
+  );
+
   // Verifica inizializzazione Gemini
   if (!genAI || !geminiDefaultModel) {
     throw createPhaseError(phaseName, 'Servizio AI Gemini non inizializzato correttamente');

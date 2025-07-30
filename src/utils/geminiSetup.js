@@ -9,7 +9,7 @@ if (!apiKey) {
 export const genAI = new GoogleGenerativeAI(apiKey);
 
 // Configura il modello che vuoi usare (es. gemini-1.5-flash-latest o gemini-1.5-pro-latest)
-const modelName = "gemini-1.5-flash-latest"; // O "gemini-1.5-pro-latest" per più capacità
+const modelName = "gemini-2.0-flash"; // O "gemini-1.5-pro-latest" per più capacità
 
 export const model = genAI.getGenerativeModel({
   model: modelName,

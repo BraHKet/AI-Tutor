@@ -42,7 +42,12 @@ export const extractTextFromFiles = async (files, onProgress) => {
         let pdfDoc = null;
         try {
             const arrayBuffer = await file.arrayBuffer();
-            const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+            const loadingTask = pdfjsLib.getDocument({
+                data: arrayBuffer,
+                cMapUrl: '/cmaps/', // Assicurati che questo percorso sia servito pubblicamente
+                cMapPacked: true,
+                fontExtraProperties: true, // Può aiutare con alcuni font
+            });
             pdfDoc = await loadingTask.promise;
             const numPages = pdfDoc.numPages;
             console.log(`PDFProcessor/extractText: ${file.name} - Pages found: ${numPages}`);
