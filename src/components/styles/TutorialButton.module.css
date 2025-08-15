@@ -1,15 +1,14 @@
-/* src/components/styles/TutorialButton.module.css (con dimensioni ridotte) */
+/* src/components/styles/TutorialButton.module.css (con stile responsive) */
 
 .fab {
-  /* Posizionamento in basso a destra */
+  /* --- STILI DI DEFAULT (DESKTOP) --- */
   position: fixed;
-  bottom: 24px; /* Ridotto per un look più pulito */
-  right: 24px;  /* Ridotto per un look più pulito */
+  bottom: 24px;
+  right: 24px;
   z-index: 999;
 
-  /* --- MODIFICHE ALLA DIMENSIONE --- */
-  width: 50px;  /* Ridotto da 60px */
-  height: 50px; /* Ridotto da 60px */
+  width: 50px;
+  height: 50px;
   
   border-radius: 50%;
   background-color: #2563eb;
@@ -36,10 +35,9 @@
   transform: scale(1.05);
 }
 
-/* --- MODIFICHE ALL'ICONA INTERNA --- */
 .fab svg {
-  width: 24px;  /* Ridotto da 30px */
-  height: 24px; /* Ridotto da 30px */
+  width: 24px;
+  height: 24px;
 }
 
 @keyframes fab-fade-in {
@@ -50,5 +48,34 @@
   to {
     opacity: 1;
     transform: scale(1);
+  }
+}
+
+
+/* --- NUOVA SEZIONE: STILI PER DISPOSITIVI MOBILI --- */
+/* Queste regole si attivano solo se la larghezza dello schermo è 768px o meno */
+
+@media (max-width: 768px) {
+  .fab {
+    /* Spostiamo il pulsante in alto a destra */
+    top: 16px;
+    right: 16px;
+    bottom: auto; /* Annulliamo la regola 'bottom' del desktop */
+    left: auto;   /* Annulliamo la regola 'left' se presente */
+
+    /* Lo rendiamo più piccolo e discreto */
+    width: 44px;
+    height: 44px;
+
+    /* Sfondo leggermente trasparente per un look più integrato */
+    background-color: rgba(37, 99, 235, 0.9);
+    backdrop-filter: blur(5px); /* Effetto vetro se supportato */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  .fab svg {
+    /* Rimpiccioliamo anche l'icona interna */
+    width: 22px;
+    height: 22px;
   }
 }
