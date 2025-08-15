@@ -14,6 +14,9 @@ import SimpleLoading from './components/SimpleLoading';
 import AgentDemo from './components/AgentDemo'
 // 2. AGGIUNGI: Importa il nuovo componente per la visualizzazione del singolo argomento
 import TopicViewer from './components/TopicViewer';
+// Importa il Context Provider e il Player
+import { VideoTutorialProvider } from './components/context/VideoTutorialContext';
+import VideoTutorialPlayer from './components/VideoTutorialPlayer';
 
 function App() {
   const { user, loading } = useGoogleAuth();
@@ -29,7 +32,9 @@ function App() {
   }
 
   return (
+    <VideoTutorialProvider>
     <Router>
+      <VideoTutorialPlayer />
       <Routes>
         {/* Route pubblica di login */}
         <Route path="/" element={
@@ -71,6 +76,7 @@ function App() {
         } />
       </Routes>
     </Router>
+    </VideoTutorialProvider>
   );
 }
 

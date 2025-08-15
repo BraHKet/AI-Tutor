@@ -1,0 +1,109 @@
+/* src/components/styles/VideoTutorialPlayer.css (Versione Finale SENZA ridimensionamento) */
+
+/* --- STILI PER DESKTOP --- */
+
+.video-player-wrapper {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+  
+  /* --- IMPOSTIAMO LA LARGHEZZA FISSA E GRANDE --- */
+  width: 340px; 
+
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background-color: #f1f1f1;
+}
+
+.player-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: #f1f1f1;
+  font-weight: 600;
+  color: #333;
+  flex-shrink: 0; 
+  /* Rimosso il cursor: grab */
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  color: #555;
+  padding: 0;
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  z-index: 1;
+}
+
+.player-container {
+  width: 100%;
+  background-color: #282828;
+  aspect-ratio: 9 / 16;
+  position: relative; 
+}
+
+.youtube-iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+
+/* --- STILI PER MOBILE (invariati) --- */
+
+@media (max-width: 768px) {
+  .video-player-wrapper {
+    width: 100vw;
+    height: 100vh;
+    top: 0;
+    left: 0;
+    bottom: auto;
+    right: auto;
+    border-radius: 0;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.8);
+  }
+
+  .player-container {
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .player-header {
+    display: none;
+  }
+  
+  .close-btn {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    font-size: 32px;
+    color: white;
+    background-color: rgba(0, 0, 0, 0.5);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    line-height: 1;
+    z-index: 1001;
+  }
+}
