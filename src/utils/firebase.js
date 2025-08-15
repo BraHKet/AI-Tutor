@@ -1,3 +1,17 @@
+// src/utils/firebase.js (VERSIONE FINALE - MINIMAL CHANGE)
+
+import {
+  signInWithCredential, // Useremo questo per il login finale   
+
+
+} from "firebase/auth";
+
+// Installa questa dipendenza: npm install @react-oauth/google
+import { googleLogout } from '@react-oauth/google';
+
+
+
+
 // src/utils/firebase.js - Aggiunto metodo per eliminazione progetti
 
 import { initializeApp } from "firebase/app";
@@ -40,7 +54,65 @@ export const signInWithGoogle = () => {
   return signInWithPopup(auth, provider);
 };
 
+
+
+/**
+ * Esegue il login sicuro tramite backend.
+ * @param {function} onCodeResponse - La funzione che riceve il codice da Google.
+ */
+export const getGoogleAuthCode = (onCodeResponse) => {
+  // Questa funzione apre il popup di Google e restituisce un codice temporaneo.
+  // Usa una libreria specifica per questo flusso.
+  // Dovrai installarla: npm install @react-oauth/google
+  // E configurare il GoogleOAuthProvider nel tuo file index.js o App.js
+};
+
+/**
+ * Funzione che orchestra il login sicuro.
+ * 1. Ottiene un codice temporaneo dal frontend.
+ * 2. Lo invia al backend Vercel per scambiarlo con i token.
+ * 3. Usa i token per autenticare l'utente su Firebase.
+ * @param {string} code - Il codice di autorizzazione di Google.
+ */
+export const signInWithCode = async (code) => {
+  try {
+    // 1. Invia il codice al nostro backend sicuro
+    const response = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to exchange code with backend.');
+    }
+
+    const { idToken } = await response.json();
+
+    if (!idToken) {
+      throw new Error('idToken not received from backend.');
+    }
+
+    // 2. Crea una credenziale Google usando l'idToken ricevuto dal backend
+    const credential = GoogleAuthProvider.credential(idToken);
+
+    // 3. Autentica l'utente su Firebase con questa credenziale sicura
+    return await signInWithCredential(auth, credential);
+
+  } catch (error) {
+    console.error("Error during secure sign-in:", error);
+    throw error;
+  }
+};
+
+
+
+
+
+
 export const logoutUser = () => {
+  // Usa googleLogout per assicurarti che anche la sessione Google sia terminata
+  googleLogout();
   return signOut(auth);
 };
 
