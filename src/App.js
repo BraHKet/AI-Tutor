@@ -17,6 +17,7 @@ import TopicViewer from './components/TopicViewer';
 // Importa il Context Provider e il Player
 import { VideoTutorialProvider } from './components/context/VideoTutorialContext';
 import VideoTutorialPlayer from './components/VideoTutorialPlayer';
+import TutorialButton from './components/TutorialButton';
 
 function App() {
   const { user, loading } = useGoogleAuth();
@@ -35,6 +36,7 @@ function App() {
     <VideoTutorialProvider>
     <Router>
       <VideoTutorialPlayer />
+      <TutorialButton />
       <Routes>
         {/* Route pubblica di login */}
         <Route path="/" element={

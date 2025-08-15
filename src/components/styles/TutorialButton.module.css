@@ -1,0 +1,54 @@
+/* src/components/styles/TutorialButton.module.css (con dimensioni ridotte) */
+
+.fab {
+  /* Posizionamento in basso a destra */
+  position: fixed;
+  bottom: 24px; /* Ridotto per un look più pulito */
+  right: 24px;  /* Ridotto per un look più pulito */
+  z-index: 999;
+
+  /* --- MODIFICHE ALLA DIMENSIONE --- */
+  width: 50px;  /* Ridotto da 60px */
+  height: 50px; /* Ridotto da 60px */
+  
+  border-radius: 50%;
+  background-color: #2563eb;
+  color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  animation: fab-fade-in 0.5s ease-out;
+}
+
+.fab:hover {
+  transform: scale(1.1);
+  background-color: #1d4ed8;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+.fab:active {
+  transform: scale(1.05);
+}
+
+/* --- MODIFICHE ALL'ICONA INTERNA --- */
+.fab svg {
+  width: 24px;  /* Ridotto da 30px */
+  height: 24px; /* Ridotto da 30px */
+}
+
+@keyframes fab-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
