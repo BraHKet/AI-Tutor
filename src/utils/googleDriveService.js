@@ -26,7 +26,7 @@ class GoogleDriveService {
     
     // IMPORTANTE: Assicurati di avere le credenziali corrette
     this.CLIENT_ID = '954741971381-4qtl2v6f4b2iebt23kd827sumf6d31dg.apps.googleusercontent.com';
-    this.API_KEY = 'AIzaSyDEvG7PnTdzMg5xF_xO-u97cjO4QF4rRaw';
+    this.API_KEY = process.env.REACT_APP_GOOGLE_API_KEY;
     this.SCOPES = 'https://www.googleapis.com/auth/drive.file';
     this.FOLDER_NAME = 'AI Tutor Files';
     

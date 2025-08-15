@@ -1,6 +1,6 @@
 // src/utils/gemini/services/geminiAIService.js - SERVIZIO AI CON FORMATO PAGINATO
 
-import { genAI, model as geminiDefaultModel } from '../../geminiSetup.js';
+import { safetySettings as GEMINI_SAFETY_SETTINGS } from '../../geminiSetup.js'; // Importiamo le safetySettings
 import { extractTextFromFiles } from '../../pdfProcessor.js';
 import { 
   SHARED_CONFIG, 
@@ -273,10 +273,7 @@ export async function executeAIRequest(input) {
     'color: yellow; font-weight: bold; font-size: 14px;'
   );
 
-  // Verifica inizializzazione Gemini
-  if (!genAI || !geminiDefaultModel) {
-    throw createPhaseError(phaseName, 'Servizio AI Gemini non inizializzato correttamente');
-  }
+
 
   // Prepara parti della richiesta
   const parts = [{ text: prompt.trim() }];
@@ -305,7 +302,8 @@ export async function executeAIRequest(input) {
       temperature: 0.1,
       maxOutputTokens: SHARED_CONFIG.AI_GENERATION.maxOutputTokens,
       responseMimeType: "application/json"
-    }
+    },
+    safetySettings: GEMINI_SAFETY_SETTINGS
   };
 
   logPhase(phaseName, `Invio richiesta PAGINATA a Gemini (${parts.length} parti)`);
@@ -318,24 +316,30 @@ export async function executeAIRequest(input) {
     try {
       const startTime = Date.now();
       
-      const timeoutMs = 300000; // 5 minuti timeout
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout AI request (5 minuti)')), timeoutMs)
-      );
+      // =========== INIZIO MODIFICA CHIAVE ===========
+      // Sostituiamo la chiamata diretta a Gemini con una chiamata fetch al nostro proxy.
       
-      const aiPromise = geminiDefaultModel.generateContent(requestPayload);
-      const aiResult = await Promise.race([aiPromise, timeoutPromise]);
-      const response = aiResult.response;
+      const proxyResponse = await fetch('/api/geminiProxy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          // Inviamo l'intero payload che il nostro backend si aspetta
+          body: JSON.stringify({ requestPayload }),
+      });
+
+      if (!proxyResponse.ok) {
+          const errorData = await proxyResponse.json();
+          // Lancia un errore per attivare il meccanismo di retry
+          throw new Error(errorData.error || `Errore del proxy API: ${proxyResponse.statusText}`);
+      }
+
+      const responseData = await proxyResponse.json();
+      const textResponse = responseData.text;
+      
+      // =========== FINE MODIFICA CHIAVE ===========
+
 
       const duration = Date.now() - startTime;
       logPhase(phaseName, `Risposta PAGINATA ricevuta in ${duration}ms`);
-
-      let textResponse;
-      if (response.candidates?.[0]?.content?.parts?.[0]?.text) {
-        textResponse = response.candidates[0].content.parts[0].text;
-      } else {
-        textResponse = response.text();
-      }
 
       if (!textResponse || textResponse.trim().length === 0) {
         throw new Error('Risposta vuota dall\'AI');

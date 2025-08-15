@@ -1,20 +1,15 @@
 // src/utils/geminiSetup.js
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
+import { HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 
-const apiKey = "AIzaSyCkw0bYs0jEa5La26hcWWQyGhBFSxhbdVU";
-if (!apiKey) {
-  throw new Error("REACT_APP_GEMINI_API_KEY is not defined. Please set it in your .env file.");
-}
 
-export const genAI = new GoogleGenerativeAI(apiKey);
+
 
 // Configura il modello che vuoi usare (es. gemini-1.5-flash-latest o gemini-1.5-pro-latest)
 const modelName = "gemini-2.0-flash"; // O "gemini-1.5-pro-latest" per più capacità
 
-export const model = genAI.getGenerativeModel({
-  model: modelName,
-  // Impostazioni di sicurezza (opzionali, ma possono prevenire blocchi per contenuti borderline)
-  safetySettings: [
+export const GEMINI_MODEL_NAME = modelName;
+
+export const safetySettings = [
     {
       category: HarmCategory.HARM_CATEGORY_HARASSMENT,
       threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
@@ -31,8 +26,16 @@ export const model = genAI.getGenerativeModel({
       category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
       threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
     },
-  ],
-  // systemInstruction: "You are a helpful AI assistant for students creating study plans." // Esempio
-});
+];
 
-console.log(`Gemini Setup: Initialized model ${modelName}`);
+export const model = {
+  model: modelName,
+  safetySettings: safetySettings,
+  // Aggiungiamo un avviso per gli sviluppatori se provano a usarlo in modo errato
+  generateContent: () => {
+    throw new Error("ERRORE DI SICUREZZA: non chiamare 'model.generateContent()' dal frontend! Usa il proxy API.");
+  }
+};
+
+// Manteniamo questo log per coerenza, ma aggiorniamo il messaggio
+console.log(`Gemini Setup: Caricate le configurazioni per il modello ${modelName}. L'inizializzazione del modello avviene sul backend.`);
