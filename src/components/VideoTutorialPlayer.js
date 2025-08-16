@@ -11,7 +11,7 @@ const VideoTutorialPlayer = () => {
     return null;
   }
   
-  const videoId = "7dCg9Vc4_JI";
+  const videoId = "dExwUkgZick";
   const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=1`;
 
   return (
