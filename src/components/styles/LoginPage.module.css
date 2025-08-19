@@ -1,208 +1,201 @@
-/* Stile base e reset per il font */
+/* src/styles/LoginPage.module.css (Versione Finale Compattata) */
+
 :global(*) {
+  /* AGGIUNTO: Questa riga risolve il problema del box model */
+  box-sizing: border-box; 
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
 }
 
 :global(body) {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background-color: #000;
+  color: #fff;
+  font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow: hidden; /* Garantisce l'assenza di scroll */
 }
 
-/* Contenitore principale a schermo intero */
-.loginContainer {
-  min-height: 100vh;
+.pageWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center; /* Centra il contenuto principale */
+  height: 100vh;
   width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 20px;
-  background-color: #000000;
-  color: #ffffff;
+  padding: 20px;
+  background-color: #000;
   position: relative;
-  overflow: hidden;
   text-align: center;
+  overflow: hidden;
 }
 
-/* Onda di luce blu di sfondo */
-.loginContainer::before {
-  content: '';
+.splineBackground {
   position: absolute;
-  width: 1500px;
-  height: 1500px;
-  bottom: -1000px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: radial-gradient(circle, rgba(29, 78, 216, 0.4) 0%, rgba(29, 78, 216, 0) 60%);
-  border-radius: 50%;
-  z-index: 1;
-  animation: backgroundPulse 10s ease-in-out infinite;
+  inset: 0; /* Abbreviazione per top: 0; right: 0; bottom: 0; left: 0; */
+  z-index: 1; /* Sta sotto il contenuto ma sopra lo sfondo nero */
+  
+  /* Opzionale: puoi aggiungere un filtro per scurire/sfocare la scena se necessario */
+  /* filter: blur(5px) brightness(0.8); */
 }
 
-@keyframes backgroundPulse {
-  0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.8; }
-  50% { transform: translateX(-50%) scale(1.1); opacity: 1; }
+/* ===== HEADER ===== */
+.header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 40%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 40px;
+  z-index: 3;
+  padding-left: 23%;
+  font-family: 'Inter', sans-serif;
 }
 
-/* Contenuto principale */
+.logoContainer { display: flex; align-items: center; gap: 12px; }
+.logo { height: 36px; width: auto; }
+.logoName { font-size: 1.05rem; font-weight: 700; color: #f9fafb; font-family: 'Inter', sans-serif;}
+
+.navLinks { 
+  display: flex; 
+  gap: 10px; 
+  margin-left:80%;
+}
+
+.navLinks a {
+  white-space: nowrap;
+  display:grid;
+  width: auto;
+  font-family: 'Inter', sans-serif;
+  padding: 8px 16px;
+  background-color: rgba(30, 29, 29, 0.8); /* Sfondo come da screenshot */
+  border-radius: 9999px;
+  text-decoration: none;
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+/* ===== CONTENUTO PRINCIPALE COMPATTATO ===== */
 .mainContent {
+  position: relative;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
-  z-index: 2;
-  animation: fadeIn 1s ease-out;
+  animation: contentFadeIn 1s 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  opacity: 0;
 }
 
-@keyframes fadeIn {
+@keyframes contentFadeIn {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-.logo {
-  width: 100px;
-  height: auto;
-  margin-bottom: 20px;
-}
-
 .headline {
-  font-size: 4rem;
-  font-weight: 700;
-  line-height: 1.1;
-  letter-spacing: -0.03em;
-  max-width: 800px;
+  max-width: 70%; 
+  margin-bottom: 10px;
+  font-family: 'Inter', sans-serif; /* Aggiunto per specificità */
+  font-size: clamp(3.0rem, 7vw, 4.5rem); /* Aumentato per più impatto */
+  font-weight: 700; /* Grassetto pieno */
+  line-height: 1.05; /* Più compatto verticalmente */
+  letter-spacing: -0.05em; /* FONDAMENTALE: Lettere più vicine */
 }
 
 .subheadline {
-  font-size: 1.125rem;
-  color: #a0a0a0;
-  max-width: 500px;
-  line-height: 1.6;
+  font-family: 'Inter', sans-serif; /* Aggiunto per specificità */
+  font-size: clamp(1.4rem, 4vw, 1.125rem); /* Corrisponde a 18px su desktop */
+  color: rgba(255, 255, 255, 0.6); /* Colore esatto: bianco semi-trasparente */
+  max-width: 65%; /* Più largo per adattarsi al testo */
+  line-height: 1.05;
+  font-weight: 600; /* FONDAMENTALE: Peso SemiBold */
+  letter-spacing: -0.04em; /* FONDAMENTALE: Lettere più vicine */
+  margin-bottom: 20px;
 }
 
-/* --- SEZIONE PULSANTI COMPLETAMENTE RIDISEGNATA --- */
-.actionButtons {
+.ctaSection {
+  /* MODIFICATO: Ridotto lo spazio sopra */
+  margin-top: 8px; 
   display: flex;
-  flex-direction: row; /* I pulsanti ora sono affiancati su desktop */
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 16px; /* Spazio tra i pulsanti */
-  margin-top: 24px;
-  width: 100%;
-  flex-wrap: wrap; /* Permette ai pulsanti di andare a capo su schermi piccoli */
+  /* MODIFICATO: Ridotto lo spazio tra pulsante e avatar */
+  gap: 16px; 
 }
 
-/* --- NUOVO STILE PER IL PULSANTE GOOGLE --- */
-.googleLoginBtn {
-  display: inline-flex; /* Per un corretto allineamento interno */
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 14px 28px;
-  background-color: #ffffff; /* Sfondo bianco pulito */
-  color: #111827; /* Testo quasi nero per un contrasto elevato */
-  border: 1px solid #e5e7eb; /* Bordo grigio chiaro sottile */
-  border-radius: 9999px;
+.primaryButton {
+  font-family: 'Inter', sans-serif;
+  padding: 14px 30px; /* Leggermente più compatto */
+  background-color: #0070f3;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
   font-size: 1rem;
-  font-weight: 600; /* Leggermente più grassetto */
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* Ombra leggera */
+  box-shadow: 0 4px 14px 0 rgba(0, 118, 255, 0.39);
+  margin-bottom: 10px;
 }
+.primaryButton:hover { transform: translateY(-2px); box-shadow: 0 6px 20px 0 rgba(0, 118, 255, 0.25); }
 
-.googleLoginBtn::before { /* Aggiungiamo un'icona Google SVG direttamente nel CSS */
-  content: '';
-  display: block;
-  width: 20px;
-  height: 20px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' width='48px' height='48px'%3E%3Cpath fill='%23FFC107' d='M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z'/%3E%3Cpath fill='%23FF3D00' d='M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z'/%3E%3Cpath fill='%234CAF50' d='M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z'/%3E%3Cpath fill='%231976D2' d='M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.082,5.571l6.19,5.238C44.434,36.33,48,30.686,48,24C48,22.659,47.862,21.35,47.611,20.083z'/%3E%3C/svg%3E");
-  background-size: contain;
-  background-repeat: no-repeat;
-}
+.socialProof { display: flex; align-items: center; gap: 12px; }
+.avatarGroup { display: flex; }
+.avatar { width: 42px; height: 42px; border-radius: 50%; border: 4px solid #000; }
+.avatar:not(:first-child) { margin-left: -12px; }
+.joinText { font-size: 0.875rem; color: #a1a1aa; }
+.joinText strong { color: #e4e4e7; }
 
-.googleLoginBtn:hover {
-  transform: translateY(-2px); /* Effetto "sollevamento" più sottile */
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  border-color: #d1d5db;
-}
-
-/* --- NUOVO STILE PER IL PULSANTE TUTORIAL --- */
-.tutorialLinkBtn {
-  padding: 14px 28px;
-  background-color: transparent;
-  color: #e5e7eb; /* Grigio chiaro, molto leggibile */
-  border: 1px solid #374151; /* Bordo scuro ma visibile */
-  border-radius: 9999px;
-  font-size: 1rem;
+.secondaryButton {
+  /* MODIFICATO: Ridotto lo spazio sopra */
+  margin-top: 16px; 
+  background: transparent;
+  color: #a1a1aa;
+  border: none;
+  font-size: 0.9rem; /* Leggermente più piccolo per coerenza */
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.tutorialLinkBtn:hover {
-  background-color: #1f2937; /* Sfondo scuro al passaggio del mouse */
-  border-color: #4b5563;
-  color: white;
-  transform: translateY(-2px);
-}
-
-/* --- NUOVO STILE PER IL FOOTER --- */
-.loginFooter {
-  position: absolute;
-  bottom: 30px; /* Più spazio dal fondo */
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 2;
-  font-size: 1rem; /* Testo più grande e leggibile */
-  color: #9ca3af; /* Grigio più chiaro */
-  display: flex;
-  gap: 24px; /* Più spazio tra i link */
-}
-
-.loginFooter a {
-  color: #9ca3af;
-  text-decoration: none;
   transition: color 0.2s ease;
 }
+.secondaryButton:hover { color: #fff; }
 
-.loginFooter a:hover {
-  color: white;
-  text-decoration: underline;
-}
-
-/* --- Responsive Design (con pulsanti a colonna su mobile) --- */
+/* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
-  .headline {
-    font-size: 3rem;
+  .header {
+    padding: 20px;
+    /* Su mobile, l'header non diventa a colonna per risparmiare spazio verticale */
+  }
+  .pageWrapper {
+    padding-top: 80px; /* Spazio per l'header */
+    padding-bottom: 20px;
+    justify-content: center; /* Mantiene la centratura */
+  }
+  .backgroundImageElement {
+    width: 250vw;
+    height: 100vh;
+    bottom: -35vh;
+    right: -125vw;
   }
 }
 
-@media (max-width: 480px) {
-  .actionButtons {
-    flex-direction: column; /* I pulsanti vanno in colonna */
-    width: 90%;
-    max-width: 320px;
+@media (max-width: 552px) {
+    .navLinks { 
+    display: grid;
+    margin-left:100%;
   }
-  .googleLoginBtn, .tutorialLinkBtn {
-    width: 100%; /* I pulsanti occupano tutta la larghezza disponibile */
+
+  .headline .subheadline {
+    margin-bottom: 0;
   }
-  .headline {
-    font-size: 2.25rem;
-  }
-  .subheadline {
-    font-size: 1rem;
-  }
-  .loginFooter {
-    position: relative;
-    bottom: auto;
-    left: auto;
-    transform: none;
-    margin-top: 60px;
-    flex-direction: column; /* Anche i link vanno in colonna */
-    gap: 12px;
+}
+
+@media (max-width: 446px) {
+    .navLinks { 
+    display: grid;
+    margin-left:70%;
   }
 }
 
