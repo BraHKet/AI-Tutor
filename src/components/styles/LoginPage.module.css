@@ -153,7 +153,7 @@
   /* MODIFICATO: Ridotto lo spazio sopra */
   margin-top: 16px; 
   background: transparent;
-  color: #a1a1aa;
+  color: #ffffff;
   border: none;
   font-size: 0.9rem; /* Leggermente più piccolo per coerenza */
   font-weight: 500;
@@ -203,11 +203,11 @@
   }
   .headline {
     
-    font-size: clamp(1.6rem, 7vw, 4.5rem); /* Aumentato per più impatto */
+    font-size: clamp(2rem, 7vw, 4.5rem); /* Aumentato per più impatto */
   }
   .subheadline {
     margin-bottom: 10px;
-    font-size: clamp(0.7rem, 4vw, 1.125rem);
+    font-size: clamp(1rem, 4vw, 1.125rem);
   }
   .navLinks a {
     font-size: 0.675rem;

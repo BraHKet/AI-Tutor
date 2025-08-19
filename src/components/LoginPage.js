@@ -73,7 +73,7 @@ const LoginPage = () => {
                 <img key={index} src={src} alt={`User ${index + 1}`} className={styles.avatar} />
               ))}
             </div>
-            <span className={styles.joinText}><strong>9</strong> Joined already</span>
+            <span className={styles.joinText}><strong>0</strong> Joined already</span>
           </div>
         </div>
 
