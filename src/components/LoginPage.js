@@ -6,6 +6,13 @@ import useGoogleAuth from '../hooks/useGoogleAuth';
 import { useVideoTutorial } from './context/VideoTutorialContext';
 import styles from './styles/LoginPage.module.css';
 import Spline from '@splinetool/react-spline';
+import { createGlobalStyle } from "styled-components";
+
+// Definisci i CSS globali che si attivano solo quando il componente è montato
+const MyGlobalStyle = createGlobalStyle`
+  
+`;
+
 
 const avatars = [
   'https://randomuser.me/api/portraits/women/68.jpg',
@@ -35,6 +42,8 @@ const LoginPage = () => {
   };
 
   return (
+    <>
+    <MyGlobalStyle />
     <div className={styles.pageWrapper}>
       <Spline 
         className={styles.splineBackground} 
@@ -82,12 +91,9 @@ const LoginPage = () => {
         </button>
       </main>
 
-      {/* Questo footer sarà visibile solo su mobile */}
-      <footer className={styles.mobileFooter}>
-        <Link to="/terms">Termini di Servizio</Link>
-        <Link to="/policy">Privacy</Link>
-      </footer>
+      
     </div>
+    </>
   );
 };
 

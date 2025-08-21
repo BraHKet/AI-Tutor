@@ -1,13 +1,13 @@
 /* src/styles/LoginPage.module.css (Versione Finale Compattata) */
 
-:global(*) {
+* {
   /* AGGIUNTO: Questa riga risolve il problema del box model */
   box-sizing: border-box; 
   margin: 0;
   padding: 0;
 }
 
-:global(body) {
+body {
   background-color: #000;
   color: #fff;
   font-family: 'Inter', sans-serif;
