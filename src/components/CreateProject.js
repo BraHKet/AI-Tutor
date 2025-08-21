@@ -55,7 +55,7 @@ const CreateProject = () => {
     });
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = (e) => {               //Inserisce file pdf nell'array
     const newFiles = Array.from(e.target.files);
     if (newFiles.length === 0) return;
 
@@ -85,7 +85,7 @@ const CreateProject = () => {
     setFiles(prevFiles => [...prevFiles, ...validFiles]);
   };
 
-  const removeFile = (indexToRemove) => {
+  const removeFile = (indexToRemove) => {           //Rimuove file dall'array
     setFiles(files.filter((_, index) => index !== indexToRemove));
   };
 
