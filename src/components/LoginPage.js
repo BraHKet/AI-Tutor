@@ -90,7 +90,7 @@ const LoginPage = () => {
             Continua con Google
           </button>
           
-          <div className={styles.socialProof}>
+   {/*       <div className={styles.socialProof}>
             <div className={styles.avatarGroup}>
               {avatars.map((src, index) => (
                 <img key={index} src={src} alt={`User ${index + 1}`} className={styles.avatar} />
@@ -98,8 +98,9 @@ const LoginPage = () => {
             </div>
             <span className={styles.joinText}><strong>0</strong> Joined already</span>
           </div>
+          //PARTE DA INSERIRE SOLO DOPO CHE HO RICEVUTO I PRIMI USERS*/}
         </div>
-
+        
         <button className={styles.secondaryButton} onClick={showVideo}>
           Guarda il Tutorial
         </button>
