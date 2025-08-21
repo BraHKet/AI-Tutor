@@ -47,7 +47,7 @@ const CreateProject = () => {
     };
   }, [location, resetAllState, navigate]);
 
-  const handleChange = (e) => {
+  const handleChange = (e) => {               //Serve solo a cambiare la variabile del numero dei giorni di studio
     const { name, value } = e.target;
     setFormData({
       ...formData,
@@ -63,7 +63,7 @@ const CreateProject = () => {
     const errors = [];
     const MAX_FILE_SIZE_MB = 100;
 
-    newFiles.forEach(file => {
+    newFiles.forEach(file => {                        //Fa le verifiche sul file (attualmente max 100MB)
       if (file.type !== 'application/pdf') {
         errors.push(`${file.name} non è un PDF.`);
       } else if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
