@@ -10,7 +10,21 @@ import { createGlobalStyle } from "styled-components";
 
 // Definisci i CSS globali che si attivano solo quando il componente è montato
 const MyGlobalStyle = createGlobalStyle`
-  
+  * {
+  /* AGGIUNTO: Questa riga risolve il problema del box model */
+  box-sizing: border-box; 
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: #000;
+  color: #fff;
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden; /* Garantisce l'assenza di scroll */
+}
 `;
 
 
