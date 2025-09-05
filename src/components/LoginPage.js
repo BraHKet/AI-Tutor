@@ -3,7 +3,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import useGoogleAuth from '../hooks/useGoogleAuth';
-import { useVideoTutorial } from './context/VideoTutorialContext';
 import styles from './styles/LoginPage.module.css';
 import Spline from '@splinetool/react-spline';
 import { createGlobalStyle } from "styled-components";
@@ -38,7 +37,6 @@ const avatars = [
 
 const LoginPage = () => {
   const { user, login } = useGoogleAuth();
-  const { showVideo } = useVideoTutorial();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -101,9 +99,7 @@ const LoginPage = () => {
           //PARTE DA INSERIRE SOLO DOPO CHE HO RICEVUTO I PRIMI USERS*/}
         </div>
         
-        <button className={styles.secondaryButton} onClick={showVideo}>
-          Guarda il Tutorial
-        </button>
+        
       </main>
 
       

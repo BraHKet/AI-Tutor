@@ -5,7 +5,6 @@ import { useNavigate } from 'react-router-dom';
 import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import useGoogleAuth from '../hooks/useGoogleAuth';
-import NavBar from './NavBar';
 import SimpleLoading from './SimpleLoading';
 import { 
   Plus, BookOpen, CheckCircle, MessageSquare, ThumbsUp, Send, Frown, Meh, Smile, Star, Brain, LogIn, LogOut
@@ -165,7 +164,6 @@ const HomePage = () => {
     return (
       <div className={styles.wrapper}>
         <div className={styles.unauthenticatedContainer}>
-          <NavBar />
           <div className={styles.unauthenticatedView}>
             <div className={styles.unauthenticatedContent}>
               <div className={styles.unauthenticatedIcon}><Brain size={48} /></div>
@@ -185,7 +183,6 @@ const HomePage = () => {
   return (
     <div className={styles.wrapper}>
       <div className={styles.homePageContainer}>
-        <NavBar />
         <main className={styles.mainContent}>
           <header className={styles.homeHeader}>
             <div className={styles.headerWelcome}>
