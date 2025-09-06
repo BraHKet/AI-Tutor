@@ -1,7 +1,7 @@
 // ==========================================
 // FILE: src/components/AgentDemo.js (SEQUENTIAL RESPONSE SYSTEM)
 // ==========================================
-
+import useGoogleAuth from '../hooks/useGoogleAuth';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
@@ -550,6 +550,17 @@ const reinitializeAllCanvases = useCallback(() => {
     if (status.startsWith('✅')) return styles.statusSuccess;
     if (status.startsWith('🎉')) return styles.statusComplete;
     return styles.statusDefault;
+  };
+
+
+  const { user, logout } = useGoogleAuth();
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   };
 
   return (
