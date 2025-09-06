@@ -25,7 +25,10 @@ function App() {
   return (
     <Router>
       <Routes>
-
+        {/* Route pubblica di login */}
+        <Route path="/" element={
+          user ? <Navigate to="/homepage" replace /> : <LoginPage />
+        } />
         {/* Routes protette - accessibili solo se autenticati */}
         {user ? (
           <>
@@ -33,7 +36,7 @@ function App() {
           </>
         ) : (
           /* Se non autenticato, redirect alla login */
-          <Route path="/" element={<LoginPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         )}
 
         {/* Fallback per routes non esistenti */}
