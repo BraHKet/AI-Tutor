@@ -562,6 +562,37 @@ const reinitializeAllCanvases = useCallback(() => {
     }
   };
 
+
+
+  const [pdfUploaded, setPdfUploaded] = useState(false);
+  const [pdfFile, setPdfFile] = useState(null);
+  if (!pdfUploaded) {
+  return (
+    <div className={styles.pdfUploadContainer}>
+      <h2>📄 Carica il PDF da cui farti interrogare!</h2>
+      <input 
+        type="file" 
+        accept="application/pdf" 
+        onChange={(e) => {
+          if (e.target.files && e.target.files[0]) {
+            setPdfFile(e.target.files[0]);
+          }
+        }} 
+      />
+      <button
+        onClick={() => {
+          if (pdfFile) setPdfUploaded(true);
+        }}
+        disabled={!pdfFile}
+        className={styles.uploadButton}
+      >
+        Carica PDF e Continua
+      </button>
+    </div>
+  );
+}
+
+
   return (
     <div className={styles.container}>
       {/* Header */}
