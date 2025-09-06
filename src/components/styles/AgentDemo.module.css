@@ -27,11 +27,8 @@
 }
 
 .backButton {
-  background: transparent;
-  border: 1px solid #d1d5db;
-  padding: 6px 12px;
-  border-radius: 6px;
-  cursor: pointer;
+  position: relative;  /* o fixed se vuoi sempre visibile */
+  z-index: 2000;
 }
 
 .title {
@@ -966,3 +963,5 @@
     height: auto;
   }
 }
+
+

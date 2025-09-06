@@ -29,14 +29,13 @@ function App() {
         <Route path="/" element={
           user ? <Navigate to="/exam" replace /> : <LoginPage />
         } />
-        {/* Routes protette - accessibili solo se autenticati */}
+
+        {/* Routes protette */}
         {user && (
-          <>
-            <Route path="/exam" element={<AgentDemo />} />
-          </>
+          <Route path="/exam" element={<AgentDemo />} />
         )}
 
-        {/* Fallback per routes non esistenti */}
+        {/* Fallback per route non esistenti */}
         <Route path="*" element={
           <Navigate to={user ? "/exam" : "/"} replace />
         } />
