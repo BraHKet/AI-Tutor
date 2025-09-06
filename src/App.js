@@ -38,8 +38,9 @@ function App() {
 
 
             {/* NUOVA ROTTA per l'agente */}
-            {/* Gli passiamo projectId e topicId per sapere quale PDF caricare */}
-            <Route path="/projects/:projectId/topic/:topicId/exam" element={<AgentDemo />} />
+            {/* Gli passiamo projectId e topicId per sapere quale PDF caricare <Route path="/projects/:projectId/topic/:topicId/exam" element={<AgentDemo />} />*/}
+            
+            <Route path="/exam" element={<AgentDemo />} />
           </>
         ) : (
           /* Se non autenticato, redirect alla login */

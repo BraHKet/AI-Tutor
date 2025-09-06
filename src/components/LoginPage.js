@@ -41,7 +41,7 @@ const LoginPage = () => {
 
   useEffect(() => {
     if (user) {
-      navigate('/homepage');
+      navigate('/exam');
     }
   }, [user, navigate]);
   
@@ -76,16 +76,16 @@ const LoginPage = () => {
 
       <main className={styles.mainContent}>
         <h1 className={styles.headline}>
-          Mentora<br />il tuo professore AI personale.
+          Mentora<br />il tuo professore personale.
         </h1>
         
         <p className={styles.subheadline}>
-          Benvenuto! Inizia il tuo percorso di apprendimento personalizzato.
+          Benvenuto! Inserisci un pdf e fatti interrogare.
         </p>
         
         <div className={styles.ctaSection}>
           <button className={styles.primaryButton} onClick={handleLogin}>
-            Continua con Google
+            Inizia l'interrogazione
           </button>
           
    {/*       <div className={styles.socialProof}>
