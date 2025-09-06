@@ -555,7 +555,6 @@ const reinitializeAllCanvases = useCallback(() => {
 
   const { user, logout } = useGoogleAuth();
   const handleLogout = async () => {
-    console.log("Logout clicked!");
     try {
       await logout();
     } catch (error) {
@@ -565,9 +564,6 @@ const reinitializeAllCanvases = useCallback(() => {
 
   return (
     <div className={styles.container}>
-      <button onClick={handleLogout} className={styles.backButton}>
-            ← Back
-          </button>
       {/* Header */}
       <div className={styles.header}>
         <div className={styles.headerLeft}>
