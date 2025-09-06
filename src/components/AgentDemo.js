@@ -555,9 +555,9 @@ const reinitializeAllCanvases = useCallback(() => {
 
   const { user, logout } = useGoogleAuth();
   const handleLogout = async () => {
+    console.log("Logout clicked!");
     try {
       await logout();
-      navigate('/');
     } catch (error) {
       console.error("Logout error:", error);
     }
