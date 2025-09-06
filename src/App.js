@@ -27,16 +27,13 @@ function App() {
       <Routes>
         {/* Route pubblica di login */}
         <Route path="/" element={
-          user ? <Navigate to="/homepage" replace /> : <LoginPage />
+          user ? <Navigate to="/exam" replace /> : <LoginPage />
         } />
         {/* Routes protette - accessibili solo se autenticati */}
-        {user ? (
+        {user && (
           <>
             <Route path="/exam" element={<AgentDemo />} />
           </>
-        ) : (
-          /* Se non autenticato, redirect alla login */
-          <Route path="*" element={<Navigate to="/" replace />} />
         )}
 
         {/* Fallback per routes non esistenti */}
