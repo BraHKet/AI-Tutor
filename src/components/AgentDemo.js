@@ -569,7 +569,7 @@ const reinitializeAllCanvases = useCallback(() => {
       {/* Header */}
       <div className={styles.header}>
         <div className={styles.headerLeft}>
-          <button onClick={handleLogout} className={styles.backButton}>
+          <button onClick={handleLogout} style={{ position: 'fixed', top: 0, right: 0, zIndex: 3000 }}>
             ← Back
           </button>
           
