@@ -405,38 +405,25 @@ const reinitializeAllCanvases = useCallback(() => {
   // ===============================================
 
   const analyzeMaterial = async () => {
-    if (!agent) return;
+  if (!agent || !pdfFile) return;
 
-    try {
-      setIsProcessing(true);
-      setStatus('📄 Analyzing material...');
+  try {
+    setIsProcessing(true);
+    setStatus('📄 Analizzando il PDF...');
 
-      const topicRef = doc(db, 'projects', projectId, 'topics', topicId);
-      const topicSnap = await getDoc(topicRef);
-      if (!topicSnap.exists()) throw new Error("Topic not found");
-      
-      const topicData = topicSnap.data();
-      const driveFileId = topicData.driveFileId || topicData.sources?.find(s => s.chunkDriveId)?.chunkDriveId;
-      const pdfName = topicData.title || 'material.pdf';
-      
-      if (!driveFileId) throw new Error("PDF not found");
-      
-      const accessToken = await googleDriveService.ensureAuthenticated();
-      const pdfBlob = await googleDriveService.downloadPdfChunk(driveFileId, accessToken);
+    await agent.analyzeMaterial(
+      { blob: pdfFile, name: pdfFile.name },
+      (progress) => setStatus(`📄 ${progress.message}`)
+    );
 
-      await agent.analyzeMaterial(
-        { blob: pdfBlob, name: pdfName },
-        (progress) => setStatus(`📄 ${progress.message}`)
-      );
-
-      setMaterialReady(true);
-      setStatus('✅ Material ready! Start examination.');
-    } catch (error) {
-      setStatus(`❌ Error: ${error.message}`);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+    setMaterialReady(true);
+    setStatus('✅ Material ready! Start examination.');
+  } catch (error) {
+    setStatus(`❌ Error: ${error.message}`);
+  } finally {
+    setIsProcessing(false);
+  }
+};
 
   const startExam = async () => {
     if (!agent || !materialReady) return;
