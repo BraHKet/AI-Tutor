@@ -45,7 +45,7 @@ const LoginPage = () => {
     setShowPopup(true);
     return;
   }
-
+  navigate("/exam", { state: { pdfFile } });
   setPdfUploaded(true);
   handleLogin();
 };

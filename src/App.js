@@ -25,10 +25,7 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Route pubblica di login */}
-        <Route path="/" element={
-          user ? <Navigate to="/exam" replace /> : <LoginPage />
-        } />
+        
 
         {/* Routes protette */}
         {user && (

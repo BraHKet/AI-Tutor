@@ -3,7 +3,7 @@
 // ==========================================
 import useGoogleAuth from '../hooks/useGoogleAuth';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import { PhysicsAgent } from '../agents/PhysicsAgent';
@@ -17,6 +17,10 @@ import styles from './styles/AgentDemo.module.css';
 export default function AgentDemo() {
   const { projectId, topicId } = useParams();
   const navigate = useNavigate();
+
+  // Recupera file da LoginPage
+  const location = useLocation();
+  const { pdfFile } = location.state || {};
 
   // Core states
   const [agent, setAgent] = useState(null);
@@ -549,35 +553,7 @@ const reinitializeAllCanvases = useCallback(() => {
 
 
 
-  const [pdfUploaded, setPdfUploaded] = useState(false);
-  const [pdfFile, setPdfFile] = useState(null);
-  if (!pdfUploaded) {
-  return (
-    <div className={styles.pdfUploadContainer}>
-      <h2>📄 Carica il PDF da cui farti interrogare!</h2>
-      <input 
-        type="file" 
-        accept="application/pdf" 
-        onChange={(e) => {
-          if (e.target.files && e.target.files[0]) {
-            setPdfFile(e.target.files[0]);
-          }
-        }} 
-      />
-      <button
-        onClick={() => {
-          if (pdfFile) setPdfUploaded(true);
-        }}
-        disabled={!pdfFile}
-        className={styles.uploadButton}
-      >
-        Carica PDF e Continua
-      </button>
-    </div>
-  );
-}
-
-
+  
   return (
     <div className={styles.container}>
       {/* Header */}
