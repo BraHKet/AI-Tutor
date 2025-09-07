@@ -28,7 +28,9 @@ function App() {
     <Router>
       <Routes>
         
-        <Route path="/" element={<LoginPage />} />
+        <Route path="/" element={
+            user ? <Navigate to="/exam" replace /> : <LoginPage />
+          } />
         {/* Routes protette */}
         {user && (
           <Route path="/exam" element={<AgentDemo />} />
