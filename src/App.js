@@ -6,6 +6,7 @@ import LoginPage from './components/LoginPage';
 import useGoogleAuth from './hooks/useGoogleAuth';
 import SimpleLoading from './components/SimpleLoading';
 import AgentDemo from './components/AgentDemo'
+import { PdfProvider } from "./context/PdfContext";
 // 2. AGGIUNGI: Importa il nuovo componente per la visualizzazione del singolo argomento
 // Importa il Context Provider e il Player
 
@@ -23,6 +24,7 @@ function App() {
   }
 
   return (
+    <PdfProvider>
     <Router>
       <Routes>
         
@@ -38,6 +40,7 @@ function App() {
         } />
       </Routes>
     </Router> 
+    </PdfProvider>
   );
 }
 

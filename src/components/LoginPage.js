@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useGoogleAuth from '../hooks/useGoogleAuth';
 import styles from './styles/LoginPage.module.css';
+import { usePdf } from "../context/PdfContext";
 
 // Icone semplici in formato SVG come componenti React per pulizia del codice
 const CheckIcon = () => (
@@ -23,8 +24,8 @@ const LoginPage = () => {
   const navigate = useNavigate();
 
   const [pdfUploaded, setPdfUploaded] = useState(false);
-  const [pdfFile, setPdfFile] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
+  const { pdfFile } = usePdf();
 
   useEffect(() => {
     if (user) {
@@ -45,7 +46,6 @@ const LoginPage = () => {
     setShowPopup(true);
     return;
   }
-  navigate("/exam", { state: { pdfFile } });
   setPdfUploaded(true);
   handleLogin();
 };
@@ -94,7 +94,7 @@ const LoginPage = () => {
       accept="application/pdf"
       onChange={(e) => {
         if (e.target.files && e.target.files[0]) {
-          setPdfFile(e.target.files[0]);
+          pdfFile(e.target.files[0]);
         }
       }}
     />

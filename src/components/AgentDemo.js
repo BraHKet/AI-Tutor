@@ -13,14 +13,15 @@ import {
   History, Mic, X, Volume2, Edit3, Plus, Type
 } from 'lucide-react';
 import styles from './styles/AgentDemo.module.css';
+import { usePdf } from "../context/PdfContext";
 
 export default function AgentDemo() {
   const { projectId, topicId } = useParams();
   const navigate = useNavigate();
+  
 
   // Recupera file da LoginPage
-  const location = useLocation();
-  const { pdfFile } = location.state || {};
+  const { pdfFile } = usePdf();
 
   // Core states
   const [agent, setAgent] = useState(null);
