@@ -28,6 +28,7 @@ const LoginPage = () => {
   const { pdfFile, setPdfFile } = usePdf();
 
   useEffect(() => {
+    setPdfFile(null);
     if (user) {
       navigate('/exam');
     }
