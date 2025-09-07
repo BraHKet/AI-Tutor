@@ -407,7 +407,7 @@ const reinitializeAllCanvases = useCallback(() => {
   // ===============================================
 
   const analyzeMaterial = async () => {
-  if (!agent || !pdfFile) return;
+  if (!agent || !pdfFile) {console.log(pdfFile); return;}
 
   try {
     setIsProcessing(true);
