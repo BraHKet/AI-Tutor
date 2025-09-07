@@ -6,7 +6,6 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../utils/firebase';
-import { googleDriveService } from '../utils/googleDriveService';
 import { PhysicsAgent } from '../agents/PhysicsAgent';
 import VoiceManager, { voiceUtils } from './VoiceManager';
 import { 
@@ -62,7 +61,6 @@ export default function AgentDemo() {
     const init = async () => {
       try {
         setStatus('🔧 Initializing...');
-        await googleDriveService.initialize();
 
         const physicsAgent = new PhysicsAgent(
           process.env.REACT_APP_SUPABASE_URL,
