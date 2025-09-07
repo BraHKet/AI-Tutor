@@ -1,202 +1,333 @@
-/* src/styles/LoginPage.module.css (Versione Finale Compattata) */
+/* src/styles/LoginPage.module.css */
+/* Architettura Mobile-First e Reattiva */
 
-
+/* --- IMPOSTAZIONI GLOBALI E FONT --- */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 .pageWrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center; /* Centra il contenuto principale */
-  height: 100vh;
-  width: 100%;
-  padding: 20px;
-  background-color: #000;
-  position: relative;
-  text-align: center;
-  overflow: hidden;
+  background-color: #ffffff;
+  color: #111827;
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Previene lo scroll orizzontale accidentale */
+  overflow-x: hidden;
 }
 
-.splineBackground {
-  position: absolute;
-  inset: 0; /* Abbreviazione per top: 0; right: 0; bottom: 0; left: 0; */
-  z-index: 1; /* Sta sotto il contenuto ma sopra lo sfondo nero */
-  
-  /* Opzionale: puoi aggiungere un filtro per scurire/sfocare la scena se necessario */
-  /* filter: blur(5px) brightness(0.8); */
-}
-
-/* ===== HEADER ===== */
+/* --- HEADER --- */
 .header {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 40%;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 40px;
-  z-index: 3;
-  padding-left: 23%;
-  font-family: 'Inter', sans-serif;
+  width: 100%;
+  /* Padding reattivo: 16px verticali, 5% orizzontali */
+  padding: 16px 5%;
+  box-sizing: border-box;
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid #E5E7EB;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .logoContainer { display: flex; align-items: center; gap: 12px; }
-.logo { height: 36px; width: auto; }
-.logoName { font-size: 1.05rem; font-weight: 700; color: #f9fafb; font-family: 'Inter', sans-serif;}
+.logo { height: 32px; }
+.logoName { font-size: 1.25rem; font-weight: 700; color: #111827; }
 
-.navLinks { 
-  display: flex; 
-  gap: 10px; 
-  margin-left:80%;
-}
+/* I link di navigazione sono nascosti su mobile per semplicità */
+.navLinks { display: none; }
 
 .navLinks a {
-  white-space: nowrap;
-  display:grid;
-  width: auto;
-  font-family: 'Inter', sans-serif;
-  padding: 8px 16px;
-  background-color: rgba(30, 29, 29, 0.8); /* Sfondo come da screenshot */
-  border-radius: 9999px;
-  text-decoration: none;
-  color: #fff;
-  font-size: 0.875rem;
-  font-weight: 700;
-  transition: all 0.2s ease;
+  text-decoration: none; /* Rimuove la sottolineatura di default */
+  color: #4B5563;      /* Un grigio scuro professionale, come i testi delle descrizioni */
+  font-weight: 600;     /* Rende il testo semi-grassetto */
+  font-size: 0.9rem;
+  transition: color 0.2s ease; /* Aggiunge un effetto di transizione morbido */
 }
 
-/* ===== CONTENUTO PRINCIPALE COMPATTATO ===== */
-.mainContent {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  animation: contentFadeIn 1s 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-  opacity: 0;
+.navLinks a:hover {
+  color: #FF4500; /* Cambia colore al passaggio del mouse, come le icone a spunta */
 }
 
-@keyframes contentFadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.headline {
-  max-width: 70%; 
-  margin-bottom: 10px;
-  font-family: 'Inter', sans-serif; /* Aggiunto per specificità */
-  font-size: clamp(3.0rem, 7vw, 4.5rem); /* Aumentato per più impatto */
-  font-weight: 700; /* Grassetto pieno */
-  line-height: 1.05; /* Più compatto verticalmente */
-  letter-spacing: -0.05em; /* FONDAMENTALE: Lettere più vicine */
-}
-
-.subheadline {
-  font-family: 'Inter', sans-serif; /* Aggiunto per specificità */
-  font-size: clamp(1.4rem, 4vw, 1.125rem); /* Corrisponde a 18px su desktop */
-  color: rgba(255, 255, 255, 0.6); /* Colore esatto: bianco semi-trasparente */
-  max-width: 65%; /* Più largo per adattarsi al testo */
-  line-height: 1.05;
-  font-weight: 600; /* FONDAMENTALE: Peso SemiBold */
-  letter-spacing: -0.04em; /* FONDAMENTALE: Lettere più vicine */
-  margin-bottom: 20px;
-}
-
-.ctaSection {
-  /* MODIFICATO: Ridotto lo spazio sopra */
-  margin-top: 8px; 
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  /* MODIFICATO: Ridotto lo spazio tra pulsante e avatar */
-  gap: 16px; 
-}
-
-.primaryButton {
-  font-family: 'Inter', sans-serif;
-  padding: 14px 30px; /* Leggermente più compatto */
-  background-color: #0070f3;
+.signInButton {
+  background-color: #111827;
   color: #ffffff;
   border: none;
   border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.signInButton:hover { background-color: #374151; }
+
+/* --- MAIN CONTENT & SEZIONI --- */
+.mainContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Spazio tra le sezioni */
+  gap: 80px;
+  padding-bottom: 80px;
+}
+
+/* Stili generici per i titoli e descrizioni delle sezioni */
+.sectionTitle, .sectionTitleCentered {
+    font-size: clamp(2rem, 8vw, 2.5rem); /* Tipografia fluida */
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1.1;
+    margin-bottom: 16px;
+}
+.sectionTitleCentered { text-align: center; margin-bottom: 50px;}
+
+.sectionDescription, .sectionDescriptionCentered {
+    font-size: clamp(1rem, 4vw, 1.125rem); /* Tipografia fluida */
+    color: #4B5563;
+    line-height: 1.6;
+    max-width: 600px;
+    margin-bottom: 32px;
+}
+.sectionDescriptionCentered { text-align: center; margin-left: auto; margin-right: auto; }
+
+/* --- HERO SECTION (SEZIONE PRINCIPALE) --- */
+.heroSection {
+  text-align: center;
+  padding: 60px 24px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.headline {
+  font-size: clamp(2.5rem, 10vw, 4.2rem); /* Tipografia fluida e d'impatto */
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  line-height: 1.1;
+  max-width: 900px;
+  margin-bottom: 24px;
+}
+
+.highlightText { color: #FF4500; }
+
+.subheadline {
+  font-size: clamp(1rem, 5vw, 1.25rem);
+  color: #4B5563;
+  max-width: 700px;
+  line-height: 1.6;
+  margin-bottom: 32px;
+}
+
+.ctaContainer {
+  display: flex;
+  /* I pulsanti si impilano verticalmente su mobile */
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 350px; /* Limita la larghezza dei pulsanti su mobile */
+}
+
+.primaryButton, .secondaryButton {
+  border-radius: 8px;
+  padding: 14px 28px;
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 14px 0 rgba(0, 118, 255, 0.39);
-  margin-bottom: 10px;
+  width: 100%; /* I pulsanti occupano tutta la larghezza del contenitore */
 }
-.primaryButton:hover { transform: translateY(-2px); box-shadow: 0 6px 20px 0 rgba(0, 118, 255, 0.25); }
 
-.socialProof { display: flex; align-items: center; gap: 12px; }
-.avatarGroup { display: flex; }
-.avatar { width: 42px; height: 42px; border-radius: 50%; border: 4px solid #000; }
-.avatar:not(:first-child) { margin-left: -12px; }
-.joinText { font-size: 0.875rem; color: #a1a1aa; }
-.joinText strong { color: #e4e4e7; }
+.primaryButton {
+  background-color: #111827;
+  color: #ffffff;
+  border: 1px solid #111827;
+}
+.primaryButton:hover { transform: scale(1.02); }
 
 .secondaryButton {
-  /* MODIFICATO: Ridotto lo spazio sopra */
-  margin-top: 16px; 
-  background: transparent;
+  background-color: #ffffff;
+  color: #111827;
+  border: 1px solid #D1D5DB;
+}
+.secondaryButton:hover { border-color: #111827; background-color: #F9FAFB; }
+
+/* --- FEATURE, COMPARISON, FAQ SECTIONS --- */
+/* Aggiungiamo il padding orizzontale a tutte le sezioni di contenuto */
+.featureSection, .comparisonSection, .faqSection {
+    width: 100%;
+    padding: 0 24px;
+    box-sizing: border-box;
+}
+
+.featureSection {
+  display: flex;
+  flex-direction: column; /* Layout a colonna su mobile */
+  align-items: center;
+  gap: 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.featureContent .tag {
+    color: #FF4500;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+.featureList {
+    list-style: none; padding: 0; margin-top: 24px;
+    display: flex; flex-direction: column; gap: 16px;
+}
+.featureList li { display: flex; align-items: center; gap: 12px; font-weight: 500; }
+
+.featureImageContainer {
+    /* Occupa tutta la larghezza visibile dello schermo */
+    width: calc(100vw - (100vw - 100%));
+    /* Mettiamo un limite per non esagerare sui tablet */
+    max-width: 700px;
+}
+
+.featureImage {
+    width: 100%; /* L'immagine si adatterà al suo contenitore (ora più grande) */
+    display: block; /* Buona pratica per rimuovere spazi extra */
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.featureContent {
+    margin-bottom: 20px;
+}
+
+
+.comparisonSection { max-width: 1200px; margin: 0 auto;}
+.comparisonGrid {
+    display: grid;
+    /* Griglia a colonna singola su mobile */
+    grid-template-columns: 1fr;
+    gap: 24px;
+    margin-top: 48px;
+}
+.comparisonCard {
+    background-color: #F9FAFB; border: 1px solid #E5E7EB;
+    border-radius: 16px; padding: 32px;
+}
+.comparisonCard.traditionalCard { background-color: #fff; opacity: 0.8; }
+.comparisonCard ul {
+    list-style: none; padding: 0; display: flex;
+    flex-direction: column; gap: 16px; margin-top: 24px;
+}
+.comparisonCard li {
+    display: flex; align-items: flex-start;
+    gap: 12px; color: #4B5563; line-height: 1.5;
+}
+.cardTitle { font-size: 1.5rem; font-weight: 700; }
+
+.faqSection { max-width: 800px; margin: 0 auto;}
+.faqContainer { display: flex; flex-direction: column; gap: 16px; }
+.faqItem { border-bottom: 1px solid #E5E7EB; padding-bottom: 16px; }
+.faqItem summary {
+  font-size: 1.125rem; font-weight: 600; cursor: pointer;
+  list-style: none; display: flex; justify-content: space-between;
+  align-items: center;
+}
+.faqItem summary::-webkit-details-marker { display: none; } /* Nasconde freccia su Chrome */
+.faqItem summary::after { content: '+'; font-size: 1.5rem; }
+.faqItem[open] summary::after { content: '−'; }
+.faqItem p { margin-top: 12px; color: #4B5563; line-height: 1.6; }
+
+/* --- FOOTER --- */
+/* Il footer ha uno sfondo nero che copre il 100% della larghezza */
+.footer {
+  background-color: #000000;
   color: #ffffff;
-  border: none;
-  font-size: 0.9rem; /* Leggermente più piccolo per coerenza */
-  font-weight: 500;
-  cursor: pointer;
-  transition: color 0.2s ease;
+  width: 100%;
+  padding: 60px 5% 24px; /* Padding interno reattivo */
+  box-sizing: border-box;
 }
-.secondaryButton:hover { color: #fff; }
+.footerContainer {
+    display: flex;
+    /* Su mobile, le colonne si impilano */
+    flex-direction: column;
+    text-align: center; /* Testo centrato su mobile */
+    align-items: center;
+    gap: 48px;
+    padding-bottom: 48px;
+    border-bottom: 1px solid #374151;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+.footerBrand { max-width: 350px; }
+.footerBrand p { color: #A1A1AA; margin-top: 16px; line-height: 1.6; }
+.footerLinks {
+    display: flex;
+    flex-direction: column; /* Colonne impilate su mobile */
+    gap: 32px;
+    width: 100%;
+}
+.linkColumn { display: flex; flex-direction: column; gap: 12px; }
+.linkColumn h4 { font-size: 1rem; font-weight: 600; margin-bottom: 8px; }
+.linkColumn a, .linkColumn p { text-decoration: none; color: #A1A1AA; font-size: 0.9rem; }
+.linkColumn a:hover { color: #ffffff; }
 
-/* ===== RESPONSIVE ===== */
-@media (max-width: 768px) {
-  .header {
-    padding: 20px;
-    /* Su mobile, l'header non diventa a colonna per risparmiare spazio verticale */
+.footerBottom {
+    padding-top: 24px;
+    display: flex;
+    flex-direction: column; /* Impilato su mobile */
+    gap: 16px;
+    align-items: center;
+    font-size: 0.875rem;
+    color: #A1A1AA;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+.footerBottom div { display: flex; gap: 24px; }
+.footerBottom a { text-decoration: none; color: #A1A1AA; }
+.footerBottom a:hover { color: #ffffff; }
+
+
+/* --- BREAKPOINTS (DA TABLET IN SU) --- */
+/* Stili che si attivano quando la larghezza è ALMENO 768px */
+@media (min-width: 768px) {
+  /* Mostra i link di navigazione nell'header */
+  .navLinks {
+    display: flex;
+    gap: 24px;
+    position: absolute; /* Trucco per centrare perfettamente */
+    left: 50%;
+    transform: translateX(-50%);
   }
-  .pageWrapper {
-    padding-top: 80px; /* Spazio per l'header */
-    padding-bottom: 20px;
-    justify-content: center; /* Mantiene la centratura */
+
+  .ctaContainer {
+    flex-direction: row; /* Pulsanti affiancati */
+    max-width: none;
+    width: auto;
   }
-  .backgroundImageElement {
-    width: 250vw;
-    height: 100vh;
-    bottom: -35vh;
-    right: -125vw;
+  .primaryButton, .secondaryButton { width: auto; }
+
+  /* Layout a 2 colonne per la griglia di confronto */
+  .comparisonGrid { grid-template-columns: 1fr 1fr; }
+
+  /* Layout orizzontale per il footer */
+  .footerContainer, .footerBottom {
+    flex-direction: row;
+    justify-content: space-between;
+    text-align: left;
+    align-items: flex-start;
   }
+  .footerLinks { flex-direction: row; gap: 64px; }
+  .footerBottom { align-items: center; }
 }
 
-@media (max-width: 552px) {
-    .navLinks { 
-    display: grid;
-    margin-left:100%;
-  }
 
-  .headline {
-    margin-bottom: 10px;
-    font-size: clamp(2.3rem, 7vw, 4.5rem); /* Aumentato per più impatto */
-  }
-  .subheadline {
-    font-size: clamp(1.0rem, 4vw, 1.125rem);
-  }
-}
-
-@media (max-width: 446px) {
-    .navLinks { 
-    display: grid;
-    margin-left:70%;
-  }
-  .headline {
+/* --- BREAKPOINTS (DA DESKTOP IN POI) --- */
+/* Stili che si attivano quando la larghezza è ALMENO 992px */
+@media (min-width: 992px) {
+    .mainContent { gap: 120px; padding-bottom: 120px; }
+    .featureSection { grid-template-columns: 1fr 1fr; display: grid; }
     
-    font-size: clamp(2rem, 7vw, 4.5rem); /* Aumentato per più impatto */
-  }
-  .subheadline {
-    margin-bottom: 10px;
-    font-size: clamp(1rem, 4vw, 1.125rem);
-  }
-  .navLinks a {
-    font-size: 0.675rem;
-  }
+    /* AGGIUNGI QUESTO PER IL RESET SU DESKTOP */
+    .featureImageContainer {
+        width: 100%; /* Torna ad occupare lo spazio della sua colonna */
+        max-width: none; /* Rimuovi il limite di larghezza */
+    }
 }
-

@@ -1,0 +1,18 @@
+body {
+  margin: 0; /* <-- QUESTA E' LA REGOLA CHIAVE CHE RISOLVE IL PROBLEMA */
+  padding: 0;
+  font-family: 'Inter', sans-serif; /* Meglio impostare il font di base qui */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #ffffff; /* Imposta lo sfondo di default della pagina */
+}
+
+/* 
+  Opzionale ma consigliato: applica un box-sizing migliore a tutti gli elementi.
+  Questo rende la gestione delle dimensioni e dei padding molto più intuitiva.
+*/
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
