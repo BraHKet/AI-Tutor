@@ -1,6 +1,6 @@
 // src/pages/LoginPage.jsx
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useGoogleAuth from '../hooks/useGoogleAuth';
 import styles from './styles/LoginPage.module.css';
@@ -22,6 +22,10 @@ const LoginPage = () => {
   const { user, login } = useGoogleAuth();
   const navigate = useNavigate();
 
+  const [pdfUploaded, setPdfUploaded] = useState(false);
+  const [pdfFile, setPdfFile] = useState(null);
+  const [showPopup, setShowPopup] = useState(false);
+
   useEffect(() => {
     if (user) {
       navigate('/exam');
@@ -35,6 +39,17 @@ const LoginPage = () => {
       console.error('Login failed:', error);
     }
   };
+
+  const handleStart = () => {
+  if (!pdfFile) {
+    setShowPopup(true);
+    return;
+  }
+
+  setPdfUploaded(true);
+  handleLogin();
+};
+
 
   return (
     <div className={styles.pageWrapper}>
@@ -50,8 +65,8 @@ const LoginPage = () => {
           <a href="#faq">FAQ</a>
         </nav>
         <div className={styles.headerActions}>
-          <button className={styles.signInButton} onClick={handleLogin}>
-            Accedi
+          <button className={styles.signInButton} onClick={handleStart}>
+            Interrogami
           </button>
         </div>
       </header>
@@ -66,10 +81,36 @@ const LoginPage = () => {
             Carica un documento, scegli gli argomenti e ottieni una simulazione d'esame in pochi minuti. Niente studio passivo, niente perdite di tempo.
           </p>
           <div className={styles.ctaContainer}>
-            <button className={styles.primaryButton} onClick={handleLogin}>
-              Inizia l'interrogazione →
-            </button>
-            <button className={styles.secondaryButton}>Guarda una Demo</button>
+            <button 
+  className={styles.primaryButton} 
+  onClick={handleStart}
+>
+  Inizia l'interrogazione →
+</button>
+<div className={styles.fileUploadWrapper}>
+  <label className={styles.fileUpload}>
+    <input
+      type="file"
+      accept="application/pdf"
+      onChange={(e) => {
+        if (e.target.files && e.target.files[0]) {
+          setPdfFile(e.target.files[0]);
+        }
+      }}
+    />
+    Inserisci un PDF
+  </label>
+
+  {pdfFile && (
+    <span className={styles.fileName}>
+      {pdfFile.name
+        .split(" ")
+        .slice(0, 4)
+        .join(" ")}
+    </span>
+  )}
+</div>
+
           </div>
         </section>
 
@@ -158,19 +199,34 @@ const LoginPage = () => {
                 </div>
                  <div className={styles.linkColumn}>
                     <h4>Contatti</h4>
-                    <p>hello@mentora.app</p>
-                    <p>Bari, Italia</p>
+                    <p>lore.mail.gl@gmail.com</p>
+                    <p>Italia</p>
                 </div>
             </div>
         </div>
         <div className={styles.footerBottom}>
-            <p>© 2025 Mentora.ai. Tutti i diritti riservati.</p>
+            <p>© 2025 Mentora. Tutti i diritti riservati.</p>
             <div>
                 <a href="https://mentora-lp.vercel.app/policy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
                 <a href="https://mentora-lp.vercel.app/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a>
             </div>
         </div>
       </footer>
+
+      {showPopup && (
+  <div className={styles.popupOverlay}>
+    <div className={styles.popup}>
+      <h3>Nessun PDF selezionato</h3>
+      <p>Per iniziare l'interrogazione devi prima caricare un file PDF.</p>
+      <button 
+        className={styles.popupButton} 
+        onClick={() => setShowPopup(false)}
+      >
+        Ok, ho capito
+      </button>
+    </div>
+  </div>
+)}
     </div>
   );
 };
