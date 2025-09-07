@@ -25,7 +25,7 @@ const LoginPage = () => {
 
   const [pdfUploaded, setPdfUploaded] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
-  const { pdfFile } = usePdf();
+  const { pdfFile, setPdfFile } = usePdf();
 
   useEffect(() => {
     if (user) {
@@ -94,7 +94,7 @@ const LoginPage = () => {
       accept="application/pdf"
       onChange={(e) => {
         if (e.target.files && e.target.files[0]) {
-          pdfFile(e.target.files[0]);
+          setPdfFile(e.target.files[0]);
         }
       }}
     />
