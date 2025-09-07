@@ -40,7 +40,7 @@ function App() {
           <Navigate to={user ? "/exam" : "/"} replace />
         } />
       </Routes>
-    </Router>
+    </Router> 
   );
 }
 
