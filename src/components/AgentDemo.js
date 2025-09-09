@@ -82,6 +82,12 @@ export default function AgentDemo() {
     init();
   }, []);
 
+   useEffect(() => {
+    if (!pdfFile) {
+      navigate("/setpdf"); // Reindirizza al percorso del componente PdfFile
+    }
+  }, [pdfFile, navigate]);
+
   // Voice transcript handler - OTTIMIZZATO ANTI-BLOCCO
   const handleTranscriptUpdate = useCallback((transcript, isFinal) => {
     console.log('🎤 Voice update:', { transcript, isFinal, activeElement: voiceActiveForElement });
@@ -551,13 +557,6 @@ const reinitializeAllCanvases = useCallback(() => {
       console.error("Logout error:", error);
     }
   };
-
-  
- if (!pdfFile) {
-  return (
-    <pdfFile />
-  );
-}
   
   return (
     <div className={styles.container}>
@@ -655,6 +654,7 @@ const reinitializeAllCanvases = useCallback(() => {
         {/* Main Workspace */}
         <div className={styles.mainWorkspace}>
           
+
           {/* Controls */}
           {(!examStarted || !materialReady) && (
             <div className={styles.controls}>
