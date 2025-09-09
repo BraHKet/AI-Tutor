@@ -256,7 +256,7 @@
     margin-top: 48px;
 }
 .comparisonCard {
-    background-color: #F9FAFB; border: 1px solid #E5E7EB;
+    background-color: #ffece5; border: 1px solid #E5E7EB;
     border-radius: 16px; padding: 32px;
 }
 .comparisonCard.traditionalCard { background-color: #fff; opacity: 0.8; }
