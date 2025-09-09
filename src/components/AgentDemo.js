@@ -553,7 +553,11 @@ const reinitializeAllCanvases = useCallback(() => {
   };
 
   
-
+ if (!pdfFile) {
+  return (
+    <pdfFile />
+  );
+}
   
   return (
     <div className={styles.container}>
