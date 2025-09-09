@@ -7,6 +7,7 @@ import useGoogleAuth from './hooks/useGoogleAuth';
 import SimpleLoading from './components/SimpleLoading';
 import AgentDemo from './components/AgentDemo'
 import { PdfProvider } from "./context/PdfContext";
+import SetPdf from './components/SetPdf';
 // 2. AGGIUNGI: Importa il nuovo componente per la visualizzazione del singolo argomento
 // Importa il Context Provider e il Player
 
@@ -27,7 +28,7 @@ function App() {
     <PdfProvider>
     <Router>
       <Routes>
-        
+        <Route path="/setpdf" element={<SetPdf />}/>
         <Route path="/" element={
             user ? <Navigate to="/exam" replace /> : <LoginPage />
           } />
