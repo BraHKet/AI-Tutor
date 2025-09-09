@@ -5,9 +5,16 @@ import './styles/SimpleLoading.css';
 const SimpleLoading = ({ 
   message = "Caricamento...", 
   size = "medium",
-  fullScreen = true 
+  fullScreen = true,
+  darkMode = false // Aggiunta una prop per attivare la dark mode
 }) => {
-  const containerClass = fullScreen ? "simple-loading-fullscreen" : "simple-loading-inline";
+  let containerClass = fullScreen ? "simple-loading-fullscreen" : "simple-loading-inline";
+  
+  // Aggiungi la classe 'dark' se fullScreen e darkMode sono attivi
+  if (fullScreen && darkMode) {
+    containerClass += " dark";
+  }
+
   const spinnerSize = size === "small" ? "small" : size === "large" ? "large" : "medium";
 
   return (

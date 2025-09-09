@@ -21,7 +21,7 @@ export default function AgentDemo() {
   
 
   // Recupera file da LoginPage
-  const { pdfFile } = usePdf();
+  const { pdfFile, setPdfFile } = usePdf();
 
   // Core states
   const [agent, setAgent] = useState(null);
@@ -552,8 +552,30 @@ const reinitializeAllCanvases = useCallback(() => {
     }
   };
 
-
-
+  
+  if (!pdfFile) {
+  return (
+    <div className={styles.pdfUploadContainer}>
+      <h2>📄 Carica il PDF da cui farti interrogare!</h2>
+      <input 
+        type="file" 
+        accept="application/pdf" 
+        onChange={(e) => {
+          if (e.target.files && e.target.files[0]) {
+            setPdfFile(e.target.files[0]);
+          }
+        }} 
+      />
+      <button
+        
+        disabled={!pdfFile}
+        className={styles.uploadButton}
+      >
+        Carica PDF e Continua
+      </button>
+    </div>
+  );
+}
   
   return (
     <div className={styles.container}>
@@ -562,6 +584,9 @@ const reinitializeAllCanvases = useCallback(() => {
         <div className={styles.headerLeft}>
           <button onClick={handleLogout} className={styles.backButton}>
             ← Logout
+          </button>
+          <button onClick={() => setPdfFile(null)}  className={styles.backButton}>
+            New Pdf
           </button>
           
           <h1 className={styles.title}>

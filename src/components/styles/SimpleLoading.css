@@ -1,40 +1,56 @@
-/* src/components/styles/SimpleLoading.css */
+/* --- SIMPLE LOADING COMPONENT - SUPER STYLISH --- */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-/* Container a schermo intero */
+/* --- Contenitore Base --- */
+.simple-loading-fullscreen,
+.simple-loading-inline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* --- Fullscreen Overlay (Elegante e Morbido) --- */
 .simple-loading-fullscreen {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  background: linear-gradient(135deg, #f8fafc 0%, #e0e7ed 100%); /* Sfumatura chiara e moderna */
   z-index: 9999;
+  animation: fadeInBackground 0.4s ease-out forwards; /* Animazione delicata di apparizione */
 }
 
-/* Container inline */
+/* --- Dark Mode per Fullscreen --- */
+.simple-loading-fullscreen.dark {
+  background: linear-gradient(135deg, #111827 0%, #2D3748 100%); /* Sfumatura scura, richiamando il footer */
+}
+
+/* --- Contenitore Inline (Flessibile) --- */
 .simple-loading-inline {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 20px;
   width: 100%;
-  min-height: 200px;
+  min-height: 150px; /* Un po' meno ingombrante */
+  padding: 30px 20px;
+  background-color: #ffffff; /* Sfondo chiaro per contesti normali */
+  border-radius: 12px; /* Angoli arrotondati */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* Ombra sottile */
 }
 
-/* Contenuto loading */
+/* --- Contenuto Centrale del Loading --- */
 .simple-loading-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 20px;
+  gap: 25px; /* Spazio leggermente aumentato */
   text-align: center;
+  transform: translateY(-10px); /* Leggera traslazione per effetto dinamico */
+  animation: slideInContent 0.4s ease-out forwards;
 }
 
-/* Spinner principale */
+/* --- Spinner Differentiato e Vibrante --- */
 .simple-spinner {
   position: relative;
   display: flex;
@@ -42,162 +58,100 @@
   justify-content: center;
 }
 
-.simple-spinner.small {
-  width: 32px;
-  height: 32px;
-}
+/* --- Dimensioni dello Spinner --- */
+.simple-spinner.small { width: 36px; height: 36px; }
+.simple-spinner.medium { width: 56px; height: 56px; } /* Dimensione default più incisiva */
+.simple-spinner.large { width: 72px; height: 72px; }
 
-.simple-spinner.medium {
-  width: 48px;
-  height: 48px;
-}
-
-.simple-spinner.large {
-  width: 64px;
-  height: 64px;
-}
-
-/* Anelli dello spinner */
+/* --- Anelli dello Spinner (Nuovi Colori e Stile) --- */
 .spinner-ring {
   position: absolute;
   border-radius: 50%;
-  border: 2px solid transparent;
-  animation: spin 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  border: 3px solid transparent; /* Bordo più spesso */
+  animation: spin 1.8s cubic-bezier(0.65, 0.05, 0.36, 1) infinite; /* Animazione più fluida e lenta */
 }
 
-/* Primo anello - più grande */
+/* Anello Esterno: Arancione Brillante */
 .simple-spinner .spinner-ring:nth-child(1) {
   width: 100%;
   height: 100%;
-  border-top: 2px solid #667eea;
-  border-right: 2px solid #667eea;
-  animation-duration: 1.5s;
+  border-top-color: #FF4500; /* Richiama l'highlight del login */
+  border-right-color: #FF4500;
+  animation-duration: 1.8s;
+  animation-delay: 0s;
 }
 
-/* Secondo anello - medio */
+/* Anello Medio: Blu Scuro Elegante */
 .simple-spinner .spinner-ring:nth-child(2) {
-  width: 75%;
-  height: 75%;
-  border-bottom: 2px solid #764ba2;
-  border-left: 2px solid #764ba2;
-  animation-duration: 1.2s;
-  animation-direction: reverse;
+  width: 70%;
+  height: 70%;
+  border-bottom-color: #111827; /* Richiama il colore principale dei bottoni */
+  border-left-color: #111827;
+  animation-duration: 1.5s;
+  animation-delay: 0.2s; /* Ritardo per un effetto a cascata */
+  animation-direction: reverse; /* Ruota in direzione opposta */
 }
 
-/* Terzo anello - più piccolo */
+/* Anello Interno: Grigio Medio Sottile */
 .simple-spinner .spinner-ring:nth-child(3) {
-  width: 50%;
-  height: 50%;
-  border-top: 2px solid #f093fb;
-  border-right: 2px solid #f093fb;
-  animation-duration: 1s;
+  width: 40%;
+  height: 40%;
+  border-top-color: #4B5563; /* Richiama i testi secondari */
+  border-right-color: #4B5563;
+  animation-duration: 1.2s;
+  animation-delay: 0.4s; /* Ultimo a partire */
 }
 
-/* Animazione rotazione */
+/* --- Animazione di Rotazione --- */
 @keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
-/* Messaggio di loading */
+/* --- Messaggio di Loading (Tipografia Professionale) --- */
 .simple-loading-message {
   margin: 0;
-  font-size: 16px;
-  font-weight: 500;
-  color: #64748b;
-  letter-spacing: 0.025em;
-  animation: fadeInOut 2s ease-in-out infinite;
+  font-size: 1.1rem; /* Dimensione più leggibile */
+  font-weight: 500; /* Semi-grassetto */
+  color: #374151; /* Colore più scuro e professionale */
+  letter-spacing: 0.03em;
+  animation: pulseText 1.8s ease-in-out infinite; /* Pulsazione più raffinata */
 }
 
-/* Animazione del testo */
-@keyframes fadeInOut {
-  0%, 100% {
-    opacity: 0.7;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-/* Varianti di dimensione per il messaggio */
-.simple-spinner.small + .simple-loading-message {
-  font-size: 14px;
-}
-
-.simple-spinner.large + .simple-loading-message {
-  font-size: 18px;
-}
-
-/* Responsive */
-@media (max-width: 600px) {
-  .simple-loading-content {
-    gap: 16px;
-  }
-  
-  .simple-loading-message {
-    font-size: 15px;
-  }
-  
-  .simple-spinner.medium {
-    width: 40px;
-    height: 40px;
-  }
-  
-  .simple-spinner.large {
-    width: 56px;
-    height: 56px;
-  }
-}
-
-@media (max-width: 400px) {
-  .simple-loading-content {
-    gap: 14px;
-  }
-  
-  .simple-loading-message {
-    font-size: 14px;
-  }
-  
-  .simple-spinner.small {
-    width: 28px;
-    height: 28px;
-  }
-  
-  .simple-spinner.medium {
-    width: 36px;
-    height: 36px;
-  }
-  
-  .simple-spinner.large {
-    width: 48px;
-    height: 48px;
-  }
-}
-
-/* Effetto speciale per contesti scuri */
-.simple-loading-fullscreen.dark {
-  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-}
-
+/* --- Dark Mode per il Messaggio --- */
 .simple-loading-fullscreen.dark .simple-loading-message {
-  color: #cbd5e1;
+  color: #E5E7EB; /* Testo chiaro su sfondo scuro */
 }
 
-.simple-loading-fullscreen.dark .spinner-ring:nth-child(1) {
-  border-top-color: #60a5fa;
-  border-right-color: #60a5fa;
+/* --- Animazione del Testo --- */
+@keyframes pulseText {
+  0%, 100% { opacity: 0.8; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.03); } /* Leggero ingrandimento */
 }
 
-.simple-loading-fullscreen.dark .spinner-ring:nth-child(2) {
-  border-bottom-color: #a78bfa;
-  border-left-color: #a78bfa;
+/* --- Animazioni Aggiuntive per l'Apparizione --- */
+@keyframes fadeInBackground {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-.simple-loading-fullscreen.dark .spinner-ring:nth-child(3) {
-  border-top-color: #f472b6;
-  border-right-color: #f472b6;
+@keyframes slideInContent {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Responsive (Miglioramenti) --- */
+@media (max-width: 768px) {
+  .simple-loading-content { gap: 20px; }
+  .simple-loading-message { font-size: 1rem; }
+  .simple-spinner.medium { width: 48px; height: 48px; }
+  .simple-spinner.large { width: 60px; height: 60px; }
+}
+
+@media (max-width: 480px) {
+  .simple-loading-content { gap: 18px; }
+  .simple-loading-message { font-size: 0.95rem; }
+  .simple-spinner.small { width: 32px; height: 32px; }
+  .simple-spinner.medium { width: 44px; height: 44px; }
+  .simple-spinner.large { width: 52px; height: 52px; }
 }
