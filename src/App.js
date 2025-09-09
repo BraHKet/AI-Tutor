@@ -18,7 +18,7 @@ function App() {
       <SimpleLoading 
         message="Inizializzazione..." 
         size="medium"
-        fullScreen={true}
+        fullScreen={true}  
       />
     );
   }
