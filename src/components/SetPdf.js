@@ -9,10 +9,17 @@ export default function SetPdf() {
 
   return (
     <div className={styles.pdfUploadContainer}>
-      <Spline
-        scene="https://prod.spline.design/1UrwWv5cFAz01IgO/scene.splinecode" 
-      />
+      {/* Spline come background a schermo intero */}
+      <div className={styles.splineBackground}>
+        <Spline
+          scene="https://prod.spline.design/1UrwWv5cFAz01IgO/scene.splinecode" 
+        />
+      </div>
+
+      {/* Overlay per migliorare la leggibilità del testo */}
       <div className={styles.overlay}></div>
+
+      {/* Contenuto centrato */}
       <div className={styles.content}>
         <h2 className={styles.title}>Upload Your PDF</h2>
         <p className={styles.subtitle}>Select a PDF file to start your interactive session</p>
