@@ -10,7 +10,7 @@ export default function SetPdf() {
     <div className={styles.pdfUploadContainer}>
       <div className={styles.backgroundAnimation}></div>
       <div className={styles.content}>
-        <h2 className={styles.title}>📄 Upload Your PDF</h2>
+        <h2 className={styles.title}>Upload Your PDF</h2>
         <p className={styles.subtitle}>Select a PDF file to start your interactive session</p>
         <div className={styles.uploadWrapper}>
           <input 
