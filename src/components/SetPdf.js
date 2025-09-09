@@ -8,12 +8,11 @@ export default function SetPdf() {
   const { setPdfFile } = usePdf();
 
   return (
- <>
     <div className={styles.pdfUploadContainer}>
-        <Spline
+      <Spline
         scene="https://prod.spline.design/1UrwWv5cFAz01IgO/scene.splinecode" 
       />
-      <div className={styles.backgroundAnimation}></div>
+      <div className={styles.overlay}></div>
       <div className={styles.content}>
         <h2 className={styles.title}>Upload Your PDF</h2>
         <p className={styles.subtitle}>Select a PDF file to start your interactive session</p>
@@ -36,6 +35,5 @@ export default function SetPdf() {
         </div>
       </div>
     </div>
-    </>
   );
 }
