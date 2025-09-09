@@ -30,7 +30,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(10, 13, 19, 0.242); /* Semi-transparent dark overlay per leggibilità */
+  background: rgba(10, 13, 19, 0.396); /* Semi-transparent dark overlay per leggibilità */
   z-index: 1; /* Sopra Spline, sotto il contenuto */
 }
 
