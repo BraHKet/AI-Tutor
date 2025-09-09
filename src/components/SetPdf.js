@@ -1,13 +1,18 @@
 import styles from './styles/SetPdf.module.css';
 import { usePdf } from "../context/PdfContext";
 import { useNavigate } from 'react-router-dom';
+import Spline from '@splinetool/react-spline';
 
 export default function SetPdf() {
   const navigate = useNavigate();
   const { setPdfFile } = usePdf();
 
   return (
+ <>
     <div className={styles.pdfUploadContainer}>
+        <Spline
+        scene="https://prod.spline.design/1UrwWv5cFAz01IgO/scene.splinecode" 
+      />
       <div className={styles.backgroundAnimation}></div>
       <div className={styles.content}>
         <h2 className={styles.title}>Upload Your PDF</h2>
@@ -31,5 +36,6 @@ export default function SetPdf() {
         </div>
       </div>
     </div>
+    </>
   );
 }
