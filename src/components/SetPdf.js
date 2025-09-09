@@ -14,7 +14,7 @@ export default function SetPdf() {
   };
 
   return (
-    <div className={styles.container}>
+    <div className={styles.pageWrapper}> {/* Nuovo wrapper per lo sfondo */}
       <div className={styles.content}>
         <h1 className={styles.mainTitle}>Benvenuto nell'Area Esami Intelligenti!</h1>
         <p className={styles.description}>
@@ -49,7 +49,6 @@ export default function SetPdf() {
           Pronto a trasformare il tuo modo di studiare? Inizia ora!
         </p>
       </div>
-      <div className={styles.animatedBackground}></div> {/* Elemento per lo sfondo animato */}
     </div>
   );
 }

@@ -1,111 +1,139 @@
-/* Stili di base del container */
-.container {
+/* Stili per il wrapper della pagina che sarà il tuo nuovo sfondo */
+.pageWrapper {
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
+  width: 100vw; /* Assicura che riempia l'intera larghezza */
   position: relative;
-  overflow: hidden; /* Nasconde le parti dell'animazione che escono dallo schermo */
+  overflow: hidden;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   color: #e0e0e0;
   text-align: center;
+  
+  /* Sfondo ispirato all'immagine allegata */
+  background: radial-gradient(circle at top left, #1a2a3a 0%, #0a0a0a 100%);
+  background-size: 400% 400%;
+  animation: backgroundMovement 15s ease infinite alternate;
 }
 
-/* Sfondo animato futuristico */
-.animatedBackground {
+/* Animazione per il background per dare un senso di profondità e movimento */
+@keyframes backgroundMovement {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 100% 100%;
+  }
+}
+
+/* Effetto di lucentezza/onda ispirato all'immagine */
+.pageWrapper::before {
+  content: '';
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(45deg, #0f0c29, #302b63, #24243e); /* Sfumatura di base */
-  animation: backgroundAnimation 20s infinite alternate; /* Animazione principale */
-  z-index: -1; /* Mantiene lo sfondo dietro il contenuto */
-  opacity: 0.9;
+  background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600"><defs><linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="rgba(0,100,255,0.05)" /><stop offset="50%" stop-color="rgba(0,180,255,0.15)" /><stop offset="100%" stop-color="rgba(0,100,255,0.05)" /></linearGradient></defs><path fill="url(#g1)" d="M0,200 C250,50 750,350 1000,100 L1000,0 L0,0 Z" opacity="0.8"/><path fill="url(#g1)" d="M0,400 C200,500 800,200 1000,450 L1000,600 L0,600 Z" opacity="0.6"/></svg>') no-repeat center center;
+  background-size: cover;
+  animation: waveEffect 20s ease-in-out infinite alternate;
+  opacity: 0.6; /* Riduci l'opacità per un effetto più sottile */
+  pointer-events: none; /* Rende l'overlay non cliccabile */
 }
 
-@keyframes backgroundAnimation {
+@keyframes waveEffect {
   0% {
-    background-position: 0% 50%;
-    transform: scale(1);
+    transform: translateY(0) scaleX(1);
     filter: hue-rotate(0deg);
   }
   50% {
-    background-position: 100% 50%;
-    transform: scale(1.05);
+    transform: translateY(-20px) scaleX(1.05);
     filter: hue-rotate(180deg);
   }
   100% {
-    background-position: 0% 50%;
-    transform: scale(1);
+    transform: translateY(0) scaleX(1);
     filter: hue-rotate(360deg);
   }
 }
 
-/* Overlay per dare un effetto "vetro" e migliorare la leggibilità */
+/* Contenuto principale, ora centrato sullo sfondo */
 .content {
   position: relative;
-  z-index: 1; /* Assicura che il contenuto sia sopra lo sfondo */
-  background: rgba(15, 12, 41, 0.7); /* Sfondo semi-trasparente */
-  backdrop-filter: blur(10px); /* Effetto sfocato per il "vetro" */
+  z-index: 2; /* Assicura che il contenuto sia sopra gli effetti di sfondo */
+  background: rgba(10, 10, 20, 0.7); /* Sfondo più scuro e discreto */
+  backdrop-filter: blur(12px); /* Effetto sfocato più pronunciato */
   border-radius: 20px;
-  padding: 40px 60px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-  max-width: 800px;
-  border: 1px solid rgba(75, 75, 75, 0.3);
+  padding: 50px 70px;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+  max-width: 850px;
+  border: 1px solid rgba(40, 40, 60, 0.4); /* Bordo più scuro */
+  transition: all 0.3s ease-in-out;
+}
+
+.content:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
 }
 
 .mainTitle {
-  font-size: 3.2em;
-  margin-bottom: 25px;
-  color: #8aff8a; /* Verde brillante per il titolo */
-  text-shadow: 0 0 15px rgba(138, 255, 138, 0.6);
-  letter-spacing: 1.5px;
+  font-size: 3.5em;
+  margin-bottom: 30px;
+  color: #a0c0ff; /* Blu più freddo e professionale */
+  text-shadow: 0 0 20px rgba(160, 192, 255, 0.5);
+  letter-spacing: 1.8px;
+  font-weight: 700;
 }
 
 .description, .subDescription {
-  font-size: 1.2em;
-  line-height: 1.8;
-  margin-bottom: 20px;
-  color: #c0c0c0;
+  font-size: 1.25em;
+  line-height: 1.9;
+  margin-bottom: 25px;
+  color: #c0c8d8;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .subDescription {
-  font-size: 1em;
-  margin-top: -10px;
-  margin-bottom: 30px;
-  opacity: 0.85;
+  font-size: 1.05em;
+  margin-top: -15px;
+  margin-bottom: 40px;
+  opacity: 0.9;
 }
 
 .pdfUploadBox {
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 15px;
-  padding: 30px;
-  margin-top: 40px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-  transition: all 0.3s ease;
+  background: rgba(25, 30, 45, 0.6); /* Sfondo del box di upload più scuro */
+  border-radius: 18px;
+  padding: 35px;
+  margin-top: 50px;
+  border: 1px solid rgba(60, 70, 90, 0.3);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+  transition: all 0.4s ease;
 }
 
 .pdfUploadBox:hover {
-  background: rgba(255, 255, 255, 0.12);
-  transform: translateY(-5px);
+  background: rgba(30, 35, 50, 0.7);
+  transform: translateY(-8px);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
 }
 
 .uploadTitle {
-  font-size: 1.8em;
-  margin-bottom: 25px;
-  color: #b3e0ff; /* Blu chiaro */
+  font-size: 2em;
+  margin-bottom: 30px;
+  color: #c0d0ff; /* Blu chiaro per il titolo dell'upload */
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 15px;
-  text-shadow: 0 0 10px rgba(179, 224, 255, 0.4);
+  gap: 18px;
+  text-shadow: 0 0 12px rgba(192, 208, 255, 0.4);
+  font-weight: 600;
 }
 
 .icon {
-  font-size: 1.5em;
-  animation: bounce 2s infinite ease-in-out;
+  font-size: 1.6em;
+  animation: bounce 2.5s infinite ease-in-out;
+  color: #8ac0ff; /* Un tocco di blu più vibrante per l'icona */
 }
 
 @keyframes bounce {
@@ -113,104 +141,119 @@
     transform: translateY(0);
   }
   50% {
-    transform: translateY(-8px);
+    transform: translateY(-10px);
   }
 }
 
 /* Stili per l'input file personalizzato */
 .fileInput {
-  display: none; /* Nasconde l'input file nativo */
+  display: none;
 }
 
 .customFileUpload {
   display: inline-block;
-  background: linear-gradient(90deg, #6a11cb 0%, #2575fc 100%); /* Sfumatura blu-viola */
+  background: linear-gradient(90deg, #3a7bd5 0%, #00d2ff 100%); /* Sfumatura blu più raffinata */
   color: white;
-  padding: 15px 30px;
-  border-radius: 50px;
+  padding: 18px 35px;
+  border-radius: 60px;
   cursor: pointer;
-  font-size: 1.1em;
+  font-size: 1.2em;
   font-weight: bold;
-  letter-spacing: 0.5px;
-  transition: all 0.4s ease;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  letter-spacing: 0.8px;
+  transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
   border: none;
   outline: none;
   text-transform: uppercase;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
 .customFileUpload:hover {
-  background: linear-gradient(90deg, #2575fc 0%, #6a11cb 100%);
-  transform: translateY(-3px) scale(1.02);
-  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.4);
+  background: linear-gradient(90deg, #00d2ff 0%, #3a7bd5 100%);
+  transform: translateY(-5px) scale(1.03);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
 }
 
 .customFileUpload:active {
   transform: translateY(0);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
 }
 
 .footerText {
-  margin-top: 40px;
-  font-size: 1em;
-  color: #a0a0a0;
-  opacity: 0.7;
-}
-
-/* Animazione aggiuntiva per un effetto di "particelle" */
-.animatedBackground::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: url('data:image/svg+xml;utf8,<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="10" fill="rgba(255,255,255,0.05)"/></svg>');
-  background-size: 20px 20px;
-  animation: particleFlow 60s linear infinite;
-  transform: scale(2);
-  opacity: 0.6;
-}
-
-@keyframes particleFlow {
-  0% {
-    transform: translate(0, 0) scale(2) rotate(0deg);
-  }
-  100% {
-    transform: translate(100vw, 100vh) scale(2) rotate(360deg);
-  }
+  margin-top: 50px;
+  font-size: 1.05em;
+  color: #a0a8b8;
+  opacity: 0.8;
+  letter-spacing: 0.2px;
 }
 
 /* Media Queries per la responsività */
+@media (max-width: 992px) {
+  .content {
+    padding: 40px 50px;
+    margin: 20px;
+    max-width: 90%;
+  }
+  .mainTitle {
+    font-size: 2.8em;
+  }
+  .description, .subDescription {
+    font-size: 1.1em;
+  }
+  .uploadTitle {
+    font-size: 1.8em;
+  }
+  .customFileUpload {
+    padding: 15px 30px;
+    font-size: 1.1em;
+  }
+}
+
 @media (max-width: 768px) {
   .content {
     padding: 30px;
-    margin: 20px;
+    margin: 15px;
   }
   .mainTitle {
-    font-size: 2.5em;
+    font-size: 2.2em;
+    margin-bottom: 20px;
   }
   .description, .subDescription {
     font-size: 1em;
+    line-height: 1.7;
   }
   .uploadTitle {
     font-size: 1.5em;
     flex-direction: column;
+    gap: 10px;
+  }
+  .icon {
+    font-size: 1.4em;
   }
   .customFileUpload {
     padding: 12px 25px;
     font-size: 1em;
   }
+  .footerText {
+    margin-top: 35px;
+    font-size: 0.95em;
+  }
 }
 
 @media (max-width: 480px) {
+  .content {
+    padding: 20px;
+  }
   .mainTitle {
-    font-size: 2em;
+    font-size: 1.8em;
   }
   .description {
     font-size: 0.9em;
   }
   .uploadTitle {
-    font-size: 1.3em;
+    font-size: 1.2em;
+  }
+  .pdfUploadBox {
+    padding: 25px;
   }
 }
