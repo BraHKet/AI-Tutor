@@ -13,6 +13,7 @@ import {
   History, Mic, X, Volume2, Edit3, Plus, Type
 } from 'lucide-react';
 import { usePdf } from "../context/PdfContext";
+import SimpleLoading from './components/SimpleLoading';
 
 // Importa tutti i moduli CSS
 import layoutStyles from './styles/layout.module.css';
@@ -44,7 +45,7 @@ export default function AgentDemo() {
   const { projectId, topicId } = useParams();
   const navigate = useNavigate();
   
-
+  const [isAutoSetupInProgress, setIsAutoSetupInProgress] = useState(true);
   // Recupera file da LoginPage
   const { pdfFile, setPdfFile } = usePdf();
 
@@ -106,6 +107,16 @@ export default function AgentDemo() {
     };
     init();
   }, []);
+
+
+  useEffect(() => {
+    // Quando lo stato 'examStarted' diventa true, significa che la sequenza
+    // automatica è terminata e possiamo nascondere la schermata di caricamento.
+    if (examStarted) {
+      console.log("🏁 Sequenza di setup completata. Nascondo la schermata di caricamento.");
+      setIsAutoSetupInProgress(false);
+    }
+  }, [examStarted]);
 
   // 1. Aggiungi un useRef per tracciare se la sequenza automatica è stata eseguita.
   const autoStartSequenceRan = useRef(false);
@@ -620,6 +631,20 @@ const reinitializeAllCanvases = useCallback(() => {
     }
   };
   
+
+
+
+  if (isAutoSetupInProgress) {
+    return (
+      <SimpleLoading 
+        // Usiamo lo stato 'status' per un messaggio dinamico!
+        message={status} 
+        size="medium"
+        fullScreen={true}  
+      />
+    );
+  }
+
   return (
     <div className={styles.container}>
       {/* Header */}
@@ -716,9 +741,6 @@ const reinitializeAllCanvases = useCallback(() => {
         {/* Main Workspace */}
         <div className={styles.mainWorkspace}>
           
-
-          
-
           {/* Sequential Response System */}
           {examStarted && !isComplete && (
             <div className={styles.sequentialWorkspace}>
