@@ -8,10 +8,8 @@ export default function SetPdf() {
 
   return (
     <div className={styles.container}>
-      {/* Animazione stelle */}
-      <div className={styles.stars}></div>
-      <div className={styles.stars2}></div>
-      <div className={styles.stars3}></div>
+      {/* Stelle animate */}
+      <div className={styles.starryBackground}></div>
 
       {/* Header con logo */}
       <header className={styles.header}>
@@ -21,6 +19,10 @@ export default function SetPdf() {
       {/* Box centrale */}
       <div className={styles.contentBox}>
         <h2 className={styles.title}>Inserisci PDF</h2>
+        <p className={styles.subtitle}>
+          Carica un file PDF per iniziare la tua sessione interattiva.<br />
+          Potrai esplorarlo, fare domande e navigare tra i contenuti facilmente.
+        </p>
         <div className={styles.uploadWrapper}>
           <input 
             type="file" 
@@ -38,6 +40,9 @@ export default function SetPdf() {
             <span>Scegli PDF</span>
           </label>
         </div>
+        <p className={styles.helperText}>
+          Formati supportati: <b>.pdf</b> – Dimensione max: <b>--</b>
+        </p>
       </div>
     </div>
   );
