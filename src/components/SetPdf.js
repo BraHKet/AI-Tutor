@@ -16,7 +16,7 @@ export default function SetPdf() {
 
       {/* Header con logo */}
       <header className={styles.header}>
-        <img src={logo} alt="Logo" className={styles.logo} />
+        <img src="/logo192.png" alt="Logo" className={styles.logo} />
       </header>
 
       {/* Box centrale */}
