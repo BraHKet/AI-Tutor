@@ -105,7 +105,21 @@ export default function AgentDemo() {
       }
     };
     init();
+    if (agent && pdfFile && !examStarted && !autoStartSequenceRan.current) {
+      console.log("🚀 Auto-start: Trovato PDF, avvio analisi...");
+      autoStartSequenceRan.current = true; // Imposta il flag per non ripeterlo
+      analyzeMaterial();
+    }
+    if (materialReady && autoStartSequenceRan.current && !examStarted) {
+      console.log("✅ Auto-start: Analisi completata, avvio esame...");
+      startExam();
+    }
   }, []);
+
+  // 1. Aggiungi un useRef per tracciare se la sequenza automatica è stata eseguita.
+  const autoStartSequenceRan = useRef(false);
+
+  
 
    useEffect(() => {
     if (!pdfFile) {
