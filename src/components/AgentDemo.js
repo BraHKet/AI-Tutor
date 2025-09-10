@@ -12,8 +12,33 @@ import {
   Bot, FileText, MessageSquare, Send, Trash2, 
   History, Mic, X, Volume2, Edit3, Plus, Type
 } from 'lucide-react';
-import styles from './styles/AgentDemo.module.css';
 import { usePdf } from "../context/PdfContext";
+
+// Importa tutti i moduli CSS
+import layoutStyles from './styles/layout.module.css';
+import headerStyles from './styles/header.module.css';
+import statusBarStyles from './styles/statusBar.module.css';
+import historySidebarStyles from './styles/historySidebar.module.css';
+import controlsStyles from './styles/controls.module.css';
+import sequentialWorkspaceStyles from './styles/sequentialWorkspace.module.css';
+import canvasStyles from './styles/canvas.module.css';
+import overlaysStyles from './styles/overlays.module.css';
+import legacyStyles from './styles/legacy.module.css';
+import responsiveStyles from './styles/responsive.module.css';
+
+// Combina tutti gli stili in un unico oggetto per mantenere la compatibilità
+const styles = {
+  ...layoutStyles,
+  ...headerStyles,
+  ...statusBarStyles,
+  ...historySidebarStyles,
+  ...controlsStyles,
+  ...sequentialWorkspaceStyles,
+  ...canvasStyles,
+  ...overlaysStyles,
+  ...legacyStyles,
+  ...responsiveStyles
+};
 
 export default function AgentDemo() {
   const { projectId, topicId } = useParams();

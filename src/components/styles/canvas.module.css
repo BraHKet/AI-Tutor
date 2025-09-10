@@ -1,0 +1,66 @@
+/* ==========================================
+// FILE: canvas.module.css
+// ========================================== */
+
+.elementCanvas {
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: white;
+  display: block;
+  width: 100%;
+  cursor: crosshair;
+  
+  /* PROPRIETÀ CHIAVE PER PRESTAZIONI TOUCH/PAD */
+  touch-action: none; 
+  -ms-touch-action: none;
+  
+  /* FORZA ACCELERAZIONE GPU E ISOLAMENTO DEL LAYER DI RENDERING */
+  will-change: transform, contents; 
+  contain: strict; 
+  transform: translateZ(0);
+
+  /* PREVIENE SELEZIONI O AZIONI INDESIDERATE */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.elementCanvas:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: -2px;
+}
+
+/* ADDITIONAL PERFORMANCE OPTIMIZATIONS */
+.drawingElementContainer {
+  /* GPU LAYER SEPARATO */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  /* SMOOTH SCROLLING */
+  -webkit-overflow-scrolling: touch;
+  /* REDUCE REPAINTS - MASSIMO ISOLAMENTO */
+  contain: layout style paint;
+  isolation: isolate;
+  /* PRELOAD GPU LAYER */
+  will-change: transform;
+}
+
+.sequentialElementsList {
+  /* SMOOTH SCROLLING */
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  /* REDUCE REPAINTS */
+  contain: layout style;
+  /* HARDWARE ACCELERATION */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+.sequentialElement {
+  /* ISOLAMENTO GPU PER OGNI ELEMENTO */
+  will-change: border-color, box-shadow;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}

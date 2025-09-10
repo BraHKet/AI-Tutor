@@ -1,0 +1,29 @@
+/* ==========================================
+// FILE: statusBar.module.css
+// ========================================== */
+
+.statusBar {
+  padding: 8px 20px;
+  font-size: 14px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.statusError {
+  composes: statusBar;
+  background-color: #fee2e2;
+}
+
+.statusSuccess {
+  composes: statusBar;
+  background-color: #dcfce7;
+}
+
+.statusComplete {
+  composes: statusBar;
+  background-color: #ecfdf5;
+}
+
+.statusDefault {
+  composes: statusBar;
+  background-color: #dbeafe;
+}

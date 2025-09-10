@@ -1,0 +1,148 @@
+/* ==========================================
+// FILE: overlays.module.css
+// ========================================== */
+
+/* VOICE MANAGER */
+.voiceManagerFixed {
+  position: fixed;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1001;
+  background: white;
+  border: 2px solid #10b981;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  min-width: 300px;
+  max-width: 500px;
+}
+
+.voiceManagerContent {
+  padding: 16px;
+}
+
+.voiceManagerHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-weight: 600;
+  color: #10b981;
+}
+
+.stopVoiceButton {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 4px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.transcriptDisplay {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #10b981;
+  color: white;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* COMPLETION SCREEN */
+.completionScreen {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: white;
+}
+
+.completionCard {
+  text-align: center;
+  background: #ecfdf5;
+  border: 2px solid #22c55e;
+  border-radius: 16px;
+  padding: 40px;
+  max-width: 500px;
+}
+
+.completionIcon {
+  font-size: 64px;
+  margin-bottom: 16px;
+}
+
+.completionTitle {
+  color: #15803d;
+  margin: 0 0 16px 0;
+}
+
+.completionText {
+  color: #059669;
+  margin: 0;
+}
+
+/* AI RESPONSE OVERLAY */
+.aiResponseOverlay {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: white;
+  border: 2px solid #3b82f6;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  max-width: 400px;
+  max-height: 300px;
+  overflow: auto;
+}
+
+.aiResponseOverlayWithHistory {
+  composes: aiResponseOverlay;
+  left: 420px;
+}
+
+.aiResponseOverlayWithoutHistory {
+  composes: aiResponseOverlay;
+  left: 20px;
+}
+
+.aiResponseHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.aiResponseTitle {
+  font-weight: 600;
+  color: #1d4ed8;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.repeatButton {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.aiResponseCloseButton {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: #6b7280;
+}
+
+.aiResponseContent {
+  line-height: 1.6;
+  color: #374151;
+}

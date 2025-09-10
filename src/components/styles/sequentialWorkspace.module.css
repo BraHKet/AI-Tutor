@@ -1,0 +1,247 @@
+/* ==========================================
+// FILE: sequentialWorkspace.module.css
+// ========================================== */
+
+.sequentialWorkspace {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: white;
+}
+
+.addElementsToolbar {
+  background-color: white;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.addElementButton {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.addElementButton:hover {
+  background: #2563eb;
+}
+
+.drawingToolsCompact {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8fafc;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.toolButton {
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.toolButtonActive {
+  composes: toolButton;
+  background: #3b82f6;
+  color: white;
+}
+
+.toolButtonInactive {
+  composes: toolButton;
+  background: transparent;
+  color: #374151;
+}
+
+.colorPickerCompact {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.strokeSliderCompact {
+  width: 50px;
+}
+
+.actionButtonsRight {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+
+.clearButton {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.sendButton {
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.sendButtonActive {
+  composes: sendButton;
+  background: #10b981;
+  cursor: pointer;
+}
+
+.sendButtonDisabled {
+  composes: sendButton;
+  background: #d1d5db;
+  cursor: not-allowed;
+}
+
+.sequentialElementsList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  background: #f8fafc;
+}
+
+.emptyState {
+  text-align: center;
+  color: #6b7280;
+  padding: 60px 20px;
+  font-size: 16px;
+}
+
+.sequentialElement {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.activeElement {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.1);
+}
+
+.elementHeader {
+  background: #f1f5f9;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.elementNumber {
+  font-weight: 600;
+  color: #475569;
+  font-size: 14px;
+}
+
+.elementControls {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.voiceControlButton {
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: white;
+}
+
+.voiceControlActive {
+  composes: voiceControlButton;
+  background: #10b981;
+}
+
+.voiceControlInactive {
+  composes: voiceControlButton;
+  background: #3b82f6;
+}
+
+.clearCanvasButton {
+  background: #f59e0b;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.deleteElementButton {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+}
+
+.elementContent {
+  padding: 16px;
+}
+
+.textElementInput {
+  width: 100%;
+  border: none;
+  outline: none;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 60px;
+  background: transparent;
+}
+
+.drawingElementContainer {
+  display: flex;
+  flex-direction: column;
+  background: #fefefe;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 8px;
+  width: 100%;
+}
