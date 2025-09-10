@@ -7,10 +7,9 @@ export default function SetPdf() {
   const { setPdfFile } = usePdf();
 
   return (
-    <div className={styles.starryBackground}>
     <div className={styles.container}>
-      {/* Stelle animate */}
-      </div>
+      {/* Stelle animate <div className={styles.starryBackground}></div>*/}
+      
 
       {/* Header con logo */}
       <header className={styles.header}>
