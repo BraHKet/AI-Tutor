@@ -105,19 +105,78 @@ export default function AgentDemo() {
       }
     };
     init();
-    if (agent && pdfFile && !examStarted && !autoStartSequenceRan.current) {
-      console.log("🚀 Auto-start: Trovato PDF, avvio analisi...");
-      autoStartSequenceRan.current = true; // Imposta il flag per non ripeterlo
-      analyzeMaterial();
-    }
-    if (materialReady && autoStartSequenceRan.current && !examStarted) {
-      console.log("✅ Auto-start: Analisi completata, avvio esame...");
-      startExam();
-    }
   }, []);
 
   // 1. Aggiungi un useRef per tracciare se la sequenza automatica è stata eseguita.
   const autoStartSequenceRan = useRef(false);
+
+  // ==========================================================
+  // LOGGING E LOGICA DI AVVIO AUTOMATICO (CORRETTI)
+  // ==========================================================
+
+  // LOG 1: Mostra lo stato ad ogni render. Utile per vedere quando le cose cambiano.
+  console.log(
+    `%c RENDER: Controllando gli stati...`,
+    'color: blue; font-weight: bold;',
+    {
+      agent: !!agent, // mostriamo solo se esiste o no
+      pdfFile: !!pdfFile,
+      materialReady,
+      examStarted,
+      autoStartFlag: autoStartSequenceRan.current,
+    }
+  );
+
+  // useEffect per l'inizializzazione dell'agente (solo al montaggio)
+  useEffect(() => {
+    const init = async () => {
+      try {
+        console.log('[EFFECT INIT] 🔧 Inizializzazione agente...');
+        setStatus('🔧 Initializing...');
+        const physicsAgent = new PhysicsAgent(
+          process.env.REACT_APP_SUPABASE_URL,
+          process.env.REACT_APP_SUPABASE_ANON_KEY
+        );
+        await physicsAgent.initialize();
+        console.log('[EFFECT INIT] ✅ Agente inizializzato. Aggiorno lo stato.');
+        setAgent(physicsAgent); // Questo causerà un re-render e attiverà il prossimo useEffect
+        setStatus('✅ Ready. Analyze material to begin.');
+      } catch (error) {
+        console.error('[EFFECT INIT] ❌ Errore durante inizializzazione:', error);
+        setStatus(`❌ Error: ${error.message}`);
+      }
+    };
+    init();
+  }, []); // L'array vuoto [] è corretto qui, deve partire solo una volta.
+
+  // useEffect per AVVIARE L'ANALISI (reagisce al cambiamento di 'agent' e 'pdfFile')
+  useEffect(() => {
+    console.log(`[EFFECT ANALYZE] 🔍 Triggered. Controllo condizioni per l'analisi...`);
+    
+    const conditionsMet = agent && pdfFile && !examStarted && !autoStartSequenceRan.current;
+
+    if (conditionsMet) {
+      console.log(`%c[EFFECT ANALYZE] ▶️ Condizioni soddisfatte! Avvio analisi...`, 'color: green;');
+      autoStartSequenceRan.current = true; // Imposta il flag per non ripeterlo
+      analyzeMaterial();
+    } else {
+      console.log(`[EFFECT ANALYZE] ⏸️ Condizioni NON soddisfatte per l'analisi.`);
+    }
+  }, [agent, pdfFile, examStarted]); // Si attiva quando 'agent' o 'pdfFile' cambiano
+
+  // useEffect per AVVIARE L'ESAME (reagisce al cambiamento di 'materialReady')
+  useEffect(() => {
+    console.log(`[EFFECT EXAM] 🎓 Triggered. Controllo condizioni per l'esame...`);
+
+    const conditionsMet = materialReady && autoStartSequenceRan.current && !examStarted;
+
+    if (conditionsMet) {
+      console.log(`%c[EFFECT EXAM] ▶️ Condizioni soddisfatte! Avvio esame...`, 'color: green;');
+      startExam();
+    } else {
+      console.log(`[EFFECT EXAM] ⏸️ Condizioni NON soddisfatte per l'esame.`);
+    }
+  }, [materialReady, examStarted]); // Si attiva quando 'materialReady' cambia
 
   
 
