@@ -13,7 +13,7 @@ import {
   History, Mic, X, Volume2, Edit3, Plus, Type
 } from 'lucide-react';
 import { usePdf } from "../context/PdfContext";
-import SimpleLoading from './components/SimpleLoading';
+import SimpleLoading from './SimpleLoading';
 
 // Importa tutti i moduli CSS
 import layoutStyles from './styles/layout.module.css';
@@ -637,7 +637,6 @@ const reinitializeAllCanvases = useCallback(() => {
   if (isAutoSetupInProgress) {
     return (
       <SimpleLoading 
-        // Usiamo lo stato 'status' per un messaggio dinamico!
         message={status} 
         size="medium"
         fullScreen={true}  
