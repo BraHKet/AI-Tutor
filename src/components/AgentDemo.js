@@ -117,12 +117,11 @@ export default function AgentDemo() {
 
   // useEffect per AVVIARE L'ANALISI (reagisce al cambiamento di 'agent' e 'pdfFile')
   useEffect(() => {
-    console.log(`[EFFECT ANALYZE] 🔍 Triggered. Controllo condizioni per l'analisi...`);
     
     const conditionsMet = agent && pdfFile && !examStarted && !autoStartSequenceRan.current;
 
     if (conditionsMet) {
-      console.log(`%c[EFFECT ANALYZE] ▶️ Condizioni soddisfatte! Avvio analisi...`, 'color: green;');
+      
       autoStartSequenceRan.current = true; // Imposta il flag per non ripeterlo
       analyzeMaterial();
     } else {
@@ -132,12 +131,11 @@ export default function AgentDemo() {
 
   // useEffect per AVVIARE L'ESAME (reagisce al cambiamento di 'materialReady')
   useEffect(() => {
-    console.log(`[EFFECT EXAM] 🎓 Triggered. Controllo condizioni per l'esame...`);
 
     const conditionsMet = materialReady && autoStartSequenceRan.current && !examStarted;
 
     if (conditionsMet) {
-      console.log(`%c[EFFECT EXAM] ▶️ Condizioni soddisfatte! Avvio esame...`, 'color: green;');
+      
       startExam();
     } else {
       console.log(`[EFFECT EXAM] ⏸️ Condizioni NON soddisfatte per l'esame.`);
