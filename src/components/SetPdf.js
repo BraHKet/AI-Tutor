@@ -1,28 +1,27 @@
 import styles from './styles/SetPdf.module.css';
 import { usePdf } from "../context/PdfContext";
 import { useNavigate } from 'react-router-dom';
-import Spline from '@splinetool/react-spline';
+import logo from "../assets/logo.png"; // importa il logo che hai caricato
 
 export default function SetPdf() {
   const navigate = useNavigate();
   const { setPdfFile } = usePdf();
 
   return (
-    <div className={styles.pdfUploadContainer}>
-      {/* Spline come background a schermo intero */}
-      <div className={styles.splineBackground}>
-        <Spline
-          scene="https://prod.spline.design/1UrwWv5cFAz01IgO/scene.splinecode" 
-        />
-      </div>
+    <div className={styles.container}>
+      {/* Animazione stelle */}
+      <div className={styles.stars}></div>
+      <div className={styles.stars2}></div>
+      <div className={styles.stars3}></div>
 
-      {/* Overlay per migliorare la leggibilità del testo */}
-      <div className={styles.overlay}></div>
+      {/* Header con logo */}
+      <header className={styles.header}>
+        <img src={logo} alt="Logo" className={styles.logo} />
+      </header>
 
-      {/* Contenuto centrato */}
-      <div className={styles.content}>
-        <h2 className={styles.title}>Upload Your PDF</h2>
-        <p className={styles.subtitle}>Select a PDF file to start your interactive session</p>
+      {/* Box centrale */}
+      <div className={styles.contentBox}>
+        <h2 className={styles.title}>Inserisci PDF</h2>
         <div className={styles.uploadWrapper}>
           <input 
             type="file" 
@@ -37,7 +36,7 @@ export default function SetPdf() {
             }} 
           />
           <label htmlFor="pdfUpload" className={styles.uploadButton}>
-            <span>Choose PDF</span>
+            <span>Scegli PDF</span>
           </label>
         </div>
       </div>
