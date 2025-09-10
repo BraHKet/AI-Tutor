@@ -1,7 +1,6 @@
 import styles from './styles/SetPdf.module.css';
 import { usePdf } from "../context/PdfContext";
 import { useNavigate } from 'react-router-dom';
-import logo from "../assets/logo.png"; // importa il logo che hai caricato
 
 export default function SetPdf() {
   const navigate = useNavigate();
