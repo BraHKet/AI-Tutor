@@ -20,8 +20,7 @@ export default function SetPdf() {
       <div className={styles.contentBox}>
         <h2 className={styles.title}>Inserisci PDF</h2>
         <p className={styles.subtitle}>
-          Carica un file PDF per iniziare la tua sessione interattiva.<br />
-          Potrai esplorarlo, fare domande e navigare tra i contenuti facilmente.
+          Carica un file PDF per iniziare la sessione di interrogazione.<br />
         </p>
         <div className={styles.uploadWrapper}>
           <input 

@@ -46,13 +46,13 @@
   opacity: 0.8;
 }
 .starryBackground::after {
-  animation-duration: 160s;
+  animation-duration: 1000s;
   opacity: 0.6;
 }
 
 @keyframes moveStars {
-  from { transform: translateY(0px); }
-  to { transform: translateY(-500px); }
+  from { transform: translateY(500px); }
+  to { transform: translateY(500px); }
 }
 
 /* Box centrale */
@@ -102,7 +102,7 @@
 .uploadButton {
   cursor: pointer;
   padding: 12px 25px;
-  background: #333;
+  background: #FF4500;
   border-radius: 8px;
   color: #fff;
   font-size: 1rem;
@@ -110,5 +110,5 @@
 }
 
 .uploadButton:hover {
-  background: #444;
+  background: #ff5517;
 }
