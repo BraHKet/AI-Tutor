@@ -114,40 +114,6 @@ export default function AgentDemo() {
   // LOGGING E LOGICA DI AVVIO AUTOMATICO (CORRETTI)
   // ==========================================================
 
-  // LOG 1: Mostra lo stato ad ogni render. Utile per vedere quando le cose cambiano.
-  console.log(
-    `%c RENDER: Controllando gli stati...`,
-    'color: blue; font-weight: bold;',
-    {
-      agent: !!agent, // mostriamo solo se esiste o no
-      pdfFile: !!pdfFile,
-      materialReady,
-      examStarted,
-      autoStartFlag: autoStartSequenceRan.current,
-    }
-  );
-
-  // useEffect per l'inizializzazione dell'agente (solo al montaggio)
-  useEffect(() => {
-    const init = async () => {
-      try {
-        console.log('[EFFECT INIT] 🔧 Inizializzazione agente...');
-        setStatus('🔧 Initializing...');
-        const physicsAgent = new PhysicsAgent(
-          process.env.REACT_APP_SUPABASE_URL,
-          process.env.REACT_APP_SUPABASE_ANON_KEY
-        );
-        await physicsAgent.initialize();
-        console.log('[EFFECT INIT] ✅ Agente inizializzato. Aggiorno lo stato.');
-        setAgent(physicsAgent); // Questo causerà un re-render e attiverà il prossimo useEffect
-        setStatus('✅ Ready. Analyze material to begin.');
-      } catch (error) {
-        console.error('[EFFECT INIT] ❌ Errore durante inizializzazione:', error);
-        setStatus(`❌ Error: ${error.message}`);
-      }
-    };
-    init();
-  }, []); // L'array vuoto [] è corretto qui, deve partire solo una volta.
 
   // useEffect per AVVIARE L'ANALISI (reagisce al cambiamento di 'agent' e 'pdfFile')
   useEffect(() => {
