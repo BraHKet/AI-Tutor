@@ -634,7 +634,7 @@ const reinitializeAllCanvases = useCallback(() => {
           
           <h1 className={styles.title}>
             <Bot size={20} />
-            AI Physics Exam
+            AI Exam
           </h1>
         </div>
 
@@ -717,28 +717,7 @@ const reinitializeAllCanvases = useCallback(() => {
         <div className={styles.mainWorkspace}>
           
 
-          {/* Controls */}
-          {(!examStarted || !materialReady) && (
-            <div className={styles.controls}>
-              <button 
-                onClick={analyzeMaterial} 
-                disabled={isProcessing || materialReady}
-                className={materialReady ? styles.analyzeButtonReady : styles.analyzeButtonActive}
-              >
-                <FileText size={16} />
-                {materialReady ? '✔️ Material Ready' : '📄 Analyze PDF'}
-              </button>
-
-              <button 
-                onClick={startExam} 
-                disabled={isProcessing || !materialReady || examStarted}
-                className={examStarted ? styles.startButtonReady : (!materialReady ? styles.startButtonDisabled : styles.startButtonActive)}
-              >
-                <MessageSquare size={16} />
-                {examStarted ? '✔️ Exam Started' : '🎓 Start Exam'}
-              </button>
-            </div>
-          )}
+          
 
           {/* Sequential Response System */}
           {examStarted && !isComplete && (
