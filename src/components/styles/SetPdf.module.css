@@ -29,6 +29,7 @@
   overflow: hidden;
   z-index: 0;
 }
+
 .starryBackground::before,
 .starryBackground::after {
   content: "";
@@ -42,18 +43,29 @@
                     radial-gradient(2px 2px at 130px 80px, white, transparent),
                     radial-gradient(2px 2px at 160px 120px, white, transparent);
   background-repeat: repeat;
-  animation: moveStars 100s linear infinite;
+  animation: moveStars 120s linear infinite, twinkle 4s ease-in-out infinite;
   opacity: 0.8;
 }
+
 .starryBackground::after {
-  animation-duration: 1000s;
+  animation: moveStars 200s linear infinite, twinkle 6s ease-in-out infinite;
   opacity: 0.6;
 }
 
 @keyframes moveStars {
-  from { transform: translateY(500px); }
-  to { transform: translateY(500px); }
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-500px);
+  }
 }
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 0.4; }
+}
+
 
 /* Box centrale */
 .contentBox {
