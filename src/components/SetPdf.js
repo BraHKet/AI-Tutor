@@ -62,6 +62,11 @@ export default function SetPdf() {
             Inizia l'esame
           </button>
         </div>
+        {pdfLocal && (
+          <p className={styles.fileName}>
+            File selezionato: <b>{pdfLocal.name}</b>
+          </p>
+        )}
         <p className={styles.helperText}>
           Formati supportati: <b>.pdf</b> – Dimensione max: <b>--</b>
         </p>
