@@ -1,10 +1,19 @@
 import styles from './styles/SetPdf.module.css';
 import { usePdf } from "../context/PdfContext";
 import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 
 export default function SetPdf() {
   const navigate = useNavigate();
-  const { setPdfFile } = usePdf();
+  const { pdfLocal, setPdfLocal } = useState();
+  const { pdfFile, setPdfFile } = usePdf();
+  
+  useEffect(() => {
+    setPdfFile(null);
+    pdfLocal(null);
+  }, []);
+
+  
 
   return (
     <div className={styles.container}>
@@ -30,14 +39,14 @@ export default function SetPdf() {
             id="pdfUpload"
             onChange={(e) => {
               if (e.target.files && e.target.files[0]) {
-                setPdfFile(e.target.files[0]);
-                navigate("/exam");
+                setPdfLocal(e.target.files[0]);
               }
             }} 
           />
           <label htmlFor="pdfUpload" className={styles.uploadButton}>
             <span>Scegli PDF</span>
           </label>
+          <button onClick={() => {if(!pdfFile && pdfLocal) {setPdfFile(pdfLocal); navigate("/exam");}}} />
         </div>
         <p className={styles.helperText}>
           Formati supportati: <b>.pdf</b> – Dimensione max: <b>--</b>
