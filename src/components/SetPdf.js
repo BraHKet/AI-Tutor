@@ -2,18 +2,27 @@ import styles from './styles/SetPdf.module.css';
 import { usePdf } from "../context/PdfContext";
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import useGoogleAuth from '../hooks/useGoogleAuth';
 
 export default function SetPdf() {
   const navigate = useNavigate();
-  const { pdfLocal, setPdfLocal } = useState();
+  const [pdfLocal, setPdfLocal] = useState();
   const { pdfFile, setPdfFile } = usePdf();
   
   useEffect(() => {
     setPdfFile(null);
-    pdfLocal(null);
+    setPdfFile(null);
   }, []);
 
-  
+  const { user, logout } = useGoogleAuth();
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
 
   return (
     <div className={styles.container}>
@@ -23,6 +32,9 @@ export default function SetPdf() {
       {/* Header con logo */}
       <header className={styles.header}>
         <img src="/logo192.png" alt="Logo" className={styles.logo} />
+        <button onClick={handleLogout} className={styles.backButton}>
+            ← Logout
+          </button>
       </header>
 
       {/* Box centrale */}
@@ -46,7 +58,9 @@ export default function SetPdf() {
           <label htmlFor="pdfUpload" className={styles.uploadButton}>
             <span>Scegli PDF</span>
           </label>
-          <button onClick={() => {if(!pdfFile && pdfLocal) {setPdfFile(pdfLocal); navigate("/exam");}}} />
+          <button onClick={() => {if(!pdfFile && pdfLocal) {setPdfFile(pdfLocal); navigate("/exam");}}} disabled={!pdfLocal}>
+            Inizia l'esame
+          </button>
         </div>
         <p className={styles.helperText}>
           Formati supportati: <b>.pdf</b> – Dimensione max: <b>--</b>
