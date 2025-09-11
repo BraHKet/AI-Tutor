@@ -25,13 +25,14 @@
   position: absolute;
   width: 100%;
   height: 100%;
-  background: #000;
+  background: #000; /* Il background qui è nero, va bene */
   overflow: hidden;
   z-index: 0;
 }
 
 .starryBackground::before,
 .starryBackground::after {
+  content: ''; /* QUESTO MANCAVA! È FONDAMENTALE per gli pseudo-elementi */
   width: 2px;
   height: 2px;
   background: white;
