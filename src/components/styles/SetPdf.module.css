@@ -32,7 +32,7 @@
   z-index: 0;
 }
 
-/* Un punto base, replicato con box-shadow */
+/* Un punto base che viene replicato con tantissimi box-shadow */
 .starryBackground::before,
 .starryBackground::after {
   content: '';
@@ -43,36 +43,58 @@
   height: 2px;
   background: white;
   border-radius: 50%;
-  box-shadow:
-    20px 30px white, 50px 120px white, 90px 200px white, 140px 80px white,
-    180px 300px white, 220px 150px white, 260px 400px white, 300px 250px white,
-    340px 100px white, 380px 350px white, 420px 500px white, 460px 200px white,
-    500px 600px white, 540px 120px white, 580px 450px white, 620px 300px white,
-    660px 700px white, 700px 550px white, 740px 800px white, 780px 400px white,
-    820px 650px white, 860px 900px white, 900px 720px white, 940px 500px white,
-    980px 300px white, 1020px 100px white, 1060px 850px white, 1100px 400px white,
-    1140px 600px white, 1180px 200px white, 1220px 750px white, 1260px 900px white;
-
   animation: twinkle 2s infinite ease-in-out alternate;
-}
-
-/* Secondo livello di stelle, per dare più densità e asimmetria */
-.starryBackground::after {
+  /* Stelle distribuite su tutta la viewport */
   box-shadow:
-    30px 60px white, 70px 250px white, 120px 100px white, 160px 400px white,
-    200px 180px white, 240px 350px white, 280px 500px white, 320px 220px white,
-    360px 700px white, 400px 900px white, 440px 300px white, 480px 100px white,
-    520px 800px white, 560px 450px white, 600px 200px white, 640px 600px white,
-    680px 750px white, 720px 500px white, 760px 300px white, 800px 100px white,
-    840px 850px white, 880px 650px white, 920px 450px white, 960px 250px white,
-    1000px 720px white, 1040px 500px white, 1080px 300px white, 1120px 100px white,
-    1160px 900px white, 1200px 600px white, 1240px 400px white, 1280px 200px white;
-
-  animation: twinkle 3s infinite ease-in-out alternate;
-  animation-delay: -1.5s;
+    /* Riga 1 */
+    50px 40px white, 150px 60px white, 300px 30px white, 500px 70px white,
+    700px 50px white, 900px 80px white, 1100px 40px white, 1300px 60px white,
+    1500px 30px white, 1700px 70px white,
+    /* Riga 2 */
+    80px 150px white, 250px 180px white, 450px 160px white, 650px 200px white,
+    850px 170px white, 1050px 190px white, 1250px 160px white, 1450px 210px white,
+    1650px 180px white, 1850px 200px white,
+    /* Riga 3 */
+    40px 300px white, 200px 320px white, 400px 310px white, 600px 340px white,
+    800px 330px white, 1000px 350px white, 1200px 310px white, 1400px 360px white,
+    1600px 340px white, 1800px 370px white,
+    /* Riga 4 */
+    70px 500px white, 270px 520px white, 470px 510px white, 670px 540px white,
+    870px 530px white, 1070px 550px white, 1270px 510px white, 1470px 560px white,
+    1670px 540px white, 1870px 570px white,
+    /* Riga 5 */
+    90px 700px white, 290px 720px white, 490px 710px white, 690px 740px white,
+    890px 730px white, 1090px 750px white, 1290px 710px white, 1490px 760px white,
+    1690px 740px white, 1890px 770px white,
+    /* Riga 6 */
+    60px 900px white, 260px 920px white, 460px 910px white, 660px 940px white,
+    860px 930px white, 1060px 950px white, 1260px 910px white, 1460px 960px white,
+    1660px 940px white, 1860px 970px white;
 }
 
-/* Effetto di brillio */
+/* Secondo livello per più varietà */
+.starryBackground::after {
+  animation: twinkle 3s infinite ease-in-out alternate;
+  animation-delay: -1s;
+  box-shadow:
+    100px 100px white, 220px 130px white, 370px 90px white, 520px 150px white,
+    720px 120px white, 920px 140px white, 1120px 100px white, 1320px 130px white,
+    1520px 110px white, 1720px 140px white,
+    150px 260px white, 320px 280px white, 520px 260px white, 720px 300px white,
+    920px 280px white, 1120px 300px white, 1320px 260px white, 1520px 310px white,
+    1720px 280px white, 1880px 300px white,
+    120px 460px white, 320px 480px white, 520px 460px white, 720px 500px white,
+    920px 480px white, 1120px 500px white, 1320px 460px white, 1520px 510px white,
+    1720px 480px white, 1920px 500px white,
+    180px 660px white, 360px 680px white, 560px 660px white, 760px 700px white,
+    960px 680px white, 1160px 700px white, 1360px 660px white, 1560px 710px white,
+    1760px 680px white, 1960px 700px white,
+    200px 860px white, 400px 880px white, 600px 860px white, 800px 900px white,
+    1000px 880px white, 1200px 900px white, 1400px 860px white, 1600px 910px white,
+    1800px 880px white;
+}
+
+/* Effetto brillio */
 @keyframes twinkle {
   0%   { opacity: 0.2; }
   50%  { opacity: 1; }
