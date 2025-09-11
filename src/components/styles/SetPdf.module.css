@@ -21,118 +21,69 @@
 }
 
 /* Stelle animate con pseudo-elementi */
-/* Stelle animate con pseudo-elementi */
 .starryBackground {
-  position: absolute;
+  position: fixed;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
-  background: #000;
+  background: black;
   overflow: hidden;
   z-index: 0;
 }
 
+/* Singola stella che poi viene replicata con box-shadow */
 .starryBackground::before,
 .starryBackground::after {
   content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 2px;
   height: 2px;
   background: white;
-  position: absolute;
-  border-radius: 50%; /* Rende le stelle rotonde */
-  /* Aggiungiamo un leggero effetto glow per renderle più "stellari" */
-  box-shadow: 0 0 4px rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  box-shadow:
+    20px 30px white, 50px 120px white, 90px 200px white, 140px 80px white,
+    180px 300px white, 220px 150px white, 260px 400px white, 300px 250px white,
+    340px 100px white, 380px 350px white, 420px 500px white, 460px 200px white,
+    500px 600px white, 540px 120px white, 580px 450px white, 620px 300px white,
+    660px 700px white, 700px 550px white, 740px 800px white, 780px 400px white,
+    820px 650px white, 860px 900px white, 900px 720px white, 940px 500px white,
+    980px 300px white, 1020px 100px white, 1060px 850px white, 1100px 400px white,
+    1140px 600px white, 1180px 200px white, 1220px 750px white, 1260px 900px white;
 
-  /* Punti per box-shadow: ho aggiunto molti più punti distribuiti. */
-  /* NOTA: Questi valori sono solo un esempio. Devi aggiungerne molti altri */
-  /* e distribuirli su tutta l'area dello sfondo per un effetto completo. */
-  /* Puoi usare tool online per generare box-shadow random, o farlo a mano. */
-  /* Ho aumentato la densità qui, ma per migliaia di stelle la soluzione JS è migliore. */
-  box-shadow: 
-    /* Riga 1: Alcuni punti sparsi */
-    50px 100px white, 130px 80px white, 180px 200px white, 300px 150px white,
-    400px 90px white, 500px 180px white, 600px 130px white, 700px 220px white,
-    800px 170px white, 150px 300px white, 250px 270px white, 370px 310px white,
-    520px 350px white, 620px 390px white, 720px 430px white,
-
-    /* Aggiungiamo altre stelle per aumentare la densità */
-    20px 20px white, 80px 150px white, 220px 50px white, 350px 200px white,
-    480px 120px white, 610px 250px white, 750px 80px white, 900px 300px white,
-    100px 400px white, 200px 350px white, 320px 480px white, 450px 390px white,
-    580px 520px white, 700px 450px white, 850px 580px white, 950px 490px white,
-
-    /* Continua ad aggiungere per coprire l'intera area */
-    60px 500px white, 180px 650px white, 300px 550px white, 420px 700px white,
-    550px 600px white, 680px 750px white, 800px 680px white, 920px 800px white,
-    40px 780px white, 160px 850px white, 280px 750px white, 400px 900px white,
-    530px 820px white, 660px 950px white, 780px 880px white, 900px 990px white,
-    
-    /* Stelle più piccole e/o meno opache (opzionale) */
-    10px 10px rgba(255,255,255,0.8), 70px 180px rgba(255,255,255,0.8),
-    200px 70px rgba(255,255,255,0.8), 330px 250px rgba(255,255,255,0.8),
-    /* ... e così via, puoi variare colore e opacità direttamente nel box-shadow */
-    
-    /* Aggiungi altri gruppi di stelle qui per riempire bene lo schermo */
-    /* Più ne aggiungi, più fitta sarà la "galassia" */
-    1020px 50px white, 1150px 180px white, 1080px 300px white, 1200px 450px white,
-    1050px 600px white, 1180px 750px white, 1100px 880px white, 1220px 990px white,
-    980px 100px white, 950px 220px white, 1010px 380px white, 920px 490px white,
-    1130px 620px white, 1070px 750px white, 1190px 880px white, 1040px 990px white;
-
-
-  /* Animazione di lampeggio */
-  animation: twinkle 2s infinite ease-in-out alternate;
-  
-  /* Animazione di movimento */
-  /* La durata può variare per ::before e ::after per un effetto più casuale */
-  animation: moveStars 200s linear infinite; /* Movimento lento e continuo */
+  animation: twinkle 2s infinite ease-in-out alternate,
+             moveStars 180s linear infinite;
 }
 
+/* Secondo livello di stelle per densità */
 .starryBackground::after {
-    /* Per ::after, duplica i box-shadow e puoi dare un offset per evitare sovrapposizioni esatte */
-    /* E/o cambiare leggermente l'animazione di movimento per renderla meno ripetitiva */
-    box-shadow: 
-        /* Aggiungi un set diverso di box-shadow per ::after */
-        /* Esempio: Sposta leggermente i punti del ::before o crea un nuovo set */
-        /* ... (molti box-shadow qui, diversi da ::before) ... */
-        /* Alcuni esempi per l'after, puoi combinarli o crearne di nuovi */
-        25px 80px white, 110px 60px white, 160px 180px white, 280px 130px white,
-        380px 70px white, 480px 160px white, 580px 110px white, 680px 200px white,
-        780px 150px white, 130px 280px white, 230px 250px white, 350px 290px white,
-        500px 330px white, 600px 370px white, 700px 410px white, 
-        /* Altri box-shadow per coprire l'area */
-        100px 520px white, 220px 680px white, 340px 580px white, 460px 720px white,
-        590px 630px white, 720px 780px white, 840px 710px white, 960px 830px white,
-        70px 810px white, 190px 880px white, 310px 780px white, 430px 930px white,
-        560px 850px white, 690px 980px white, 810px 910px white, 930px 1020px white;
-    
-    animation: 
-        twinkle 2.5s infinite ease-in-out alternate, /* Velocità lampeggio leggermente diversa */
-        moveStars 220s linear infinite; /* Durata movimento leggermente diversa */
-    animation-delay: -10s; /* Inizia con un leggero ritardo per rompere la sincronia */
+  box-shadow:
+    30px 60px white, 70px 250px white, 120px 100px white, 160px 400px white,
+    200px 180px white, 240px 350px white, 280px 500px white, 320px 220px white,
+    360px 700px white, 400px 900px white, 440px 300px white, 480px 100px white,
+    520px 800px white, 560px 450px white, 600px 200px white, 640px 600px white,
+    680px 750px white, 720px 500px white, 760px 300px white, 800px 100px white,
+    840px 850px white, 880px 650px white, 920px 450px white, 960px 250px white,
+    1000px 720px white, 1040px 500px white, 1080px 300px white, 1120px 100px white,
+    1160px 900px white, 1200px 600px white, 1240px 400px white, 1280px 200px white;
+
+  animation: twinkle 3s infinite ease-in-out alternate,
+             moveStars 200s linear infinite;
+  animation-delay: -20s;
 }
 
-
+/* Lampeggio */
 @keyframes twinkle {
-  0% {
-    opacity: 0.3;
-  }
-  100% {
-    opacity: 1;
-  }
+  0% { opacity: 0.3; }
+  100% { opacity: 1; }
 }
 
+/* Movimento diagonale */
 @keyframes moveStars {
-  0% {
-    transform: translate(0, 0); /* In alto a sinistra */
-  }
-  100% {
-    /* Spostale fuori dallo schermo in basso a destra. */
-    /* Variare questi valori in base alla dimensione media dello schermo. */
-    /* Ad esempio, 100vw e 100vh le spostano di una larghezza/altezza dello schermo */
-    /* Ma siccome sono relative a `position: absolute`, 
-       un valore fisso o % più grande funziona meglio per farle "uscire". */
-    transform: translate(150vw, 150vh); /* Sposta di 1.5 volte la larghezza e altezza della viewport */
-  }
+  0%   { transform: translate(0, 0); }
+  100% { transform: translate(150vw, 150vh); }
 }
 
 
