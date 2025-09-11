@@ -28,7 +28,7 @@ function App() {
     <PdfProvider>
     <Router>
       <Routes>
-        <Route path="/setpdf" element={<SetPdf />}/>
+        <Route path="/setpdf" element={user ? <SetPdf /> : <Navigate to="/" replace />} />
         <Route path="/" element={
             user ? <Navigate to="/exam" replace /> : <LoginPage />
           } />
