@@ -26,8 +26,8 @@ export default function SetPdf() {
 
   return (
     <div className={styles.container}>
-      {/* Stelle animate <div className={styles.starryBackground}></div>*/}
-      
+      {/* Stelle animate */}
+      <div className={styles.starryBackground}></div>
 
       {/* Header con logo */}
       <header className={styles.header}>

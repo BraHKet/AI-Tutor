@@ -32,38 +32,36 @@
 
 .starryBackground::before,
 .starryBackground::after {
-  content: "";
+  width: 2px;
+  height: 2px;
+  background: white;
   position: absolute;
-  width: 200%;
-  height: 200%;
-  background-image: radial-gradient(2px 2px at 20px 30px, white, transparent),
-                    radial-gradient(2px 2px at 40px 70px, white, transparent),
-                    radial-gradient(2px 2px at 50px 160px, white, transparent),
-                    radial-gradient(2px 2px at 90px 40px, white, transparent),
-                    radial-gradient(2px 2px at 130px 80px, white, transparent),
-                    radial-gradient(2px 2px at 160px 120px, white, transparent);
-  background-repeat: repeat;
-  animation: moveStars 120s linear infinite, twinkle 4s ease-in-out infinite;
-  opacity: 0.8;
-}
-
-.starryBackground::after {
-  animation: moveStars 200s linear infinite, twinkle 6s ease-in-out infinite;
-  opacity: 0.6;
-}
-
-@keyframes moveStars {
-  from {
-    transform: translateY(0);
-  }
-  to {
-    transform: translateY(-500px);
-  }
+  box-shadow: 
+    50px 100px white, 
+    130px 80px white, 
+    180px 200px white,
+    300px 150px white, 
+    400px 90px white, 
+    500px 180px white,
+    600px 130px white, 
+    700px 220px white, 
+    800px 170px white,
+    150px 300px white, 
+    250px 270px white, 
+    370px 310px white,
+    520px 350px white, 
+    620px 390px white, 
+    720px 430px white;
+  animation: twinkle 2s infinite ease-in-out alternate;
 }
 
 @keyframes twinkle {
-  0%, 100% { opacity: 0.8; }
-  50% { opacity: 0.4; }
+  0% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
 
