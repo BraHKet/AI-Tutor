@@ -58,15 +58,16 @@ export default function SetPdf() {
           <label htmlFor="pdfUpload" className={styles.uploadButton}>
             <span>Scegli PDF</span>
           </label>
-          <button onClick={() => {if(!pdfFile && pdfLocal) {setPdfFile(pdfLocal); navigate("/exam");}}} disabled={!pdfLocal}>
-            Inizia l'esame
-          </button>
-        </div>
-        {pdfLocal && (
+          {pdfLocal && (
           <p className={styles.fileName}>
             <b>{pdfLocal.name}</b>
           </p>
         )}
+          <button onClick={() => {if(!pdfFile && pdfLocal) {setPdfFile(pdfLocal); navigate("/exam");}}} disabled={!pdfLocal}>
+            Inizia l'esame
+          </button>
+        </div>
+        
         <p className={styles.helperText}>
           Dimensione max: <b>--</b>
         </p>
