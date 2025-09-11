@@ -32,7 +32,7 @@
   z-index: 0;
 }
 
-/* Singola stella che poi viene replicata con box-shadow */
+/* Un punto base, replicato con box-shadow */
 .starryBackground::before,
 .starryBackground::after {
   content: '';
@@ -53,11 +53,10 @@
     980px 300px white, 1020px 100px white, 1060px 850px white, 1100px 400px white,
     1140px 600px white, 1180px 200px white, 1220px 750px white, 1260px 900px white;
 
-  animation: twinkle 2s infinite ease-in-out alternate,
-             moveStars 180s linear infinite;
+  animation: twinkle 2s infinite ease-in-out alternate;
 }
 
-/* Secondo livello di stelle per densità */
+/* Secondo livello di stelle, per dare più densità e asimmetria */
 .starryBackground::after {
   box-shadow:
     30px 60px white, 70px 250px white, 120px 100px white, 160px 400px white,
@@ -69,21 +68,15 @@
     1000px 720px white, 1040px 500px white, 1080px 300px white, 1120px 100px white,
     1160px 900px white, 1200px 600px white, 1240px 400px white, 1280px 200px white;
 
-  animation: twinkle 3s infinite ease-in-out alternate,
-             moveStars 200s linear infinite;
-  animation-delay: -20s;
+  animation: twinkle 3s infinite ease-in-out alternate;
+  animation-delay: -1.5s;
 }
 
-/* Lampeggio */
+/* Effetto di brillio */
 @keyframes twinkle {
-  0% { opacity: 0.3; }
-  100% { opacity: 1; }
-}
-
-/* Movimento diagonale */
-@keyframes moveStars {
-  0%   { transform: translate(0, 0); }
-  100% { transform: translate(150vw, 150vh); }
+  0%   { opacity: 0.2; }
+  50%  { opacity: 1; }
+  100% { opacity: 0.3; }
 }
 
 
