@@ -25,54 +25,63 @@ export default function SetPdf() {
 
 
   return (
-    <div className={styles.container}>
-      {/* Stelle animate */}
-      <div className={styles.starryBackground}></div>
+  <div className={styles.container}>
+    {/* Stelle animate */}
+    <div className={styles.starryBackground}></div>
 
-      {/* Header con logo */}
-      <header className={styles.header}>
-        <img src="/logo192.png" alt="Logo" className={styles.logo} />
-        <button onClick={handleLogout} className={styles.backButton}>
-            Logout
-          </button>
-      </header>
+    {/* Header con logo e logout */}
+    <header className={styles.header}>
+      <img src="/logo192.png" alt="Logo" className={styles.logo} />
+      <button onClick={handleLogout} className={styles.backButton}>
+        Logout
+      </button>
+    </header>
 
-      {/* Box centrale */}
-      <div className={styles.contentBox}>
-        <h2 className={styles.title}>Inserisci PDF</h2>
-        <p className={styles.subtitle}>
-          Carica un file PDF per iniziare la sessione di interrogazione.<br />
+    {/* Testo centrale */}
+    <h2 className={styles.title}>Inserisci PDF</h2>
+    <p className={styles.subtitle}>
+      Carica un file PDF per iniziare la sessione di interrogazione.<br />
+    </p>
+
+    <div className={styles.uploadWrapper}>
+      <input 
+        type="file" 
+        accept="application/pdf" 
+        className={styles.fileInput}
+        id="pdfUpload"
+        onChange={(e) => {
+          if (e.target.files && e.target.files[0]) {
+            setPdfLocal(e.target.files[0]);
+          }
+        }} 
+      />
+      <label htmlFor="pdfUpload" className={styles.uploadButton}>
+        <span>Scegli PDF</span>
+      </label>
+
+      {pdfLocal && (
+        <p className={styles.fileName}>
+          <b>{pdfLocal.name}</b>
         </p>
-        <div className={styles.uploadWrapper}>
-          <input 
-            type="file" 
-            accept="application/pdf" 
-            className={styles.fileInput}
-            id="pdfUpload"
-            onChange={(e) => {
-              if (e.target.files && e.target.files[0]) {
-                setPdfLocal(e.target.files[0]);
-              }
-            }} 
-          />
-          <label htmlFor="pdfUpload" className={styles.uploadButton}>
-            <span>Scegli PDF</span>
-          </label>
-          {pdfLocal && (
-          <p className={styles.fileName}>
-            <b>{pdfLocal.name}</b>
-          </p>
-        )}
-          <button onClick={() => {if(!pdfFile && pdfLocal) {setPdfFile(pdfLocal); navigate("/exam");}}} disabled={!pdfLocal}>
-            Inizia l'esame
-          </button>
-        </div>
-        
-        <p className={styles.helperText}>
-          Dimensione max: <b>--</b>
-        </p>
-      </div>
+      )}
+
+      <button 
+        className={styles.startButton}
+        onClick={() => {
+          if (!pdfFile && pdfLocal) {
+            setPdfFile(pdfLocal);
+            navigate("/exam");
+          }
+        }} 
+        disabled={!pdfLocal}
+      >
+        Inizia l'esame
+      </button>
     </div>
-    
-  );
+
+    <p className={styles.helperText}>
+      Dimensione max: <b>--</b>
+    </p>
+  </div>
+);
 }
