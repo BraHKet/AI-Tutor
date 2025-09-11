@@ -33,7 +33,7 @@ export default function SetPdf() {
       <header className={styles.header}>
         <img src="/logo192.png" alt="Logo" className={styles.logo} />
         <button onClick={handleLogout} className={styles.backButton}>
-            ← Logout
+            Logout
           </button>
       </header>
 
@@ -64,11 +64,11 @@ export default function SetPdf() {
         </div>
         {pdfLocal && (
           <p className={styles.fileName}>
-            File selezionato: <b>{pdfLocal.name}</b>
+            <b>{pdfLocal.name}</b>
           </p>
         )}
         <p className={styles.helperText}>
-          Formati supportati: <b>.pdf</b> – Dimensione max: <b>--</b>
+          Dimensione max: <b>--</b>
         </p>
       </div>
     </div>
