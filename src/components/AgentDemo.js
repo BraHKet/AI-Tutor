@@ -117,6 +117,9 @@ export default function AgentDemo() {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [autoSpeak, setAutoSpeak] = useState(true);
 
+    // 1. Aggiungi un useRef per tracciare se la sequenza automatica è stata eseguita.
+  const autoStartSequenceRan = useRef(false);
+
   // Gestisce l'avvio e lo stop della riproduzione per un messaggio specifico.
   const handleRepeatOrStop = (message) => {
     const messageId = message.timestamp;
@@ -136,163 +139,9 @@ export default function AgentDemo() {
     }
   };
 
-  // Initialize
-  useEffect(() => {
-    const init = async () => {
-      try {
-        setStatus('🔧 Initializing...');
-
-        const physicsAgent = new PhysicsAgent(
-          process.env.REACT_APP_SUPABASE_URL,
-          process.env.REACT_APP_SUPABASE_ANON_KEY
-        );
-        
-        await physicsAgent.initialize();
-        setAgent(physicsAgent);
-        setStatus('✅ Ready. Analyze material to begin.');
-      } catch (error) {
-        setStatus(`❌ Error: ${error.message}`);
-      }
-    };
-    init();
-  }, []);
-
-
-  // Resetta l'ID del messaggio quando la sintesi vocale si ferma per qualsiasi motivo.
-  useEffect(() => {
-    if (!voiceState.isSpeaking && speakingMessageId !== null) {
-      setSpeakingMessageId(null);
-    }
-  }, [voiceState.isSpeaking]);
-
-    // useEffect per tracciare la posizione del mouse
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      setCursorState(prev => ({
-        ...prev,
-        position: { x: e.clientX, y: e.clientY }
-      }));
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-    };
-  }, []);
-
-  // useEffect per nascondere il cursore di default quando il nostro è attivo
-  useEffect(() => {
-    if (cursorState.visible) {
-      document.body.style.cursor = 'none';
-    } else {
-      document.body.style.cursor = 'auto';
-    }
-
-    // Funzione di pulizia per ripristinare il cursore se il componente viene smontato
-    return () => {
-      document.body.style.cursor = 'auto';
-    };
-  }, [cursorState.visible]);
-
-
-  useEffect(() => {
-    // Quando lo stato 'examStarted' diventa true, significa che la sequenza
-    // automatica è terminata e possiamo nascondere la schermata di caricamento.
-    if (examStarted) {
-      console.log("🏁 Sequenza di setup completata. Nascondo la schermata di caricamento.");
-      setIsAutoSetupInProgress(false);
-    }
-  }, [examStarted]);
-
-  // 1. Aggiungi un useRef per tracciare se la sequenza automatica è stata eseguita.
-  const autoStartSequenceRan = useRef(false);
-
-  // ==========================================================
-  // LOGGING E LOGICA DI AVVIO AUTOMATICO (CORRETTI)
-  // ==========================================================
-
-
-  // useEffect per AVVIARE L'ANALISI (reagisce al cambiamento di 'agent' e 'pdfFile')
-  useEffect(() => {
-    
-    const conditionsMet = agent && pdfFile && !examStarted && !autoStartSequenceRan.current;
-
-    if (conditionsMet) {
-      
-      autoStartSequenceRan.current = true; // Imposta il flag per non ripeterlo
-      analyzeMaterial();
-    } else {
-      console.log(`[EFFECT ANALYZE] ⏸️ Condizioni NON soddisfatte per l'analisi.`);
-    }
-  }, [agent, pdfFile, examStarted]); // Si attiva quando 'agent' o 'pdfFile' cambiano
-
-  // useEffect per AVVIARE L'ESAME (reagisce al cambiamento di 'materialReady')
-  useEffect(() => {
-
-    const conditionsMet = materialReady && autoStartSequenceRan.current && !examStarted;
-
-    if (conditionsMet) {
-      
-      startExam();
-    } else {
-      console.log(`[EFFECT EXAM] ⏸️ Condizioni NON soddisfatte per l'esame.`);
-    }
-  }, [materialReady, examStarted]); // Si attiva quando 'materialReady' cambia
-
   
 
-   useEffect(() => {
-    if (!pdfFile) {
-      navigate("/setpdf"); // Reindirizza al percorso del componente PdfFile
-    }
-  }, [pdfFile, navigate]);
-
-  // Voice transcript handler - OTTIMIZZATO ANTI-BLOCCO
-  const handleTranscriptUpdate = useCallback((transcript, isFinal) => {
-    // Aggiorna visivamente la trascrizione in tempo reale
-    setCurrentTranscript(transcript);
-
-    if (voiceActiveForElement) {
-      // Combina il testo di base con la nuova trascrizione
-      const newContent = (baseTranscriptRef.current ? baseTranscriptRef.current + ' ' : '') + transcript;
-      
-      // Aggiorna il contenuto dell'elemento in tempo reale
-      updateElementContent(voiceActiveForElement, newContent);
-    }
-
-    // Quando una frase è finalizzata, aggiorna il testo di base
-    // in modo che la prossima frase venga accodata correttamente.
-    if (isFinal) {
-      const currentElement = sequentialElements.find(el => el.id === voiceActiveForElement);
-      if (currentElement) {
-        baseTranscriptRef.current = currentElement.content;
-      }
-      setCurrentTranscript(''); // Pulisci la visualizzazione della trascrizione in corso
-    }
-  }, [voiceActiveForElement, sequentialElements, updateElementContent]);
-
-// Auto-speak AI responses - VERSIONE INTEGRATA
-useEffect(() => {
-  // Se l'opzione è attiva e l'overlay appare con una nuova risposta...
-  if (autoSpeak && showAIResponse && currentAIResponse) {
-    // ...attendi un istante e poi avvia la riproduzione TRAMITE il nostro sistema di controllo.
-    setTimeout(() => {
-      handleRepeatOrStop({ content: currentAIResponse, timestamp: 'overlay_response' });
-    }, 500);
-  }
-}, [showAIResponse, currentAIResponse, autoSpeak]); // Le dipendenze rimangono le stesse
-
-  // Cleanup animation frame on unmount
-  useEffect(() => {
-    return () => {
-      if (drawingAnimationFrame.current) {
-        cancelAnimationFrame(drawingAnimationFrame.current);
-      }
-    };
-  }, []);
-
-
-// --- LOGICA DI PERSISTENZA DELLE IMPOSTAZIONI ---
+  // --- LOGICA DI PERSISTENZA DELLE IMPOSTAZIONI ---
 
   // Funzione per salvare le impostazioni correnti nel localStorage
   const saveVoiceSettings = (settings) => {
@@ -304,40 +153,6 @@ useEffect(() => {
       }
     }
   };
-
-  // useEffect per caricare le impostazioni quando il componente si monta
-  useEffect(() => {
-    if (user && user.uid && availableVoices.length > 0) {
-      try {
-        const savedSettingsJSON = localStorage.getItem(`voiceSettings_${user.uid}`);
-        if (savedSettingsJSON) {
-          const savedSettings = JSON.parse(savedSettingsJSON);
-          
-          // 1. Applica le impostazioni di velocità e tono
-          const newSpeechSettings = {
-            rate: savedSettings.rate || 0.85,
-            pitch: savedSettings.pitch || 1.0
-          };
-          setSpeechSettings(newSpeechSettings);
-          if (window.voiceManager) {
-            window.voiceManager.updateSpeechSettings(newSpeechSettings);
-          }
-
-          // 2. Applica la voce salvata
-          const savedVoice = availableVoices.find(v => v.name === savedSettings.voiceName);
-          if (savedVoice) {
-            setSelectedVoice(savedVoice);
-            if (window.voiceManager) {
-              window.voiceManager.changeSelectedVoice(savedVoice.name);
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Failed to load voice settings:", error);
-      }
-    }
-  }, [user, availableVoices]); // Si attiva quando l'utente o le voci sono pronti
-
 
   // ===============================================
   // SEQUENTIAL ELEMENTS FUNCTIONS - NUOVO SISTEMA
@@ -523,23 +338,6 @@ const reinitializeAllCanvases = useCallback(() => {
     saveVoiceSettings({ ...newSettings, voiceName: selectedVoice?.name });
   };
 
-  // Hook per chiudere il menu se si clicca all'esterno
-  useEffect(() => {
-    function handleClickOutside(event) {
-      // Assicurati che il click non sia sul pulsante dell'ingranaggio
-      if (event.target.closest(`.${styles.iconButton}`)) return;
-      
-      if (settingsMenuRef.current && !settingsMenuRef.current.contains(event.target)) {
-        setShowSettings(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [settingsMenuRef]);
-
-
 
   const getEventCoords = useCallback((e, canvasId) => {
     // Se l'evento non è valido, esci subito.
@@ -713,6 +511,7 @@ const reinitializeAllCanvases = useCallback(() => {
     setCurrentTranscript('');
   }, []);
 
+
   // ===============================================
   // EXAM FUNCTIONS (rimangono uguali)
   // ===============================================
@@ -862,6 +661,221 @@ const reinitializeAllCanvases = useCallback(() => {
       console.error("Logout error:", error);
     }
   };
+
+  //------------------------------------------------------------------------------------------------------------
+
+  // Initialize
+  useEffect(() => {
+    const init = async () => {
+      try {
+        setStatus('🔧 Initializing...');
+
+        const physicsAgent = new PhysicsAgent(
+          process.env.REACT_APP_SUPABASE_URL,
+          process.env.REACT_APP_SUPABASE_ANON_KEY
+        );
+        
+        await physicsAgent.initialize();
+        setAgent(physicsAgent);
+        setStatus('✅ Ready. Analyze material to begin.');
+      } catch (error) {
+        setStatus(`❌ Error: ${error.message}`);
+      }
+    };
+    init();
+  }, []);
+
+
+  // Resetta l'ID del messaggio quando la sintesi vocale si ferma per qualsiasi motivo.
+  useEffect(() => {
+    if (!voiceState.isSpeaking && speakingMessageId !== null) {
+      setSpeakingMessageId(null);
+    }
+  }, [voiceState.isSpeaking]);
+
+    // useEffect per tracciare la posizione del mouse
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      setCursorState(prev => ({
+        ...prev,
+        position: { x: e.clientX, y: e.clientY }
+      }));
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, []);
+
+  // useEffect per nascondere il cursore di default quando il nostro è attivo
+  useEffect(() => {
+    if (cursorState.visible) {
+      document.body.style.cursor = 'none';
+    } else {
+      document.body.style.cursor = 'auto';
+    }
+
+    // Funzione di pulizia per ripristinare il cursore se il componente viene smontato
+    return () => {
+      document.body.style.cursor = 'auto';
+    };
+  }, [cursorState.visible]);
+
+
+  useEffect(() => {
+    // Quando lo stato 'examStarted' diventa true, significa che la sequenza
+    // automatica è terminata e possiamo nascondere la schermata di caricamento.
+    if (examStarted) {
+      console.log("🏁 Sequenza di setup completata. Nascondo la schermata di caricamento.");
+      setIsAutoSetupInProgress(false);
+    }
+  }, [examStarted]);
+
+
+  // ==========================================================
+  // LOGGING E LOGICA DI AVVIO AUTOMATICO (CORRETTI)
+  // ==========================================================
+
+
+  // useEffect per AVVIARE L'ANALISI (reagisce al cambiamento di 'agent' e 'pdfFile')
+  useEffect(() => {
+    
+    const conditionsMet = agent && pdfFile && !examStarted && !autoStartSequenceRan.current;
+
+    if (conditionsMet) {
+      
+      autoStartSequenceRan.current = true; // Imposta il flag per non ripeterlo
+      analyzeMaterial();
+    } else {
+      console.log(`[EFFECT ANALYZE] ⏸️ Condizioni NON soddisfatte per l'analisi.`);
+    }
+  }, [agent, pdfFile, examStarted]); // Si attiva quando 'agent' o 'pdfFile' cambiano
+
+  // useEffect per AVVIARE L'ESAME (reagisce al cambiamento di 'materialReady')
+  useEffect(() => {
+
+    const conditionsMet = materialReady && autoStartSequenceRan.current && !examStarted;
+
+    if (conditionsMet) {
+      
+      startExam();
+    } else {
+      console.log(`[EFFECT EXAM] ⏸️ Condizioni NON soddisfatte per l'esame.`);
+    }
+  }, [materialReady, examStarted]); // Si attiva quando 'materialReady' cambia
+
+  
+
+   useEffect(() => {
+    if (!pdfFile) {
+      navigate("/setpdf"); // Reindirizza al percorso del componente PdfFile
+    }
+  }, [pdfFile, navigate]);
+
+  // Voice transcript handler - OTTIMIZZATO ANTI-BLOCCO
+  const handleTranscriptUpdate = useCallback((transcript, isFinal) => {
+    // Aggiorna visivamente la trascrizione in tempo reale
+    setCurrentTranscript(transcript);
+
+    if (voiceActiveForElement) {
+      // Combina il testo di base con la nuova trascrizione
+      const newContent = (baseTranscriptRef.current ? baseTranscriptRef.current + ' ' : '') + transcript;
+      
+      // Aggiorna il contenuto dell'elemento in tempo reale
+      updateElementContent(voiceActiveForElement, newContent);
+    }
+
+    // Quando una frase è finalizzata, aggiorna il testo di base
+    // in modo che la prossima frase venga accodata correttamente.
+    if (isFinal) {
+      const currentElement = sequentialElements.find(el => el.id === voiceActiveForElement);
+      if (currentElement) {
+        baseTranscriptRef.current = currentElement.content;
+      }
+      setCurrentTranscript(''); // Pulisci la visualizzazione della trascrizione in corso
+    }
+  }, [voiceActiveForElement, sequentialElements, updateElementContent]);
+
+// Auto-speak AI responses - VERSIONE INTEGRATA
+useEffect(() => {
+  // Se l'opzione è attiva e l'overlay appare con una nuova risposta...
+  if (autoSpeak && showAIResponse && currentAIResponse) {
+    // ...attendi un istante e poi avvia la riproduzione TRAMITE il nostro sistema di controllo.
+    setTimeout(() => {
+      handleRepeatOrStop({ content: currentAIResponse, timestamp: 'overlay_response' });
+    }, 500);
+  }
+}, [showAIResponse, currentAIResponse, autoSpeak]); // Le dipendenze rimangono le stesse
+
+  // Cleanup animation frame on unmount
+  useEffect(() => {
+    return () => {
+      if (drawingAnimationFrame.current) {
+        cancelAnimationFrame(drawingAnimationFrame.current);
+      }
+    };
+  }, []);
+
+
+
+
+  // useEffect per caricare le impostazioni quando il componente si monta
+  useEffect(() => {
+    if (user && user.uid && availableVoices.length > 0) {
+      try {
+        const savedSettingsJSON = localStorage.getItem(`voiceSettings_${user.uid}`);
+        if (savedSettingsJSON) {
+          const savedSettings = JSON.parse(savedSettingsJSON);
+          
+          // 1. Applica le impostazioni di velocità e tono
+          const newSpeechSettings = {
+            rate: savedSettings.rate || 0.85,
+            pitch: savedSettings.pitch || 1.0
+          };
+          setSpeechSettings(newSpeechSettings);
+          if (window.voiceManager) {
+            window.voiceManager.updateSpeechSettings(newSpeechSettings);
+          }
+
+          // 2. Applica la voce salvata
+          const savedVoice = availableVoices.find(v => v.name === savedSettings.voiceName);
+          if (savedVoice) {
+            setSelectedVoice(savedVoice);
+            if (window.voiceManager) {
+              window.voiceManager.changeSelectedVoice(savedVoice.name);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load voice settings:", error);
+      }
+    }
+  }, [user, availableVoices]); // Si attiva quando l'utente o le voci sono pronti
+
+
+
+
+  // Hook per chiudere il menu se si clicca all'esterno
+  useEffect(() => {
+    function handleClickOutside(event) {
+      // Assicurati che il click non sia sul pulsante dell'ingranaggio
+      if (event.target.closest(`.${styles.iconButton}`)) return;
+      
+      if (settingsMenuRef.current && !settingsMenuRef.current.contains(event.target)) {
+        setShowSettings(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [settingsMenuRef]);
+
+
+
+
+  
   
 
 
