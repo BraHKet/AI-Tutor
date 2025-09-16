@@ -117,7 +117,24 @@ export default function AgentDemo() {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [autoSpeak, setAutoSpeak] = useState(true);
 
-  
+  // Gestisce l'avvio e lo stop della riproduzione per un messaggio specifico.
+  const handleRepeatOrStop = (message) => {
+    const messageId = message.timestamp;
+
+    // Caso 1: Clicco sul pulsante del messaggio GIÀ in riproduzione -> FERMA
+    if (speakingMessageId === messageId) {
+      voiceUtils.stopSpeaking();
+      // Non aspettiamo più l'useEffect.
+      setSpeakingMessageId(null); 
+    } 
+    // Caso 2: Clicco su un pulsante diverso (o nessuno sta parlando) -> AVVIA
+    else {
+      // Ferma qualsiasi altra voce che potrebbe essere in riproduzione prima di avviarne una nuova
+      voiceUtils.stopSpeaking(); 
+      setSpeakingMessageId(messageId);
+      voiceUtils.speak(message.content);
+    }
+  };
 
   // Initialize
   useEffect(() => {
@@ -504,25 +521,6 @@ const reinitializeAllCanvases = useCallback(() => {
     }
     // Salva le nuove impostazioni insieme alla voce corrente
     saveVoiceSettings({ ...newSettings, voiceName: selectedVoice?.name });
-  };
-
-  // Gestisce l'avvio e lo stop della riproduzione per un messaggio specifico.
-  const handleRepeatOrStop = (message) => {
-    const messageId = message.timestamp;
-
-    // Caso 1: Clicco sul pulsante del messaggio GIÀ in riproduzione -> FERMA
-    if (speakingMessageId === messageId) {
-      voiceUtils.stopSpeaking();
-      // Non aspettiamo più l'useEffect.
-      setSpeakingMessageId(null); 
-    } 
-    // Caso 2: Clicco su un pulsante diverso (o nessuno sta parlando) -> AVVIA
-    else {
-      // Ferma qualsiasi altra voce che potrebbe essere in riproduzione prima di avviarne una nuova
-      voiceUtils.stopSpeaking(); 
-      setSpeakingMessageId(messageId);
-      voiceUtils.speak(message.content);
-    }
   };
 
   // Hook per chiudere il menu se si clicca all'esterno
