@@ -87,6 +87,14 @@ export default function AgentDemo() {
   const [selectedVoice, setSelectedVoice] = useState(null);
   const settingsMenuRef = useRef(null); // Per chiudere il menu cliccando fuori
 
+  // Nuovi stati per il menu avanzato
+  const [showVoiceSubmenu, setShowVoiceSubmenu] = useState(false);
+  const voicePreviewTimeout = useRef(null);
+  const [speechSettings, setSpeechSettings] = useState({
+    rate: 0.85, // Valore di default
+    pitch: 1.0  // Valore di default
+  });
+
   // AI Response states
   const [showAIResponse, setShowAIResponse] = useState(false);
   const [currentAIResponse, setCurrentAIResponse] = useState('');
@@ -342,7 +350,26 @@ const reinitializeAllCanvases = useCallback(() => {
   };
 
 
-    // Gestisce la selezione di una voce dal menu
+  // Gestisce il ritardo per l'anteprima vocale
+  const handleVoicePreviewEnter = (voice) => {
+    // Cancella qualsiasi anteprima precedente in attesa
+    if (voicePreviewTimeout.current) {
+      clearTimeout(voicePreviewTimeout.current);
+    }
+    // Imposta una nuova anteprima dopo 2 secondi
+    voicePreviewTimeout.current = setTimeout(() => {
+      voiceUtils.speak(`Ciao, questa è una prova della mia voce.`, { voice: voice });
+    }, 2000);
+  };
+
+  // Annulla l'anteprima se il mouse esce prima dei 2 secondi
+  const handleVoicePreviewLeave = () => {
+    if (voicePreviewTimeout.current) {
+      clearTimeout(voicePreviewTimeout.current);
+    }
+  };
+
+  // Seleziona una nuova voce
   const handleVoiceSelection = (voiceName) => {
     const voice = availableVoices.find(v => v.name === voiceName);
     if (voice) {
@@ -350,15 +377,19 @@ const reinitializeAllCanvases = useCallback(() => {
       if (window.voiceManager) {
         window.voiceManager.changeSelectedVoice(voiceName);
       }
-      voiceUtils.speak("Voce selezionata.");
-      setShowSettings(false); // Chiude il menu dopo aver scelto
+      setShowSettings(false);
+      setShowVoiceSubmenu(false);
     }
   };
 
-  // Fa partire un'anteprima vocale
-  const handleVoicePreview = (text) => {
-    voiceUtils.stopSpeaking(); // Ferma anteprime precedenti
-    voiceUtils.speak(text);
+  // Aggiorna le impostazioni di velocità e tono
+  const handleSettingsChange = (e) => {
+    const { name, value } = e.target;
+    const newSettings = { ...speechSettings, [name]: parseFloat(value) };
+    setSpeechSettings(newSettings);
+    if (window.voiceManager) {
+      window.voiceManager.updateSpeechSettings(newSettings);
+    }
   };
 
   // Hook per chiudere il menu se si clicca all'esterno
@@ -1056,31 +1087,81 @@ const reinitializeAllCanvases = useCallback(() => {
           </div>
         </div>
       )}
-      {showSettings && (
-        <div className={styles.settingsOverlay} ref={settingsMenuRef}>
+            {showSettings && (
+        <div 
+          className={styles.settingsOverlay} 
+          ref={settingsMenuRef}
+          onMouseLeave={() => setShowVoiceSubmenu(false)} // Chiude il sottomenu quando si esce dal menu principale
+        >
           <div className={styles.settingsHeader}>
             <h3 className={styles.settingsTitle}>Impostazioni</h3>
             <button onClick={() => setShowSettings(false)} className={styles.closeSettingsButton}>
               <X size={18} />
             </button>
           </div>
+
+          {/* === Sezione Principale del Menu === */}
           <div className={styles.settingsSection}>
-            <h4 className={styles.settingsSectionTitle}>Scegli Voce</h4>
-            <div className={styles.voiceList}>
-              {availableVoices
-                .filter(v => v.lang.startsWith('it') || v.lang.startsWith('en'))
-                .map(voice => (
-                  <div
-                    key={voice.name}
-                    className={`${styles.voiceItem} ${selectedVoice?.name === voice.name ? styles.voiceItemSelected : ''}`}
-                    onClick={() => handleVoiceSelection(voice.name)}
-                    onMouseEnter={() => handleVoicePreview(`Ciao, sono ${voice.name.split(' ')[0]}.`)}
-                  >
-                    <span className={styles.voiceName}>{voice.name}</span>
-                    <span className={styles.voiceLang}>{voice.lang}</span>
+            {/* --- Opzione per Scegliere la Voce (con sottomenu) --- */}
+            <div 
+              className={styles.settingsMenuItem}
+              onMouseEnter={() => setShowVoiceSubmenu(true)}
+            >
+              <span>🎙️ Scegli Voce</span>
+              <span>&rsaquo;</span>
+              
+              {/* --- SOTTOMENU DELLE VOCI (appare a lato) --- */}
+              {showVoiceSubmenu && (
+                <div className={styles.submenuContainer}>
+                  <div className={styles.voiceList}>
+                    {availableVoices
+                      .filter(v => v.lang.startsWith('it') || v.lang.startsWith('en'))
+                      .map(voice => (
+                        <div
+                          key={voice.name}
+                          className={`${styles.voiceItem} ${selectedVoice?.name === voice.name ? styles.voiceItemSelected : ''}`}
+                          onClick={() => handleVoiceSelection(voice.name)}
+                          onMouseEnter={() => handleVoicePreviewEnter(voice)}
+                          onMouseLeave={handleVoicePreviewLeave}
+                        >
+                          <span className={styles.voiceName}>{voice.name}</span>
+                          <span className={styles.voiceLang}>{voice.lang}</span>
+                        </div>
+                      ))
+                    }
                   </div>
-                ))
-              }
+                </div>
+              )}
+            </div>
+
+            {/* --- Controlli per Velocità e Tono --- */}
+            <div className={styles.sliderSection}>
+              <div className={styles.sliderContainer}>
+                <label className={styles.sliderLabel}>Velocità: {speechSettings.rate.toFixed(2)}</label>
+                <input
+                  type="range"
+                  name="rate"
+                  min="0.5"
+                  max="2.0"
+                  step="0.1"
+                  value={speechSettings.rate}
+                  onChange={handleSettingsChange}
+                  className={styles.sliderInput}
+                />
+              </div>
+              <div className={styles.sliderContainer}>
+                <label className={styles.sliderLabel}>Tono: {speechSettings.pitch.toFixed(2)}</label>
+                <input
+                  type="range"
+                  name="pitch"
+                  min="0.5"
+                  max="2.0"
+                  step="0.1"
+                  value={speechSettings.pitch}
+                  onChange={handleSettingsChange}
+                  className={styles.sliderInput}
+                />
+              </div>
             </div>
           </div>
         </div>

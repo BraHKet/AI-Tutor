@@ -185,43 +185,38 @@ export default function VoiceManager({
   };
 
   // Enhanced speak function with better voice and settings
-  const speakText = (text, options = {}) => {
+    const speakText = (text, options = {}) => {
     if (!isSupported || disabled || !text.trim()) return;
 
     try {
-      // Stop any ongoing speech
       synthRef.current.cancel();
 
       const utterance = new SpeechSynthesisUtterance(text);
       
-      // Use selected voice or best available
-      if (selectedVoice) {
-        utterance.voice = selectedVoice;
+      // NUOVA LOGICA: Usa una voce specifica se fornita nelle opzioni,
+      // altrimenti usa quella selezionata nello stato.
+      const voiceToUse = options.voice || selectedVoice;
+      if (voiceToUse) {
+        utterance.voice = voiceToUse;
       }
       
-      // Apply optimized settings
-      utterance.lang = options.lang || selectedVoice?.lang || 'it-IT';
+      // Applica le impostazioni
+      utterance.lang = options.lang || voiceToUse?.lang || 'it-IT';
       utterance.rate = options.rate || speechSettings.rate;
       utterance.pitch = options.pitch || speechSettings.pitch;
       utterance.volume = options.volume || speechSettings.volume;
 
       // Event handlers
-      utterance.onstart = () => {
-        setIsSpeaking(true);
-        setError('');
-      };
-
+      utterance.onstart = () => setIsSpeaking(true);
       utterance.onend = () => {
         setIsSpeaking(false);
         onSpeechComplete();
       };
-
       utterance.onerror = (event) => {
         setIsSpeaking(false);
         setError(`Speech synthesis error: ${event.error}`);
       };
 
-      // Start speaking
       synthRef.current.speak(utterance);
     } catch (error) {
       setError(`Failed to speak: ${error.message}`);
@@ -282,6 +277,7 @@ export default function VoiceManager({
       clearTranscript,
       testVoice,
       changeSelectedVoice, 
+      updateSpeechSettings,
       isListening,
       isSpeaking,
       selectedVoice: selectedVoice?.name
