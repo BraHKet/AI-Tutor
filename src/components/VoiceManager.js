@@ -36,6 +36,51 @@ export default function VoiceManager({
   const audioChunksRef = useRef([]);
 
   useEffect(() => {
+    // Controlla se il browser supporta la sintesi vocale
+    const speechSynthesisSupported = 'speechSynthesis' in window;
+    if (!speechSynthesisSupported) {
+      setIsSupported(false);
+      setError('Speech Synthesis not supported');
+      return;
+    }
+
+    // Inizializza la sintesi vocale
+    synthRef.current = window.speechSynthesis;
+
+    // Carica le voci quando sono disponibili
+    const handleVoicesChanged = () => {
+      if (!synthRef.current) return;
+      const voices = synthRef.current.getVoices();
+      setAvailableVoices(voices);
+      onVoicesLoaded(voices);
+      
+      if (voices.length > 0 && !selectedVoice) {
+        const bestVoice = findBestItalianVoice(voices);
+        setSelectedVoice(bestVoice);
+        onVoiceChange(bestVoice);
+      }
+    };
+
+    // Alcuni browser caricano le voci subito, altri dopo un evento
+    handleVoicesChanged();
+    if (synthRef.current.onvoiceschanged !== undefined) {
+      synthRef.current.onvoiceschanged = handleVoicesChanged;
+    }
+
+    // Funzione di pulizia
+    return () => {
+      if (synthRef.current) {
+        synthRef.current.cancel();
+        synthRef.current.onvoiceschanged = null;
+      }
+    };
+  }, [onVoicesLoaded, onVoiceChange, selectedVoice]); // Aggiungi le dipendenze
+
+  useEffect(() => {
+    onStateChange({ isListening, isSpeaking });
+  }, [isListening, isSpeaking, onStateChange]);
+
+  useEffect(() => {
     onStateChange({ isListening, isSpeaking });
   }, [isListening, isSpeaking, onStateChange]);
 
