@@ -45,6 +45,8 @@ export default function AgentDemo() {
   const { projectId, topicId } = useParams();
   const navigate = useNavigate();
   
+  const { user, logout } = useGoogleAuth();
+
   const [isAutoSetupInProgress, setIsAutoSetupInProgress] = useState(true);
   // Recupera file da LoginPage
   const { pdfFile, setPdfFile } = usePdf();
@@ -776,7 +778,7 @@ const reinitializeAllCanvases = useCallback(() => {
   };
 
 
-  const { user, logout } = useGoogleAuth();
+ 
   const handleLogout = async () => {
     try {
       await logout();
