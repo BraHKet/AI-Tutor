@@ -8,6 +8,8 @@ import { Mic, MicOff, Volume2, VolumeX, Settings } from 'lucide-react';
 export default function VoiceManager({ 
   onTranscriptUpdate = () => {}, 
   onSpeechComplete = () => {},
+  onStateChange = () => {}, 
+  showUI = true, 
   disabled = false 
 }) {
   // States
@@ -28,6 +30,10 @@ export default function VoiceManager({
   // Refs
   const recognitionRef = useRef(null);
   const synthRef = useRef(null);
+
+  useEffect(() => {
+    onStateChange({ isListening, isSpeaking });
+  }, [isListening, isSpeaking, onStateChange]);
 
   // Load and select best available voice
   const loadVoices = () => {
@@ -271,6 +277,12 @@ export default function VoiceManager({
       delete window.voiceManager;
     };
   }, [isListening, isSpeaking, currentTranscript, selectedVoice]);
+
+
+  if (!showUI) {
+    return null; 
+  }
+
 
   if (!isSupported) {
     return (

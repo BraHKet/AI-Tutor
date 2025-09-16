@@ -10,7 +10,7 @@ import { PhysicsAgent } from '../agents/PhysicsAgent';
 import VoiceManager, { voiceUtils } from './VoiceManager';
 import { 
   Bot, FileText, MessageSquare, Send, Trash2, 
-  History, Mic, X, Volume2, Edit3, Plus, Type
+  History, Mic, X, Volume2, Edit3, Plus, Type, MicOff
 } from 'lucide-react';
 import { usePdf } from "../context/PdfContext";
 import SimpleLoading from './SimpleLoading';
@@ -86,6 +86,8 @@ export default function AgentDemo() {
   const [showHistory, setShowHistory] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [autoSpeak, setAutoSpeak] = useState(true);
+
+  const [voiceState, setVoiceState] = useState({ isListening: false, isSpeaking: false });
 
   // Initialize
   useEffect(() => {
@@ -308,6 +310,30 @@ const reinitializeAllCanvases = useCallback(() => {
         }
     });
 }, [sequentialElements, initializeElementCanvas]);
+
+
+  // ====================================================================
+  // INIZIO MODIFICA: Nuova funzione per gestire il click sul microfono
+  // ====================================================================
+  const handleMicClick = (elementId) => {
+    const isCurrentlyListeningForThis = voiceState.isListening && voiceActiveForElement === elementId;
+    
+    // Ferma sempre la registrazione corrente, se esiste
+    if (voiceState.isListening) {
+      voiceUtils.stopListening();
+    }
+
+    if (isCurrentlyListeningForThis) {
+      // Se stavamo registrando per questo elemento, ora abbiamo smesso.
+      setVoiceActiveForElement(null);
+    } else {
+      // Altrimenti, avvia una nuova registrazione per questo elemento.
+      setVoiceActiveForElement(elementId);
+      // Un piccolo ritardo per assicurare che il servizio si sia fermato prima di ripartire
+      setTimeout(() => voiceUtils.startListening(), 100);
+    }
+  };
+
 
 
   const getEventCoords = useCallback((e, canvasId) => {
@@ -646,6 +672,12 @@ const reinitializeAllCanvases = useCallback(() => {
 
   return (
     <div className={styles.container}>
+      <VoiceManager
+        onTranscriptUpdate={handleTranscriptUpdate}
+        onStateChange={setVoiceState} // Comunica lo stato
+        showUI={false} // Nasconde l'interfaccia
+        disabled={isProcessing}
+      />
       {/* Header */}
       <div className={styles.header}>
         <div className={styles.headerLeft}>
@@ -836,14 +868,20 @@ const reinitializeAllCanvases = useCallback(() => {
                       </span>
                       
                       <div className={styles.elementControls}>
-                        {element.type === 'text' && voiceEnabled && (
+                                                {element.type === 'text' && voiceEnabled && (
                           <button
-                            onClick={() => setVoiceActiveForElement(
-                              voiceActiveForElement === element.id ? null : element.id
-                            )}
-                            className={voiceActiveForElement === element.id ? styles.voiceControlActive : styles.voiceControlInactive}
+                            onClick={() => handleMicClick(element.id)} // Usa la nuova funzione
+                            className={
+                              (voiceState.isListening && voiceActiveForElement === element.id) 
+                                ? styles.voiceControlActive 
+                                : styles.voiceControlInactive
+                            }
                           >
-                            <Mic size={12} />
+                            {/* Cambia l'icona in base allo stato di ascolto */}
+                            {(voiceState.isListening && voiceActiveForElement === element.id) 
+                              ? <MicOff size={12} /> 
+                              : <Mic size={12} />
+                            }
                           </button>
                         )}
                         
@@ -897,30 +935,22 @@ const reinitializeAllCanvases = useCallback(() => {
               </div>
 
               {/* Voice Manager - POSIZIONATO MEGLIO */}
-              {voiceActiveForElement && (
+              {voiceState.isListening && voiceActiveForElement && (
                 <div className={styles.voiceManagerFixed}>
                   <div className={styles.voiceManagerContent}>
                     <div className={styles.voiceManagerHeader}>
-                      🎤 Voice Recording Active
+                      🎤 Registrazione Attiva...
                       <button
-                        onClick={() => {
-                          setVoiceActiveForElement(null);
-                          setCurrentTranscript('');
-                        }}
+                        onClick={() => handleMicClick(voiceActiveForElement)} // Usa la stessa funzione per fermare
                         className={styles.stopVoiceButton}
                       >
                         Stop
                       </button>
                     </div>
                     
-                    <VoiceManager 
-                      onTranscriptUpdate={handleTranscriptUpdate}
-                      disabled={isProcessing}
-                    />
-                    
                     {currentTranscript && (
                       <div className={styles.transcriptDisplay}>
-                        <strong>Transcript:</strong> "{currentTranscript}"
+                        <strong>Trascrizione:</strong> "{currentTranscript}"
                       </div>
                     )}
                   </div>
