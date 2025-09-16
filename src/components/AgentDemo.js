@@ -499,16 +499,18 @@ const reinitializeAllCanvases = useCallback(() => {
 
   // Gestisce l'avvio e lo stop della riproduzione per un messaggio specifico.
   const handleRepeatOrStop = (message) => {
-    // Usiamo il timestamp come ID univoco del messaggio
     const messageId = message.timestamp;
 
     // Caso 1: Clicco sul pulsante del messaggio GIÀ in riproduzione -> FERMA
     if (speakingMessageId === messageId) {
       voiceUtils.stopSpeaking();
-      // L'useEffect si occuperà di settare speakingMessageId a null
+      // Non aspettiamo più l'useEffect.
+      setSpeakingMessageId(null); 
     } 
     // Caso 2: Clicco su un pulsante diverso (o nessuno sta parlando) -> AVVIA
     else {
+      // Ferma qualsiasi altra voce che potrebbe essere in riproduzione prima di avviarne una nuova
+      voiceUtils.stopSpeaking(); 
       setSpeakingMessageId(messageId);
       voiceUtils.speak(message.content);
     }
