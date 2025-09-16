@@ -10,7 +10,7 @@ import { PhysicsAgent } from '../agents/PhysicsAgent';
 import VoiceManager, { voiceUtils } from './VoiceManager';
 import { 
   Bot, FileText, MessageSquare, Send, Trash2, 
-  History, Mic, X, Volume2, Edit3, Plus, Type, MicOff
+  History, Mic, X, Volume2, Edit3, Plus, Type, MicOff, Settings 
 } from 'lucide-react';
 import { usePdf } from "../context/PdfContext";
 import SimpleLoading from './SimpleLoading';
@@ -79,6 +79,13 @@ export default function AgentDemo() {
   // Voice states
   const [voiceActiveForElement, setVoiceActiveForElement] = useState(null);
   const [currentTranscript, setCurrentTranscript] = useState('');
+  const [voiceState, setVoiceState] = useState({ isListening: false, isSpeaking: false });
+
+  // Stati per il menu impostazioni e la selezione vocale
+  const [showSettings, setShowSettings] = useState(false);
+  const [availableVoices, setAvailableVoices] = useState([]);
+  const [selectedVoice, setSelectedVoice] = useState(null);
+  const settingsMenuRef = useRef(null); // Per chiudere il menu cliccando fuori
 
   // AI Response states
   const [showAIResponse, setShowAIResponse] = useState(false);
@@ -87,7 +94,7 @@ export default function AgentDemo() {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [autoSpeak, setAutoSpeak] = useState(true);
 
-  const [voiceState, setVoiceState] = useState({ isListening: false, isSpeaking: false });
+  
 
   // Initialize
   useEffect(() => {
@@ -333,6 +340,42 @@ const reinitializeAllCanvases = useCallback(() => {
       setTimeout(() => voiceUtils.startListening(), 100);
     }
   };
+
+
+    // Gestisce la selezione di una voce dal menu
+  const handleVoiceSelection = (voiceName) => {
+    const voice = availableVoices.find(v => v.name === voiceName);
+    if (voice) {
+      setSelectedVoice(voice);
+      if (window.voiceManager) {
+        window.voiceManager.changeSelectedVoice(voiceName);
+      }
+      voiceUtils.speak("Voce selezionata.");
+      setShowSettings(false); // Chiude il menu dopo aver scelto
+    }
+  };
+
+  // Fa partire un'anteprima vocale
+  const handleVoicePreview = (text) => {
+    voiceUtils.stopSpeaking(); // Ferma anteprime precedenti
+    voiceUtils.speak(text);
+  };
+
+  // Hook per chiudere il menu se si clicca all'esterno
+  useEffect(() => {
+    function handleClickOutside(event) {
+      // Assicurati che il click non sia sul pulsante dell'ingranaggio
+      if (event.target.closest(`.${styles.iconButton}`)) return;
+      
+      if (settingsMenuRef.current && !settingsMenuRef.current.contains(event.target)) {
+        setShowSettings(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [settingsMenuRef]);
 
 
 
@@ -674,8 +717,10 @@ const reinitializeAllCanvases = useCallback(() => {
     <div className={styles.container}>
       <VoiceManager
         onTranscriptUpdate={handleTranscriptUpdate}
-        onStateChange={setVoiceState} // Comunica lo stato
-        showUI={false} // Nasconde l'interfaccia
+        onStateChange={setVoiceState}
+        onVoicesLoaded={setAvailableVoices} // <-- AGGIUNGI QUESTA RIGA
+        onVoiceChange={setSelectedVoice}   // <-- AGGIUNGI QUESTA RIGA
+        showUI={false}
         disabled={isProcessing}
       />
       {/* Header */}
@@ -716,6 +761,15 @@ const reinitializeAllCanvases = useCallback(() => {
             <Volume2 size={16} />
             {voiceEnabled ? 'Voice On' : 'Voice Off'}
           </button>
+
+          <div className={styles.settingsContainer}>
+            <button
+              onClick={() => setShowSettings(prev => !prev)}
+              className={styles.iconButton}
+            >
+              <Settings size={20} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -999,6 +1053,35 @@ const reinitializeAllCanvases = useCallback(() => {
           
           <div className={styles.aiResponseContent}>
             {currentAIResponse}
+          </div>
+        </div>
+      )}
+      {showSettings && (
+        <div className={styles.settingsOverlay} ref={settingsMenuRef}>
+          <div className={styles.settingsHeader}>
+            <h3 className={styles.settingsTitle}>Impostazioni</h3>
+            <button onClick={() => setShowSettings(false)} className={styles.closeSettingsButton}>
+              <X size={18} />
+            </button>
+          </div>
+          <div className={styles.settingsSection}>
+            <h4 className={styles.settingsSectionTitle}>Scegli Voce</h4>
+            <div className={styles.voiceList}>
+              {availableVoices
+                .filter(v => v.lang.startsWith('it') || v.lang.startsWith('en'))
+                .map(voice => (
+                  <div
+                    key={voice.name}
+                    className={`${styles.voiceItem} ${selectedVoice?.name === voice.name ? styles.voiceItemSelected : ''}`}
+                    onClick={() => handleVoiceSelection(voice.name)}
+                    onMouseEnter={() => handleVoicePreview(`Ciao, sono ${voice.name.split(' ')[0]}.`)}
+                  >
+                    <span className={styles.voiceName}>{voice.name}</span>
+                    <span className={styles.voiceLang}>{voice.lang}</span>
+                  </div>
+                ))
+              }
+            </div>
           </div>
         </div>
       )}

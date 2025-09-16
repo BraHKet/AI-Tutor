@@ -146,3 +146,125 @@
   line-height: 1.6;
   color: #374151;
 }
+
+/* Stili per il pulsante Impostazioni */
+.settingsContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.iconButton {
+  background: none;
+  border: none;
+  color: #4b5563;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.iconButton:hover {
+  background-color: #f0f0f0;
+}
+
+/* Stili per il menu a tendina delle impostazioni */
+.settingsOverlay {
+  position: absolute;
+  top: 60px;
+  right: 20px;
+  width: 320px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e5e7eb;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.settingsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.settingsTitle {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.closeSettingsButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6b7280;
+  padding: 4px;
+  border-radius: 50%;
+}
+.closeSettingsButton:hover {
+  background-color: #f0f0f0;
+}
+
+.settingsSection {
+  padding: 8px;
+}
+
+.settingsSectionTitle {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+  padding: 8px;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.voiceList {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.voiceItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.voiceItem:hover {
+  background-color: #f3f4f6;
+}
+
+.voiceItemSelected {
+  background-color: #eef2ff; /* Colore indaco chiaro per la selezione */
+  color: #4338ca; /* Colore indaco scuro per la selezione */
+  font-weight: 600;
+}
+
+.voiceName {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 10px;
+}
+
+.voiceLang {
+  font-size: 12px;
+  color: #6b7280;
+  background-color: #e5e7eb;
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}

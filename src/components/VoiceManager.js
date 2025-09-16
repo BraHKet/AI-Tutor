@@ -9,6 +9,8 @@ export default function VoiceManager({
   onTranscriptUpdate = () => {}, 
   onSpeechComplete = () => {},
   onStateChange = () => {}, 
+  onVoicesLoaded = () => {}, 
+  onVoiceChange = () => {},  
   showUI = true, 
   disabled = false 
 }) {
@@ -36,16 +38,17 @@ export default function VoiceManager({
   }, [isListening, isSpeaking, onStateChange]);
 
   // Load and select best available voice
-  const loadVoices = () => {
+    const loadVoices = () => {
     if (!synthRef.current) return;
     
     const voices = synthRef.current.getVoices();
     setAvailableVoices(voices);
+    onVoicesLoaded(voices); // <-- NOTIFICA L'ELENCO VOCI
     
     if (voices.length > 0 && !selectedVoice) {
-      // Find the best Italian voice available
       const bestVoice = findBestItalianVoice(voices);
       setSelectedVoice(bestVoice);
+      onVoiceChange(bestVoice); // <-- NOTIFICA LA VOCE PREDEFINITA
       console.log('🎙️ Selected voice:', bestVoice?.name || 'Default');
     }
   };
@@ -257,6 +260,16 @@ export default function VoiceManager({
     setSpeechSettings(prev => ({ ...prev, ...newSettings }));
   };
 
+
+
+  const changeSelectedVoice = (voiceName) => {
+    const voice = availableVoices.find(v => v.name === voiceName);
+    if (voice) {
+      setSelectedVoice(voice);
+    }
+  };
+
+
   // Expose methods for parent components
   useEffect(() => {
     // Attach methods to window for easy access (optional)
@@ -268,6 +281,7 @@ export default function VoiceManager({
       getTranscript,
       clearTranscript,
       testVoice,
+      changeSelectedVoice, 
       isListening,
       isSpeaking,
       selectedVoice: selectedVoice?.name
@@ -276,7 +290,7 @@ export default function VoiceManager({
     return () => {
       delete window.voiceManager;
     };
-  }, [isListening, isSpeaking, currentTranscript, selectedVoice]);
+  }, [isListening, isSpeaking, currentTranscript, selectedVoice, availableVoices]);
 
 
   if (!showUI) {
