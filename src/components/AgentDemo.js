@@ -100,6 +100,8 @@ export default function AgentDemo() {
     pitch: 1.0  // Valore di default
   });
 
+  const baseTranscriptRef = useRef('');
+
   const [showVoiceProperties, setShowVoiceProperties] = useState(false);
 
   const [cursorState, setCursorState] = useState({
@@ -230,31 +232,27 @@ export default function AgentDemo() {
 
   // Voice transcript handler - OTTIMIZZATO ANTI-BLOCCO
   const handleTranscriptUpdate = useCallback((transcript, isFinal) => {
-    console.log('🎤 Voice update:', { transcript, isFinal, activeElement: voiceActiveForElement });
-    
-    // Aggiorna sempre il transcript corrente (per feedback visivo)
+    // Aggiorna visivamente la trascrizione in tempo reale
     setCurrentTranscript(transcript);
-    
-    // Solo quando è final E c'è contenuto E c'è un elemento attivo
-    if (isFinal && transcript.trim() && voiceActiveForElement) {
-      const cleanTranscript = transcript.trim();
-      console.log('✅ Adding to element:', voiceActiveForElement, 'text:', cleanTranscript);
+
+    if (voiceActiveForElement) {
+      // Combina il testo di base con la nuova trascrizione
+      const newContent = (baseTranscriptRef.current ? baseTranscriptRef.current + ' ' : '') + transcript;
       
-      setSequentialElements(prev => prev.map(element => {
-        if (element.id === voiceActiveForElement) {
-          const newContent = element.content + (element.content ? ' ' : '') + cleanTranscript;
-          console.log('📝 Updated element content:', newContent);
-          return { ...element, content: newContent };
-        }
-        return element;
-      }));
-      
-      // Pulisci il transcript dopo l'aggiunta
-      setTimeout(() => {
-        setCurrentTranscript('');
-      }, 100);
+      // Aggiorna il contenuto dell'elemento in tempo reale
+      updateElementContent(voiceActiveForElement, newContent);
     }
-  }, [voiceActiveForElement]);
+
+    // Quando una frase è finalizzata, aggiorna il testo di base
+    // in modo che la prossima frase venga accodata correttamente.
+    if (isFinal) {
+      const currentElement = sequentialElements.find(el => el.id === voiceActiveForElement);
+      if (currentElement) {
+        baseTranscriptRef.current = currentElement.content;
+      }
+      setCurrentTranscript(''); // Pulisci la visualizzazione della trascrizione in corso
+    }
+  }, [voiceActiveForElement, sequentialElements, updateElementContent]);
 
 // Auto-speak AI responses - VERSIONE INTEGRATA
 useEffect(() => {
@@ -430,21 +428,25 @@ const reinitializeAllCanvases = useCallback(() => {
   // ====================================================================
   // INIZIO MODIFICA: Nuova funzione per gestire il click sul microfono
   // ====================================================================
-  const handleMicClick = (elementId) => {
+    const handleMicClick = (elementId) => {
     const isCurrentlyListeningForThis = voiceState.isListening && voiceActiveForElement === elementId;
-    
-    // Ferma sempre la registrazione corrente, se esiste
-    if (voiceState.isListening) {
-      voiceUtils.stopListening();
-    }
 
     if (isCurrentlyListeningForThis) {
-      // Se stavamo registrando per questo elemento, ora abbiamo smesso.
-      setVoiceActiveForElement(null);
+      // Se sta già ascoltando, fermalo
+      voiceUtils.stopListening();
+      baseTranscriptRef.current = ''; // Pulisci il riferimento
     } else {
-      // Altrimenti, avvia una nuova registrazione per questo elemento.
+      // Se un'altra registrazione è attiva, fermala prima
+      if (voiceState.isListening) {
+        voiceUtils.stopListening();
+      }
+      
+      // LA MODIFICA CHIAVE: Salva il testo attuale prima di iniziare a dettare
+      const currentElement = sequentialElements.find(el => el.id === elementId);
+      baseTranscriptRef.current = currentElement ? currentElement.content : '';
+
+      // Avvia una nuova registrazione per questo elemento
       setVoiceActiveForElement(elementId);
-      // Un piccolo ritardo per assicurare che il servizio si sia fermato prima di ripartire
       setTimeout(() => voiceUtils.startListening(), 100);
     }
   };
@@ -1101,40 +1103,50 @@ const reinitializeAllCanvases = useCallback(() => {
                         {index + 1}. {element.type === 'text' ? '📝 Text' : '🎨 Drawing'}
                       </span>
                       
-                      <div className={styles.elementControls}>
-                                                {element.type === 'text' && voiceEnabled && (
-                          <button
-                            onClick={() => handleMicClick(element.id)} // Usa la nuova funzione
-                            className={
-                              (voiceState.isListening && voiceActiveForElement === element.id) 
-                                ? styles.voiceControlActive 
-                                : styles.voiceControlInactive
-                            }
-                          >
-                            {/* Cambia l'icona in base allo stato di ascolto */}
-                            {(voiceState.isListening && voiceActiveForElement === element.id) 
-                              ? <MicOff size={12} /> 
-                              : <Mic size={12} />
-                            }
-                          </button>
-                        )}
-                        
-                        {element.type === 'drawing' && (
-                          <button
-                            onClick={() => clearElementCanvas(element.id)}
-                            className={styles.clearCanvasButton}
-                          >
-                            Clear
-                          </button>
-                        )}
-                        
-                        <button
-                          onClick={() => deleteElement(element.id)}
-                          className={styles.deleteElementButton}
-                        >
-                          <X size={12} />
-                        </button>
-                      </div>
+                      
+<div className={styles.elementControls}>
+  {element.type === 'text' && voiceEnabled && (
+    <> {/* Aggiunto un Fragment per contenere sia l'indicatore che il pulsante */}
+      
+      {/* NUOVO: Questo è il punto rosso lampeggiante */}
+      {voiceState.isListening && voiceActiveForElement === element.id && (
+        <div className={styles.recordingIndicator} title="Registrazione attiva..."></div>
+      )}
+
+      {/* Il pulsante del microfono rimane quasi identico */}
+      <button
+        onClick={() => handleMicClick(element.id)}
+        className={
+          (voiceState.isListening && voiceActiveForElement === element.id) 
+            ? styles.voiceControlActive 
+            : styles.voiceControlInactive
+        }
+      >
+        {(voiceState.isListening && voiceActiveForElement === element.id) 
+          ? <MicOff size={12} /> 
+          : <Mic size={12} />
+        }
+      </button>
+    </>
+  )}
+  
+  {element.type === 'drawing' && (
+    <button
+      onClick={() => clearElementCanvas(element.id)}
+      className={styles.clearCanvasButton}
+    >
+      Clear
+    </button>
+  )}
+  
+  <button
+    onClick={() => deleteElement(element.id)}
+    className={styles.deleteElementButton}
+  >
+    <X size={12} />
+  </button>
+</div>
+
                     </div>
 
                     <div className={styles.elementContent}>
@@ -1169,27 +1181,7 @@ const reinitializeAllCanvases = useCallback(() => {
               </div>
 
               {/* Voice Manager - POSIZIONATO MEGLIO */}
-              {voiceState.isListening && voiceActiveForElement && (
-                <div className={styles.voiceManagerFixed}>
-                  <div className={styles.voiceManagerContent}>
-                    <div className={styles.voiceManagerHeader}>
-                      🎤 Registrazione Attiva...
-                      <button
-                        onClick={() => handleMicClick(voiceActiveForElement)} // Usa la stessa funzione per fermare
-                        className={styles.stopVoiceButton}
-                      >
-                        Stop
-                      </button>
-                    </div>
-                    
-                    {currentTranscript && (
-                      <div className={styles.transcriptDisplay}>
-                        <strong>Trascrizione:</strong> "{currentTranscript}"
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
+              
             </div>
           )}
 
@@ -1321,3 +1313,4 @@ const reinitializeAllCanvases = useCallback(() => {
   );
   
 }
+
