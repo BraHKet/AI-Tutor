@@ -661,7 +661,7 @@ const reinitializeAllCanvases = useCallback(() => {
       console.error("Logout error:", error);
     }
   };
-
+  
   //------------------------------------------------------------------------------------------------------------
 
   // Initialize
@@ -775,27 +775,25 @@ const reinitializeAllCanvases = useCallback(() => {
 
   // Voice transcript handler - OTTIMIZZATO ANTI-BLOCCO
   const handleTranscriptUpdate = useCallback((transcript, isFinal) => {
-    // Aggiorna visivamente la trascrizione in tempo reale
-    setCurrentTranscript(transcript);
+  if (!voiceActiveForElement) return;
 
-    if (voiceActiveForElement) {
-      // Combina il testo di base con la nuova trascrizione
-      const newContent = (baseTranscriptRef.current ? baseTranscriptRef.current + ' ' : '') + transcript;
-      
-      // Aggiorna il contenuto dell'elemento in tempo reale
-      updateElementContent(voiceActiveForElement, newContent);
-    }
+  // Unisce il testo di base (già confermato) con la nuova trascrizione in corso.
+  // Aggiunge uno spazio solo se c'è già del testo di base.
+  const newContent = baseTranscriptRef.current 
+    ? baseTranscriptRef.current + ' ' + transcript 
+    : transcript;
 
-    // Quando una frase è finalizzata, aggiorna il testo di base
-    // in modo che la prossima frase venga accodata correttamente.
-    if (isFinal) {
-      const currentElement = sequentialElements.find(el => el.id === voiceActiveForElement);
-      if (currentElement) {
-        baseTranscriptRef.current = currentElement.content;
-      }
-      setCurrentTranscript(''); // Pulisci la visualizzazione della trascrizione in corso
-    }
-  }, [voiceActiveForElement, sequentialElements, updateElementContent]);
+  // Aggiorna il contenuto della textarea in tempo reale.
+  // Questo fornisce un feedback visivo immediato e fluido.
+  updateElementContent(voiceActiveForElement, newContent);
+
+  // Quando una frase viene riconosciuta come "finale" dal browser...
+  if (isFinal) {
+    // ...aggiorniamo il nostro testo di base con il contenuto corrente.
+    // In questo modo, la prossima frase verrà aggiunta dopo questa.
+    baseTranscriptRef.current = newContent;
+  }
+}, [voiceActiveForElement, updateElementContent]); // Dipendenze ottimizzate
 
 // Auto-speak AI responses - VERSIONE INTEGRATA
 useEffect(() => {
