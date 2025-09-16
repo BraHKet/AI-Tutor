@@ -30,9 +30,10 @@ export default function VoiceManager({
   });
 
   // Refs
-  const recognitionRef = useRef(null);
   const synthRef = useRef(null);
   const isIntentionalStopRef = useRef(false);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
 
   useEffect(() => {
     onStateChange({ isListening, isSpeaking });
@@ -89,111 +90,87 @@ export default function VoiceManager({
     return voices[0] || null;
   };
 
-  // Initialize Speech APIs
-  useEffect(() => {
-    // Check browser support
-    const speechRecognitionSupported = 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window;
-    const speechSynthesisSupported = 'speechSynthesis' in window;
-    
-    if (!speechRecognitionSupported || !speechSynthesisSupported) {
-      setIsSupported(false);
-      setError('Speech APIs not supported in this browser');
-      return;
-    }
-
-    // Initialize Speech Recognition
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    recognitionRef.current = new SpeechRecognition();
-    
-    recognitionRef.current.continuous = true;
-    recognitionRef.current.interimResults = true;
-    recognitionRef.current.lang = 'it-IT';
-
-    // Recognition event handlers
-    recognitionRef.current.onstart = () => {
-      setIsListening(true);
-      setError('');
-    };
-
-    recognitionRef.current.onresult = (event) => {
-      let transcript = '';
-      
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript;
-      }
-      
-      setCurrentTranscript(transcript);
-      onTranscriptUpdate(transcript, event.results[event.results.length - 1].isFinal);
-    };
-
-    recognitionRef.current.onend = () => {
-      // Se lo stop NON è stato causato dall'utente, riavvia la registrazione!
-      if (!isIntentionalStopRef.current) {
-        // Un piccolo timeout per evitare che il browser blocchi troppe richieste ravvicinate
-        setTimeout(() => {
-          if (recognitionRef.current) {
-            recognitionRef.current.start();
-          }
-        }, 100);
-      } else {
-        // Altrimenti, se è stato l'utente, aggiorna lo stato a "non in ascolto"
-        setIsListening(false);
-      }
-    };
-
-    recognitionRef.current.onerror = (event) => {
-      setIsListening(false);
-      setError(`Speech recognition error: ${event.error}`);
-    };
-
-    // Initialize Speech Synthesis
-    synthRef.current = window.speechSynthesis;
-
-    // Load voices when available
-    loadVoices();
-    if (synthRef.current.onvoiceschanged !== undefined) {
-      synthRef.current.onvoiceschanged = loadVoices;
-    }
-
-    return () => {
-      // Cleanup
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-      if (synthRef.current) {
-        synthRef.current.cancel();
-      }
-    };
-  }, [onTranscriptUpdate]);
+  
 
   // Start listening
-  const startListening = () => {
-    if (!isSupported || disabled || isListening) return;
-    isIntentionalStopRef.current = false;
+  const startListening = async () => {
+    if (disabled || isListening) return;
+
     try {
-      // Stop any ongoing speech first
-      if (synthRef.current.speaking) {
+      // 1. Richiedi l'accesso al microfono
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      // Ferma la sintesi vocale se stava parlando
+      if (synthRef.current && synthRef.current.speaking) {
         synthRef.current.cancel();
         setIsSpeaking(false);
       }
-
-      setCurrentTranscript('');
+      
       setError('');
-      recognitionRef.current.start();
-    } catch (error) {
-      setError(`Failed to start listening: ${error.message}`);
+      audioChunksRef.current = []; // Svuota i vecchi pezzi di audio
+      setIsListening(true);
+      
+      // 2. Inizializza il MediaRecorder
+      mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'audio/webm; codecs=opus' });
+
+      // 3. Salva i pezzi di audio man mano che vengono registrati
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
+      };
+
+      // 4. Quando la registrazione si ferma, invia i dati al backend
+      mediaRecorderRef.current.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm; codecs=opus' });
+        
+        // Converti il file audio in una stringa base64
+        const reader = new FileReader();
+        reader.readAsDataURL(audioBlob);
+        reader.onloadend = async () => {
+          const base64Audio = reader.result.split(',')[1];
+
+          // 5. Invia all'API serverless
+          try {
+            const response = await fetch('/api/speechProxy', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ audioBytes: base64Audio }),
+            });
+
+            if (!response.ok) {
+              const errData = await response.json();
+              throw new Error(errData.error || 'Errore nella trascrizione.');
+            }
+
+            const data = await response.json();
+            
+            // 6. Notifica al componente genitore la trascrizione finale
+            onTranscriptUpdate(data.transcription, true);
+
+          } catch (apiError) {
+            setError(`Errore API: ${apiError.message}`);
+          } finally {
+            // Pulisci le tracce dello stream per spegnere l'icona del microfono nel browser
+            stream.getTracks().forEach(track => track.stop());
+          }
+        };
+      };
+
+      // 7. Avvia la registrazione
+      mediaRecorderRef.current.start();
+
+    } catch (err) {
+      setError(`Errore microfono: ${err.message}`);
+      setIsListening(false);
     }
   };
 
   // Stop listening
   const stopListening = () => {
-    if (!isSupported || !isListening) return;
-    isIntentionalStopRef.current = true;
-    try {
-      recognitionRef.current.stop();
-    } catch (error) {
-      setError(`Failed to stop listening: ${error.message}`);
-    }
+    if (!isListening || !mediaRecorderRef.current) return;
+    
+    // Ferma la registrazione. Questo attiverà l'evento 'onstop' definito sopra.
+    mediaRecorderRef.current.stop();
+    setIsListening(false);
   };
 
   // Enhanced speak function with better voice and settings
