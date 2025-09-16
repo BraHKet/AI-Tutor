@@ -104,7 +104,8 @@ export default function AgentDemo() {
 
   const [cursorState, setCursorState] = useState({
   visible: false,
-  position: { x: 0, y: 0 }
+  position: { x: 0, y: 0 },
+  animationKey: 0
   });
 
   // AI Response states
@@ -451,7 +452,11 @@ const reinitializeAllCanvases = useCallback(() => {
 
   // Gestisce il ritardo per l'anteprima vocale
   const handleVoicePreviewEnter = (voice) => {
-    setCursorState(prev => ({ ...prev, visible: true })); // <-- MOSTRA IL CURSORE
+    setCursorState(prev => ({ 
+  ...prev, 
+  visible: true, 
+  animationKey: prev.animationKey + 1 // <-- QUESTA È LA MODIFICA CHIAVE
+}));
     
     if (voicePreviewTimeout.current) {
       clearTimeout(voicePreviewTimeout.current);
@@ -874,7 +879,12 @@ const reinitializeAllCanvases = useCallback(() => {
   return (
     <>
       {/* Renderizza il cursore personalizzato se è visibile */}
-      {cursorState.visible && <CustomCursor position={cursorState.position} />}
+      {cursorState.visible && (
+      <CustomCursor 
+        key={cursorState.animationKey} // <-- AGGIUNGI QUESTA RIGA
+        position={cursorState.position} 
+      />
+    )}
     <div className={styles.container}>
       <VoiceManager
         onTranscriptUpdate={handleTranscriptUpdate}
@@ -968,7 +978,7 @@ const reinitializeAllCanvases = useCallback(() => {
                         className={styles.repeatButton}
                         onClick={() => handleRepeatOrStop(turn)}
                       >
-                        {speakingMessageId === turn.timestamp ? <VolumeX size={12} /> : 'R'}
+                        {speakingMessageId === 'overlay_response' ? <X size={12} /> : 'R'}
                       </button>
                     )}
                   
