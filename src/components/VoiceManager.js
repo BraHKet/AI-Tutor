@@ -32,6 +32,7 @@ export default function VoiceManager({
   // Refs
   const recognitionRef = useRef(null);
   const synthRef = useRef(null);
+  const isIntentionalStopRef = useRef(false);
 
   useEffect(() => {
     onStateChange({ isListening, isSpeaking });
@@ -126,7 +127,18 @@ export default function VoiceManager({
     };
 
     recognitionRef.current.onend = () => {
-      setIsListening(false);
+      // Se lo stop NON è stato causato dall'utente, riavvia la registrazione!
+      if (!isIntentionalStopRef.current) {
+        // Un piccolo timeout per evitare che il browser blocchi troppe richieste ravvicinate
+        setTimeout(() => {
+          if (recognitionRef.current) {
+            recognitionRef.current.start();
+          }
+        }, 100);
+      } else {
+        // Altrimenti, se è stato l'utente, aggiorna lo stato a "non in ascolto"
+        setIsListening(false);
+      }
     };
 
     recognitionRef.current.onerror = (event) => {
@@ -157,7 +169,7 @@ export default function VoiceManager({
   // Start listening
   const startListening = () => {
     if (!isSupported || disabled || isListening) return;
-
+    isIntentionalStopRef.current = false;
     try {
       // Stop any ongoing speech first
       if (synthRef.current.speaking) {
@@ -176,7 +188,7 @@ export default function VoiceManager({
   // Stop listening
   const stopListening = () => {
     if (!isSupported || !isListening) return;
-
+    isIntentionalStopRef.current = true;
     try {
       recognitionRef.current.stop();
     } catch (error) {
