@@ -255,14 +255,16 @@ export default function AgentDemo() {
     }
   }, [voiceActiveForElement]);
 
-  // Auto-speak AI responses
-  useEffect(() => {
-    if (autoSpeak && showAIResponse && currentAIResponse) {
-      setTimeout(() => {
-        voiceUtils.speak(currentAIResponse);
-      }, 500);
-    }
-  }, [showAIResponse, currentAIResponse, autoSpeak]);
+// Auto-speak AI responses - VERSIONE INTEGRATA
+useEffect(() => {
+  // Se l'opzione è attiva e l'overlay appare con una nuova risposta...
+  if (autoSpeak && showAIResponse && currentAIResponse) {
+    // ...attendi un istante e poi avvia la riproduzione TRAMITE il nostro sistema di controllo.
+    setTimeout(() => {
+      handleRepeatOrStop({ content: currentAIResponse, timestamp: 'overlay_response' });
+    }, 500);
+  }
+}, [showAIResponse, currentAIResponse, autoSpeak]); // Le dipendenze rimangono le stesse
 
   // Cleanup animation frame on unmount
   useEffect(() => {
@@ -835,6 +837,7 @@ const reinitializeAllCanvases = useCallback(() => {
   const closeAIResponse = () => {
     setShowAIResponse(false);
     setCurrentAIResponse('');
+    voiceUtils.stopSpeaking();
   };
 
   // Helper functions
@@ -1206,7 +1209,7 @@ const reinitializeAllCanvases = useCallback(() => {
                   className={styles.repeatButton}
                   onClick={() => handleRepeatOrStop({ content: currentAIResponse, timestamp: 'overlay_response' })}
                 >
-                  {speakingMessageId === 'overlay_response' ? <VolumeX size={12} /> : 'R'}
+                  {speakingMessageId === 'overlay_response' ? <X size={12} /> : 'R'}
                 </button>
               )}
             </div>
