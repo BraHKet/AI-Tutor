@@ -147,33 +147,9 @@
   color: #374151;
 }
 
-/* Stili per il pulsante Impostazioni */
-.settingsContainer {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.iconButton {
-  background: none;
-  border: none;
-  color: #4b5563;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.2s;
-}
-
-.iconButton:hover {
-  background-color: #f0f0f0;
-}
-
 /** 
- * Stili per il Menu Impostazioni (Versione Migliorata)
- * Design pulito, sottomenu a sinistra e controlli stilizzati.
+ * Stili per il Menu Impostazioni (Versione Finale)
+ * Layout migliorato, sottomenu a sinistra e sezioni a tendina.
  */
 
 /* === Contenitore Principale del Menu === */
@@ -181,11 +157,11 @@
   position: absolute;
   top: 60px;
   right: 20px;
-  width: 280px; /* Più compatto e moderno */
+  width: 300px; /* AUMENTATA LARGHEZZA */
   background-color: #ffffff;
-  border-radius: 12px; /* Angoli più arrotondati */
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); /* Ombra più morbida */
-  border: 1px solid #f0f0f0; /* Bordo quasi invisibile */
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border: 1px solid #f0f0f0;
   z-index: 1000;
   display: flex;
   flex-direction: column;
@@ -201,192 +177,118 @@
   border-bottom: 1px solid #eeeeee;
   flex-shrink: 0;
 }
-
 .settingsTitle {
   font-size: 16px;
   font-weight: 600;
   color: #111827;
   margin: 0;
 }
-
 .closeSettingsButton {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #6b7280;
-  padding: 6px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.2s ease;
+  background: none; border: none; cursor: pointer; color: #6b7280;
+  padding: 6px; border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; transition: background-color 0.2s ease;
 }
-.closeSettingsButton:hover {
-  background-color: #f3f4f6;
-}
+.closeSettingsButton:hover { background-color: #f3f4f6; }
 
 /* === Corpo Principale del Menu === */
 .settingsContent {
-  padding: 8px; /* Padding interno per tutte le sezioni */
+  padding: 8px;
 }
 
-/* === Elemento di Menu Hoverabile (es. "Scegli Voce") === */
+/* === Stile generico per un elemento cliccabile del menu === */
 .settingsMenuItem {
-  position: relative; /* FONDAMENTALE per posizionare il sottomenu */
+  position: relative;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  width: 100%;
   padding: 10px;
   border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
   color: #374151;
   transition: background-color 0.2s ease;
+  user-select: none; /* Impedisce la selezione del testo */
 }
-.settingsMenuItem:hover {
-  background-color: #f3f4f6;
-}
-.settingsMenuItem span:last-child {
-  font-size: 18px; /* Rende la freccia ">" più visibile */
-  color: #9ca3af;
+.settingsMenuItem:hover { background-color: #f3f4f6; }
+.settingsMenuItem span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 8px; /* Spazio tra icona e testo */
 }
 
-/* === Contenitore del Sottomenu (Logica di Posizionamento) === */
+/* === Sottomenu e Logica di Posizionamento === */
 .submenuContainer {
   position: absolute;
-  top: 0;
-  /* CHIAVE: si posiziona a sinistra del suo genitore */
-  right: 100%; 
-  margin-right: 8px; /* Crea uno spazio tra i due menu */
+  top: -8px; /* Allinea il sottomenu con l'inizio del .settingsContent */
+  right: calc(100% + 8px); /* Posiziona a sinistra con 8px di spazio */
   z-index: 1100;
-  /* Animazione di apparizione (opzionale ma consigliata) */
   animation: fadeIn 0.2s ease-out;
 }
 
-/* === Lista delle Voci nel Sottomenu === */
+/* === Lista delle Voci (dentro il sottomenu) === */
 .voiceList {
-  width: 320px;
-  max-height: 400px;
-  overflow-y: auto;
-  background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  border: 1px solid #f0f0f0;
-  padding: 8px;
+  width: 320px; max-height: 400px; overflow-y: auto; background-color: white;
+  border-radius: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border: 1px solid #f0f0f0; padding: 8px;
 }
-
-/* === Singolo Elemento nella Lista Voci === */
 .voiceItem {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  color: #374151;
-  transition: background-color 0.2s ease;
-  position: relative;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 12px; border-radius: 6px; cursor: pointer;
+  font-size: 14px; color: #374151; transition: background-color 0.2s ease;
 }
-.voiceItem:hover {
-  background-color: #f3f4f6;
-}
-
+.voiceItem:hover { background-color: #f3f4f6; }
 .voiceItemSelected {
-  background-color: #eef2ff; /* Indaco chiaro */
-  color: #4338ca; /* Indaco scuro */
-  font-weight: 500;
+  background-color: #eef2ff; color: #4338ca; font-weight: 500;
 }
-/* Aggiunge un'icona di spunta all'elemento selezionato per chiarezza */
 .voiceItemSelected::before {
-  content: '✔';
-  margin-right: 12px;
-  font-size: 12px;
-  color: #4f46e5;
+  content: '✔'; margin-right: 12px; font-size: 12px; color: #4f46e5;
 }
-
-.voiceName {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  padding-right: 10px;
-}
-
+.voiceName { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 10px; }
 .voiceLang {
-  font-size: 12px;
-  color: #6b7280;
-  background-color: #e5e7eb;
-  padding: 2px 6px;
-  border-radius: 4px;
-  flex-shrink: 0;
+  font-size: 12px; color: #6b7280; background-color: #e5e7eb;
+  padding: 2px 6px; border-radius: 4px; flex-shrink: 0;
 }
 
-/* === Sezione per gli Slider (Velocità, Tono) === */
-.sliderSection {
-  padding-top: 12px;
-  margin-top: 8px;
+/* === Stili per la Sezione a Tendina (Accordion) === */
+.accordionItem {
   border-top: 1px solid #eeeeee;
+  margin-top: 8px;
+  padding-top: 8px;
+}
+.accordionContent {
+  padding: 12px 4px 4px 4px; /* Padding per gli slider */
+  animation: slideDown 0.3s ease-out;
+}
+.menuItemChevron {
+  font-size: 18px;
+  color: #9ca3af;
+  transition: transform 0.3s ease;
+}
+.chevronOpen {
+  transform: rotate(90deg);
 }
 
-.sliderContainer {
-  padding: 0 4px;
-}
-.sliderContainer:not(:last-child) {
-  margin-bottom: 16px;
-}
-
-.sliderLabel {
-  display: block;
-  font-size: 14px;
-  margin-bottom: 10px;
-  color: #374151;
-}
-
-/* Stile Personalizzato per gli Input Range (Slider) */
+/* === Stili per gli Slider === */
+.sliderContainer:not(:last-child) { margin-bottom: 16px; }
+.sliderLabel { display: block; font-size: 14px; margin-bottom: 10px; color: #374151; }
 input[type=range].sliderInput {
-  -webkit-appearance: none;
-  width: 100%;
-  height: 6px;
-  background: #e5e7eb;
-  border-radius: 5px;
-  outline: none;
-  opacity: 0.7;
-  transition: opacity .2s;
+  -webkit-appearance: none; width: 100%; height: 6px; background: #e5e7eb;
+  border-radius: 5px; outline: none; transition: opacity .2s;
 }
-input[type=range].sliderInput:hover {
-  opacity: 1;
-}
+input[type=range].sliderInput:hover { opacity: 1; }
 input[type=range].sliderInput::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 16px;
-  height: 16px;
-  background: #4f46e5; /* Indaco */
-  border-radius: 50%;
-  cursor: pointer;
+  -webkit-appearance: none; appearance: none; width: 16px; height: 16px;
+  background: #4f46e5; border-radius: 50%; cursor: pointer;
 }
 input[type=range].sliderInput::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
-  background: #4f46e5;
-  border-radius: 50%;
-  cursor: pointer;
+  width: 16px; height: 16px; background: #4f46e5;
+  border-radius: 50%; cursor: pointer;
 }
 
-/* Stile Personalizzato per la Scrollbar della Lista Voci */
-.voiceList::-webkit-scrollbar {
-  width: 6px;
-}
-.voiceList::-webkit-scrollbar-track {
-  background: transparent;
-}
-.voiceList::-webkit-scrollbar-thumb {
-  background-color: #d1d5db;
-  border-radius: 10px;
-}
-
-/* Animazione di Fade-in per il sottomenu */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateX(10px); }
-  to { opacity: 1; transform: translateX(0); }
+/* === Animazioni === */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); max-height: 0; }
+  to { opacity: 1; transform: translateY(0); max-height: 200px; }
 }
