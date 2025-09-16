@@ -26,6 +26,7 @@ import canvasStyles from './styles/canvas.module.css';
 import overlaysStyles from './styles/overlays.module.css';
 import legacyStyles from './styles/legacy.module.css';
 import responsiveStyles from './styles/responsive.module.css';
+import CustomCursor from './CustomCursor';
 
 // Combina tutti gli stili in un unico oggetto per mantenere la compatibilità
 const styles = {
@@ -99,6 +100,11 @@ export default function AgentDemo() {
 
   const [showVoiceProperties, setShowVoiceProperties] = useState(false);
 
+  const [cursorState, setCursorState] = useState({
+  visible: false,
+  position: { x: 0, y: 0 }
+  });
+
   // AI Response states
   const [showAIResponse, setShowAIResponse] = useState(false);
   const [currentAIResponse, setCurrentAIResponse] = useState('');
@@ -128,6 +134,35 @@ export default function AgentDemo() {
     };
     init();
   }, []);
+
+    // useEffect per tracciare la posizione del mouse
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      setCursorState(prev => ({
+        ...prev,
+        position: { x: e.clientX, y: e.clientY }
+      }));
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, []);
+
+  // useEffect per nascondere il cursore di default quando il nostro è attivo
+  useEffect(() => {
+    if (cursorState.visible) {
+      document.body.style.cursor = 'none';
+    } else {
+      document.body.style.cursor = 'auto';
+    }
+
+    // Funzione di pulizia per ripristinare il cursore se il componente viene smontato
+    return () => {
+      document.body.style.cursor = 'auto';
+    };
+  }, [cursorState.visible]);
 
 
   useEffect(() => {
@@ -404,18 +439,21 @@ const reinitializeAllCanvases = useCallback(() => {
 
   // Gestisce il ritardo per l'anteprima vocale
   const handleVoicePreviewEnter = (voice) => {
-    // Cancella qualsiasi anteprima precedente in attesa
+    setCursorState(prev => ({ ...prev, visible: true })); // <-- MOSTRA IL CURSORE
+    
     if (voicePreviewTimeout.current) {
       clearTimeout(voicePreviewTimeout.current);
     }
-    // Imposta una nuova anteprima dopo 2 secondi
     voicePreviewTimeout.current = setTimeout(() => {
       voiceUtils.speak(`Ciao, questa è una prova della mia voce.`, { voice: voice });
+      setCursorState(prev => ({ ...prev, visible: false })); // <-- NASCONDI DOPO 1 SEC
     }, 1000);
   };
 
   // Annulla l'anteprima se il mouse esce prima dei 2 secondi
-  const handleVoicePreviewLeave = () => {
+    const handleVoicePreviewLeave = () => {
+    setCursorState(prev => ({ ...prev, visible: false })); // <-- NASCONDI SUBITO
+    
     if (voicePreviewTimeout.current) {
       clearTimeout(voicePreviewTimeout.current);
     }
@@ -429,6 +467,7 @@ const reinitializeAllCanvases = useCallback(() => {
       if (window.voiceManager) {
         window.voiceManager.changeSelectedVoice(voiceName);
       }
+      setCursorState(prev => ({ ...prev, visible: false }));
       // Salva la nuova voce insieme alle impostazioni correnti
       saveVoiceSettings({ ...speechSettings, voiceName: voice.name });
       setShowSettings(false);
@@ -801,6 +840,9 @@ const reinitializeAllCanvases = useCallback(() => {
   }
 
   return (
+    <>
+      {/* Renderizza il cursore personalizzato se è visibile */}
+      {cursorState.visible && <CustomCursor position={cursorState.position} />}
     <div className={styles.container}>
       <VoiceManager
         onTranscriptUpdate={handleTranscriptUpdate}
@@ -1224,5 +1266,7 @@ const reinitializeAllCanvases = useCallback(() => {
         </div>
       )}
     </div>
+    </>
   );
+  
 }

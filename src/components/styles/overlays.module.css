@@ -292,3 +292,30 @@ input[type=range].sliderInput::-moz-range-thumb {
   from { opacity: 0; transform: translateY(-10px); max-height: 0; }
   to { opacity: 1; transform: translateY(0); max-height: 200px; }
 }
+
+/** 
+ * Stili per il Cursore Personalizzato con Caricamento
+ */
+
+.customCursor {
+  position: fixed; /* Sempre relativo alla finestra */
+  z-index: 9999;   /* Sopra a tutto */
+  pointer-events: none; /* Non deve interferire con click o hover */
+  transform: translate(-50%, -50%); /* Centra l'SVG sulla punta del mouse */
+}
+
+.progressCircle {
+  transform-origin: center;
+  transform: rotate(-90deg); /* Fa partire l'animazione dall'alto */
+  /* L'animazione chiave per "riempire" il cerchio */
+  animation: fillCircleAnimation 1s linear forwards;
+}
+
+@keyframes fillCircleAnimation {
+  from {
+    stroke-dashoffset: 88; /* Valore calcolato (2 * PI * 14) */
+  }
+  to {
+    stroke-dashoffset: 0;  /* "Riempito" */
+  }
+}
