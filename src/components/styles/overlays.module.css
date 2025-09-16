@@ -319,3 +319,50 @@ input[type=range].sliderInput::-moz-range-thumb {
     stroke-dashoffset: 0;  /* "Riempito" */
   }
 }
+
+/** 
+ * Stili per il Pulsante Repeat/Stop ("R")
+ */
+
+/* Rende il contenitore del titolo flex per allineare il pulsante */
+.professorSpeaker, .aiResponseTitle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.repeatButton {
+  background-color: #f3f4f6; /* Grigio chiaro */
+  border: 1px solid #e5e7eb; /* Bordo sottile */
+  color: #4b5563; /* Grigio scuro */
+  font-weight: bold;
+  font-size: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  
+  /* Dimensioni e forma */
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  
+  /* Allineamento */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0; /* Impedisce al pulsante di rimpicciolirsi */
+  
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.repeatButton:hover {
+  background-color: #e5e7eb;
+  border-color: #d1d5db;
+}
+
+/* Stile quando è attivo (in riproduzione) */
+.repeatButton:active, 
+.repeatButton:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.5); /* Anello di focus indaco */
+}

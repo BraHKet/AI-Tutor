@@ -10,7 +10,7 @@ import { PhysicsAgent } from '../agents/PhysicsAgent';
 import VoiceManager, { voiceUtils } from './VoiceManager';
 import { 
   Bot, FileText, MessageSquare, Send, Trash2, 
-  History, Mic, X, Volume2, Edit3, Plus, Type, MicOff, Settings 
+  History, Mic, X, Volume2, Edit3, Plus, Type, MicOff, Settings, VolumeX 
 } from 'lucide-react';
 import { usePdf } from "../context/PdfContext";
 import SimpleLoading from './SimpleLoading';
@@ -84,6 +84,8 @@ export default function AgentDemo() {
   const [currentTranscript, setCurrentTranscript] = useState('');
   const [voiceState, setVoiceState] = useState({ isListening: false, isSpeaking: false });
 
+  const [speakingMessageId, setSpeakingMessageId] = useState(null);
+
   // Stati per il menu impostazioni e la selezione vocale
   const [showSettings, setShowSettings] = useState(false);
   const [availableVoices, setAvailableVoices] = useState([]);
@@ -134,6 +136,14 @@ export default function AgentDemo() {
     };
     init();
   }, []);
+
+
+  // Resetta l'ID del messaggio quando la sintesi vocale si ferma per qualsiasi motivo.
+  useEffect(() => {
+    if (!voiceState.isSpeaking && speakingMessageId !== null) {
+      setSpeakingMessageId(null);
+    }
+  }, [voiceState.isSpeaking]);
 
     // useEffect per tracciare la posizione del mouse
   useEffect(() => {
@@ -485,6 +495,23 @@ const reinitializeAllCanvases = useCallback(() => {
     }
     // Salva le nuove impostazioni insieme alla voce corrente
     saveVoiceSettings({ ...newSettings, voiceName: selectedVoice?.name });
+  };
+
+  // Gestisce l'avvio e lo stop della riproduzione per un messaggio specifico.
+  const handleRepeatOrStop = (message) => {
+    // Usiamo il timestamp come ID univoco del messaggio
+    const messageId = message.timestamp;
+
+    // Caso 1: Clicco sul pulsante del messaggio GIÀ in riproduzione -> FERMA
+    if (speakingMessageId === messageId) {
+      voiceUtils.stopSpeaking();
+      // L'useEffect si occuperà di settare speakingMessageId a null
+    } 
+    // Caso 2: Clicco su un pulsante diverso (o nessuno sta parlando) -> AVVIA
+    else {
+      setSpeakingMessageId(messageId);
+      voiceUtils.speak(message.content);
+    }
   };
 
   // Hook per chiudere il menu se si clicca all'esterno
@@ -930,6 +957,15 @@ const reinitializeAllCanvases = useCallback(() => {
                     {turn.speaker === 'professor' ? '🎓 Professor' : '👨‍🎓 Student'}
                     {turn.image && ' 🎨'}
                   </div>
+
+                  {turn.speaker === 'professor' && (
+                      <button 
+                        className={styles.repeatButton}
+                        onClick={() => handleRepeatOrStop(turn)}
+                      >
+                        {speakingMessageId === turn.timestamp ? <VolumeX size={12} /> : 'R'}
+                      </button>
+                    )}
                   
                   <div className={styles.turnContent}>
                     {turn.content}
@@ -1163,12 +1199,12 @@ const reinitializeAllCanvases = useCallback(() => {
           <div className={styles.aiResponseHeader}>
             <div className={styles.aiResponseTitle}>
               🎓 Professor Response
-              {voiceEnabled && autoSpeak && (
+              {voiceEnabled && (
                 <button
-                  onClick={() => voiceUtils.speak(currentAIResponse)}
                   className={styles.repeatButton}
+                  onClick={() => handleRepeatOrStop({ content: currentAIResponse, timestamp: 'overlay_response' })}
                 >
-                  🔊 Repeat
+                  {speakingMessageId === 'overlay_response' ? <VolumeX size={12} /> : 'R'}
                 </button>
               )}
             </div>
