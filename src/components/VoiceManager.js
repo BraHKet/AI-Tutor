@@ -171,7 +171,7 @@ export default function VoiceManager({
         const reader = new FileReader();
         reader.readAsDataURL(audioBlob);
         reader.onloadend = async () => {
-          const base64Audio = reader.result.split(',')[1];
+          const base64Audio = reader.result.split(',')[1]; 
 
           // 5. Invia all'API serverless
           try {
