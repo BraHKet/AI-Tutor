@@ -1,38 +1,45 @@
-/* ==========================================
-// FILE: controls.module.css (FINALE - Stile OneNote)
-// ========================================== */
+/* ===================================================================
+// FILE: controls.module.css (DEFINITIVO - Corregge il layout verticale)
+// =================================================================== */
 
 .drawingToolsCompact {
-  display: flex; /* <-- ECCO LA REGOLA CHIAVE CHE FORZA L'ORIZZONTALITÀ */
+  display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px; /* Spazio tra i pulsanti e gli elementi */
 }
 
-/* LA REGOLA PIÙ IMPORTANTE: Rende i bottoni stessi dei contenitori flex */
+/* ===================================================================
+// QUESTA È LA REGOLA CHIAVE CHE RISOLVE TUTTO
+// Rende i bottoni stessi dei contenitori flex orizzontali.
+// =================================================================== */
 .toolButtonActive, .toolButtonInactive {
-  display: flex;
-  flex-direction: row; /* Assicura che icona e testo siano in riga */
-  align-items: center;
-  gap: 8px;
+  display: flex;         /* <-- Tratta il contenuto del bottone come flex */
+  flex-direction: row;   /* <-- Allinea il contenuto (icona e testo) in una riga */
+  align-items: center;   /* <-- Centra verticalmente icona e testo */
+  gap: 8px;              /* <-- Spazio tra icona e testo */
+  
+  /* Stili estetici */
   background-color: transparent;
-  border: none;
+  border: 1px solid transparent;
   border-radius: 6px;
   padding: 8px 12px;
   cursor: pointer;
-  transition: background-color 0.2s ease-in-out;
+  transition: all 0.2s ease-in-out;
   font-size: 14px;
   font-weight: 500;
   color: #374151;
-  white-space: nowrap;
+  white-space: nowrap; /* Impedisce al testo di andare a capo */
 }
 
 .toolButtonInactive:hover {
-  background-color: #e5e7eb;
+  background-color: #f3f4f6; /* Sfondo grigio chiaro al passaggio */
+  border-color: #e5e7eb;
 }
 
 .toolButtonActive {
-  background-color: #e0e7ff; /* Azzurro/Viola chiaro */
-  color: #3730a3;
+  background-color: #eef2ff; /* Viola/Blu molto chiaro per l'elemento attivo */
+  color: #4338ca;
+  border-color: #c7d2fe;
 }
 
 /* Stile per il selettore del colore */
@@ -41,24 +48,23 @@
   width: 28px;
   height: 28px;
   padding: 0;
-  border: 2px solid transparent;
   border-radius: 50%;
   cursor: pointer;
   background-color: transparent;
-  transition: all 0.2s;
-  margin: 0 8px;
+  transition: transform 0.2s;
+  border: 2px solid #e5e7eb;
+  margin: 0 4px; /* Un po' di respiro */
 }
 .colorPickerCompact:hover {
-  border-color: #9ca3af;
+  transform: scale(1.1);
 }
-.colorPickerCompact::-webkit-color-swatch { border-radius: 50%; border: 2px solid #d1d5db; }
-.colorPickerCompact::-moz-color-swatch { border-radius: 50%; border: 2px solid #d1d5db; }
+.colorPickerCompact::-webkit-color-swatch { border-radius: 50%; }
+.colorPickerCompact::-moz-color-swatch { border-radius: 50%; }
 
 /* Stile per lo slider dello spessore */
 .strokeSliderCompact {
   width: 100px;
   cursor: pointer;
-  margin-left: 4px;
 }
 
 /* Stili per il pulsante di invio */
@@ -75,12 +81,12 @@
 }
 
 .sendButtonActive {
-  background: #16a34a; /* Verde più deciso */
+  background: #16a34a;
   color: white;
 }
 .sendButtonActive:hover {
   background: #15803d;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .sendButtonDisabled {
@@ -89,22 +95,22 @@
   cursor: not-allowed;
 }
 
-/* ==========================================
-// SEZIONE RESPONSIVE
-// ========================================== */
 
-/* Sotto i 1024px, nascondiamo il testo degli strumenti */
-@media (max-width: 1024px) {
+/* ==========================================
+// SEZIONE RESPONSIVE (Migliorata)
+// ========================================== */
+@media (max-width: 1200px) {
+  /* Nasconde il testo quando c'è un po' meno spazio */
   .toolButtonActive span, .toolButtonInactive span {
     display: none;
   }
   .toolButtonActive, .toolButtonInactive {
-    padding: 8px;
+    padding: 8px; /* Rende i bottoni quadrati e compatti */
   }
   .sendButtonActive span, .sendButtonDisabled span {
       display: none;
   }
    .sendButtonActive, .sendButtonDisabled {
-    padding: 8px;
+    padding: 8px 12px;
   }
 }
