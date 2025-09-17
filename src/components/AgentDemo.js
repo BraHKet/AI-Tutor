@@ -916,7 +916,7 @@ useEffect(() => {
       {/* Renderizza il cursore personalizzato se è visibile */}
       {cursorState.visible && (
       <CustomCursor 
-        key={cursorState.animationKey} // <-- AGGIUNGI QUESTA RIGA
+        key={cursorState.animationKey}
         position={cursorState.position} 
       />
     )}
@@ -924,58 +924,111 @@ useEffect(() => {
       <VoiceManager
         onTranscriptUpdate={handleTranscriptUpdate}
         onStateChange={setVoiceState}
-        onVoicesLoaded={setAvailableVoices} // <-- AGGIUNGI QUESTA RIGA
-        onVoiceChange={setSelectedVoice}   // <-- AGGIUNGI QUESTA RIGA
+        onVoicesLoaded={setAvailableVoices}
+        onVoiceChange={setSelectedVoice}
         showUI={false}
         disabled={isProcessing}
       />
-      {/* Header */}
-      <div className={styles.header}>
-        <div className={styles.headerLeft}>
-          <button onClick={handleLogout} className={styles.backButton}>
-            ← Logout
-          </button>
-          <button onClick={() => navigate("/setpdf")}  className={styles.backButton}>
-            New Pdf
-          </button>
-          
-          <h1 className={styles.title}>
-            <Bot size={20} />
-            AI Exam
-          </h1>
-        </div>
 
-        <div className={styles.headerRight}>
-          {examStarted && (
-            <div className={styles.progressBadge}>
-              {progress.covered}/{progress.total} ({progress.percentage}%)
-            </div>
-          )}
+      {/* ================================================================== */}
+      {/* ========= INIZIO DELLA NUOVA STRUTTURA ORGANIZZATIVA ============= */}
+      {/* ================================================================== */}
 
-          <button
-            onClick={() => setShowHistory(!showHistory)}
-            className={showHistory ? styles.historyButtonActive : styles.historyButtonInactive}
-          >
-            <History size={16} />
-            History
-          </button>
-
-
-          <div className={styles.settingsContainer}>
-            <button
-              onClick={() => setShowSettings(prev => !prev)}
-              className={styles.iconButton}
-            >
-              <Settings size={20} />
+      <div className={styles.stickyHeaderWrapper}>
+        <div className={styles.header}>
+          <div className={styles.headerLeft}>
+            <button onClick={handleLogout} className={styles.backButton}>
+              ← Logout
             </button>
+            <button onClick={() => navigate("/setpdf")}  className={styles.backButton}>
+              New Pdf
+            </button>
+            <h1 className={styles.title}>
+              <Bot size={20} />
+              AI Exam
+            </h1>
+          </div>
+          
+          <div className={styles.headerCenter}>
+            {activeCanvasId && (
+              <div className={styles.drawingToolsCompact}>
+                <button
+                  onClick={() => setCurrentTool('pointer')}
+                  className={currentTool === 'pointer' ? styles.toolButtonActive : styles.toolButtonInactive}
+                >
+                  👆
+                </button>
+                <button
+                  onClick={() => setCurrentTool('pen')}
+                  className={currentTool === 'pen' ? styles.toolButtonActive : styles.toolButtonInactive}
+                >
+                  ✏️
+                </button>
+                <button
+                  onClick={() => setCurrentTool('eraser')}
+                  className={currentTool === 'eraser' ? styles.toolButtonActive : styles.toolButtonInactive}
+                >
+                  🗑️
+                </button>
+                <input
+                  type="color"
+                  value={strokeColor}
+                  onChange={(e) => setStrokeColor(e.target.value)}
+                  className={styles.colorPickerCompact}
+                />
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  value={strokeWidth}
+                  onChange={(e) => setStrokeWidth(parseInt(e.target.value))}
+                  className={styles.strokeSliderCompact}
+                />
+              </div>
+            )}
+          </div>
+
+          <div className={styles.headerRight}>
+            {examStarted && (
+              <div className={styles.progressBadge}>
+                {progress.covered}/{progress.total} ({progress.percentage}%)
+              </div>
+            )}
+            <button
+              onClick={() => setShowHistory(!showHistory)}
+              className={showHistory ? styles.historyButtonActive : styles.historyButtonInactive}
+            >
+              <History size={16} />
+              History
+            </button>
+            <button
+              onClick={sendSequentialContent}
+              disabled={isProcessing || !hasContent()}
+              className={hasContent() ? styles.sendButtonActive : styles.sendButtonDisabled}
+            >
+              <Send size={14} />
+              Send Response
+            </button>
+            <div className={styles.settingsContainer}>
+              <button
+                onClick={() => setShowSettings(prev => !prev)}
+                className={styles.iconButton}
+              >
+                <Settings size={20} />
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Status Bar */}
-      <div className={getStatusClass()}>
-        <strong>Status:</strong> {status}
+        <div className={getStatusClass()}>
+          <strong>Status:</strong> {status}
+        </div>
       </div>
+      
+      {/* ================================================================== */}
+      {/* ========= FINE DELLA NUOVA STRUTTURA ORGANIZZATIVA =============== */}
+      {/* ================================================================== */}
+
 
       {/* Main Content Area */}
       <div className={styles.mainContent}>
@@ -1037,64 +1090,6 @@ useEffect(() => {
           {/* Sequential Response System */}
           {examStarted && !isComplete && (
             <div className={styles.sequentialWorkspace}>
-              
-                            {/* MODIFICA QUI: Toolbar di controllo principale con solo Clear e Send, e drawing tools */}
-              <div className={styles.controlsBar}> {/* Ho rinominato la classe per chiarezza */}
-                
-                {/* Drawing Tools (showed only when there's an active canvas) */}
-                {activeCanvasId && (
-                  <div className={styles.drawingToolsCompact}>
-                    <button
-                      onClick={() => setCurrentTool('pointer')} // Aggiunto un tool per "pointer"
-                      className={currentTool === 'pointer' ? styles.toolButtonActive : styles.toolButtonInactive}
-                    >
-                      👆
-                    </button>
-                    <button
-                      onClick={() => setCurrentTool('pen')}
-                      className={currentTool === 'pen' ? styles.toolButtonActive : styles.toolButtonInactive}
-                    >
-                      ✏️
-                    </button>
-
-                    <button
-                      onClick={() => setCurrentTool('eraser')}
-                      className={currentTool === 'eraser' ? styles.toolButtonActive : styles.toolButtonInactive}
-                    >
-                      🗑️
-                    </button>
-
-                    <input
-                      type="color"
-                      value={strokeColor}
-                      onChange={(e) => setStrokeColor(e.target.value)}
-                      className={styles.colorPickerCompact}
-                    />
-
-                    <input
-                      type="range"
-                      min="1"
-                      max="10"
-                      value={strokeWidth}
-                      onChange={(e) => setStrokeWidth(parseInt(e.target.value))}
-                      className={styles.strokeSliderCompact}
-                    />
-                  </div>
-                )}
-
-                <div className={styles.actionButtonsRight}>
-                  
-
-                  <button
-                    onClick={sendSequentialContent}
-                    disabled={isProcessing || !hasContent()}
-                    className={hasContent() ? styles.sendButtonActive : styles.sendButtonDisabled}
-                  >
-                    <Send size={14} />
-                    Send Response
-                  </button>
-                </div>
-              </div>
 
               {/* Sequential Elements List */}
               <div className={styles.sequentialElementsList}>
@@ -1115,48 +1110,48 @@ useEffect(() => {
                       </span>
                       
                       
-<div className={styles.elementControls}>
-  {element.type === 'text' && voiceEnabled && (
-    <> {/* Aggiunto un Fragment per contenere sia l'indicatore che il pulsante */}
-      
-      {/* NUOVO: Questo è il punto rosso lampeggiante */}
-      {voiceState.isListening && voiceActiveForElement === element.id && (
-        <div className={styles.recordingIndicator} title="Registrazione attiva..."></div>
-      )}
+                        <div className={styles.elementControls}>
+                          {element.type === 'text' && voiceEnabled && (
+                            <> {/* Aggiunto un Fragment per contenere sia l'indicatore che il pulsante */}
+                              
+                              {/* NUOVO: Questo è il punto rosso lampeggiante */}
+                              {voiceState.isListening && voiceActiveForElement === element.id && (
+                                <div className={styles.recordingIndicator} title="Registrazione attiva..."></div>
+                              )}
 
-      {/* Il pulsante del microfono rimane quasi identico */}
-      <button
-        onClick={() => handleMicClick(element.id)}
-        className={
-          (voiceState.isListening && voiceActiveForElement === element.id) 
-            ? styles.voiceControlActive 
-            : styles.voiceControlInactive
-        }
-      >
-        {(voiceState.isListening && voiceActiveForElement === element.id) 
-          ? <MicOff size={12} /> 
-          : <Mic size={12} />
-        }
-      </button>
-    </>
-  )}
-  
-  {element.type === 'drawing' && (
-    <button
-      onClick={() => clearElementCanvas(element.id)}
-      className={styles.clearCanvasButton}
-    >
-      Clear
-    </button>
-  )}
-  
-  <button
-    onClick={() => deleteElement(element.id)}
-    className={styles.deleteElementButton}
-  >
-    <X size={12} />
-  </button>
-</div>
+                              {/* Il pulsante del microfono rimane quasi identico */}
+                              <button
+                                onClick={() => handleMicClick(element.id)}
+                                className={
+                                  (voiceState.isListening && voiceActiveForElement === element.id) 
+                                    ? styles.voiceControlActive 
+                                    : styles.voiceControlInactive
+                                }
+                              >
+                                {(voiceState.isListening && voiceActiveForElement === element.id) 
+                                  ? <MicOff size={12} /> 
+                                  : <Mic size={12} />
+                                }
+                              </button>
+                            </>
+                          )}
+                          
+                          {element.type === 'drawing' && (
+                            <button
+                              onClick={() => clearElementCanvas(element.id)}
+                              className={styles.clearCanvasButton}
+                            >
+                              Clear
+                            </button>
+                          )}
+                          
+                          <button
+                            onClick={() => deleteElement(element.id)}
+                            className={styles.deleteElementButton}
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
 
                     </div>
 
@@ -1211,9 +1206,6 @@ useEffect(() => {
                 </button>
               </div>
 
-
-              {/* Voice Manager - POSIZIONATO MEGLIO */}
-              
             </div>
           )}
 
@@ -1335,8 +1327,6 @@ useEffect(() => {
                   </div>
                 </div>
               )}
-              {/* InitLast viene montato per ultimo */}
-      
             </div>
 
           </div>
@@ -1387,6 +1377,5 @@ useEffect(() => {
         />
     </>
   );
-  
 }
 
