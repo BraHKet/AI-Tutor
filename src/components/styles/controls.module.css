@@ -3,18 +3,18 @@
 // =================================================================== */
 
 .drawingToolsCompact {
-  display: flex !important;
-  flex-direction: row !important;
-  align-items: center !important;
-  gap: 8px !important;
-  flex-wrap: nowrap !important;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;      /* forza riga unica */
+  width: 100%;            /* prende tutto lo spazio disponibile */
+  overflow-x: auto;       /* se i bottoni non ci stanno, appare scroll orizzontale */
 }
 
 .drawingToolsCompact > * {
-  display: inline-flex !important; /* inline-flex evita che occupino tutta la larghezza */
-  width: auto !important;          /* annulla eventuali width fisse */
-  flex: 0 0 auto !important;       /* non si espandono */
-  margin: 0 !important;            /* reset margin globali */
+  flex: 0 0 auto;       /* non si espandono e restano in riga */
+  width: auto;
 }
 
 .toolButtonActive,
