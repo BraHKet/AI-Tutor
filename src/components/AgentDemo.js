@@ -10,7 +10,7 @@ import { PhysicsAgent } from '../agents/PhysicsAgent';
 import VoiceManager, { voiceUtils } from './VoiceManager';
 import { 
   Bot, FileText, MessageSquare, Send, Trash2, 
-  History, Mic, X, Volume2, Edit3, Plus, Type, MicOff, Settings, VolumeX 
+  History, Mic, X, Volume2, Edit3, Plus, Type, MicOff, Settings, VolumeX, MousePointer2
 } from 'lucide-react';
 import { usePdf } from "../context/PdfContext";
 import SimpleLoading from './SimpleLoading';
