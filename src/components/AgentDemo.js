@@ -957,21 +957,18 @@ useEffect(() => {
                   className={currentTool === 'pointer' ? styles.toolButtonActive : styles.toolButtonInactive}
                 >
                   <MousePointer2 size={18} />
-                    <span>Seleziona</span>
                 </button>
                 <button
                   onClick={() => setCurrentTool('pen')}
                   className={currentTool === 'pen' ? styles.toolButtonActive : styles.toolButtonInactive}
                 >
                   <Pen size={18} />
-                    <span>Disegna</span>
                 </button>
                 <button
                   onClick={() => setCurrentTool('eraser')}
                   className={currentTool === 'eraser' ? styles.toolButtonActive : styles.toolButtonInactive}
                 >
                   <Eraser size={18} />
-                    <span>Gomma</span>
                 </button>
                 <input
                   type="color"

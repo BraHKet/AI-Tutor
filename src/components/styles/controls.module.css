@@ -3,13 +3,17 @@
 // =================================================================== */
 
 .drawingToolsCompact {
-  display: flex;
-  flex-direction: row;   /* forza l’orizzontale */
-  align-items: center;
-  gap: 8px;
-  flex-wrap: nowrap;     /* evita che vadano a capo */
-  overflow-x: auto;      /* se ce ne sono troppi scroll orizzontale */
-  padding: 4px 0;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 8px !important;
+  flex-wrap: nowrap !important;
+}
+
+.drawingToolsCompact > * {
+  flex: 0 0 auto;      /* impedisce che si allarghino in verticale */
+  display: inline-flex; /* forza gli interni a comportarsi da inline-flex */
 }
 
 .toolButtonActive,
