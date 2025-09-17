@@ -67,26 +67,7 @@ export default function AgentDemo() {
   const [progress, setProgress] = useState({ covered: 0, total: 0, percentage: 0 });
   
   // Sequential Response states - NUOVO SISTEMA
-  const [sequentialElements, setSequentialElements] = useState(() => {
-    const initialTextId = Date.now();
-    const initialDrawingId = Date.now() + 1; // Assicura un ID unico
-
-    return [
-      {
-        id: initialTextId,
-        type: 'text',
-        content: '',
-        timestamp: new Date(initialTextId)
-      },
-      {
-        id: initialDrawingId,
-        type: 'drawing',
-        content: '',
-        canvasData: null,
-        timestamp: new Date(initialDrawingId)
-      }
-    ];
-  });
+  const [sequentialElements, setSequentialElements] = useState([]);
   const [activeElementId, setActiveElementId] = useState(null);
   const [currentTool, setCurrentTool] = useState('pointer'); // Solo per i canvas di disegno
   
@@ -918,57 +899,43 @@ useEffect(() => {
 
 
 
-  // useEffect per inizializzare il canvas iniziale
+  // useEffect per creare gli elementi iniziali dopo il primo render
 useEffect(() => {
-  // Trova l'elemento drawing iniziale
-  const initialDrawingElement = sequentialElements.find(el => el.type === 'drawing');
-  
-  if (initialDrawingElement && !activeCanvasId) {
-    // Imposta come attivo per mostrare i drawing tools
-    setActiveCanvasId(initialDrawingElement.id);
-    setActiveElementId(initialDrawingElement.id);
-    
-    // Inizializza il canvas con più tentativi
-    const tryInitialize = (attempts = 0) => {
-      if (attempts > 10) return; // Limita i tentativi
-      
-      const canvas = document.getElementById(`canvas-${initialDrawingElement.id}`);
-      if (canvas && canvas.parentElement) {
-        const rect = canvas.parentElement.getBoundingClientRect();
-        if (rect.width > 10) { // Se ha dimensioni valide
-  // Forza il ridimensionamento del canvas
-  const canvas = document.getElementById(`canvas-${initialDrawingElement.id}`);
-  if (canvas) {
-    const width = rect.width;
-    const height = 600; // FIXED_CANVAS_HEIGHT
-    
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
-    
-    const ctx = canvas.getContext('2d');
-    ctx.scale(dpr, dpr);
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-  }
-} else {
-  setTimeout(() => tryInitialize(attempts + 1), 100);
-}
-      } else {
-        setTimeout(() => tryInitialize(attempts + 1), 100);
+  // Crea gli elementi iniziali solo se l'array è vuoto
+  if (sequentialElements.length === 0) {
+    const initialTextId = Date.now();
+    const initialDrawingId = Date.now() + 1;
+
+    const initialElements = [
+      {
+        id: initialTextId,
+        type: 'text',
+        content: '',
+        timestamp: new Date(initialTextId)
+      },
+      {
+        id: initialDrawingId,
+        type: 'drawing',
+        content: '',
+        canvasData: null,
+        timestamp: new Date(initialDrawingId)
       }
-    };
+    ];
+
+    setSequentialElements(initialElements);
     
-    setTimeout(() => tryInitialize(), 500); // Inizia dopo 500ms
+    // Imposta il drawing come attivo dopo averlo creato
+    setTimeout(() => {
+      setActiveCanvasId(initialDrawingId);
+      setActiveElementId(initialDrawingId);
+      
+      // Inizializza il canvas dopo un altro piccolo ritardo
+      setTimeout(() => {
+        initializeElementCanvas(initialDrawingId);
+      }, 200);
+    }, 100);
   }
-}, [sequentialElements]); // Dipende da sequentialElements per reagire ai cambiamenti
-  
+}, []);
 
 
 
