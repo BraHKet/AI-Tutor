@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { usePdf } from "../context/PdfContext";
 import SimpleLoading from './SimpleLoading';
+import InitLast from "./InitLast";
 
 // Importa tutti i moduli CSS
 import layoutStyles from './styles/layout.module.css';
@@ -899,40 +900,6 @@ useEffect(() => {
 
 
 
- // effettua la creazione iniziale una sola volta
-useEffect(() => {
-  if (sequentialElements.length === 0) {
-    const initialTextId = Date.now();
-    const initialDrawingId = initialTextId + 1;
-
-    const initialElements = [
-      { id: initialTextId, type: 'text', content: '', timestamp: new Date(initialTextId) },
-      { id: initialDrawingId, type: 'drawing', content: '', canvasData: null, timestamp: new Date(initialDrawingId) }
-    ];
-
-    setSequentialElements(initialElements);
-  }
-}, []);
-
-// quando sequentialElements cambia, setta l'elemento attivo e inizializza il canvas
-useEffect(() => {
-  if (sequentialElements.length === 0) return;
-
-  const drawing = sequentialElements.find(e => e.type === 'drawing');
-  if (!drawing) return;
-
-  // imposta gli id attivi
-  setActiveCanvasId(drawing.id);
-  setActiveElementId(drawing.id);
-
-  // assicurati che il DOM sia aggiornato prima di inizializzare il canvas
-  // requestAnimationFrame è più affidabile di setTimeout per sincronizzarsi con il paint
-  requestAnimationFrame(() => {
-    initializeElementCanvas(drawing.id);
-  });
-}, [sequentialElements]);
-
-
 
   if (isAutoSetupInProgress) {
     return (
@@ -1375,6 +1342,31 @@ useEffect(() => {
                   </div>
                 </div>
               )}
+              {/* InitLast viene montato per ultimo */}
+      <InitLast
+        onInit={() => {
+          if (sequentialElements.length === 0) {
+            const initialTextId = Date.now();
+            const initialDrawingId = initialTextId + 1;
+
+            const initialElements = [
+              { id: initialTextId, type: "text", content: "", timestamp: new Date(initialTextId) },
+              { id: initialDrawingId, type: "drawing", content: "", canvasData: null, timestamp: new Date(initialDrawingId) }
+            ];
+
+            setSequentialElements(initialElements);
+
+            // imposto subito il drawing attivo
+            setActiveCanvasId(initialDrawingId);
+            setActiveElementId(initialDrawingId);
+
+            // inizializzo il canvas al frame successivo (DOM già pronto)
+            requestAnimationFrame(() => {
+              initializeElementCanvas(initialDrawingId);
+            });
+          }
+        }}
+      />
             </div>
 
           </div>
