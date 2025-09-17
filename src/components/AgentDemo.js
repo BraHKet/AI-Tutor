@@ -260,28 +260,32 @@ const reinitializeAllCanvases = useCallback(() => {
   // ====================================================================
   // INIZIO MODIFICA: Nuova funzione per gestire il click sul microfono
   // ====================================================================
-    const handleMicClick = (elementId) => {
+  const handleMicClick = (elementId) => {
     const isCurrentlyListeningForThis = voiceState.isListening && voiceActiveForElement === elementId;
 
     if (isCurrentlyListeningForThis) {
-      // Se sta già ascoltando, fermalo
+      // Se sta già ascoltando, fermalo. 
+      // La logica in handleTranscriptUpdate salverà l'ultimo frammento "finale".
+      // Se l'utente interrompe a metà, l'ultimo frammento parziale non verrà salvato con questo sistema.
+      // (Questo è spesso un comportamento desiderato per evitare testo incompleto)
       voiceUtils.stopListening();
-      baseTranscriptRef.current = ''; // Pulisci il riferimento
+      // Azzeriamo il riferimento, dato che la sessione di dettatura è terminata.
+      baseTranscriptRef.current = ''; 
     } else {
-      // Se un'altra registrazione è attiva, fermala prima
+      // Se un'altra registrazione è attiva, fermala prima.
       if (voiceState.isListening) {
         voiceUtils.stopListening();
       }
       
-      // LA MODIFICA CHIAVE: Salva il testo attuale prima di iniziare a dettare
+      // LA MODIFICA CHIAVE: Salva il testo attuale prima di iniziare a dettare.
       const currentElement = sequentialElements.find(el => el.id === elementId);
       baseTranscriptRef.current = currentElement ? currentElement.content : '';
 
-      // Avvia una nuova registrazione per questo elemento
+      // Avvia una nuova registrazione per questo elemento.
       setVoiceActiveForElement(elementId);
       setTimeout(() => voiceUtils.startListening(), 100);
     }
-  };
+};
 
 
   // Gestisce il ritardo per l'anteprima vocale
@@ -777,23 +781,31 @@ const reinitializeAllCanvases = useCallback(() => {
   const handleTranscriptUpdate = useCallback((transcript, isFinal) => {
   if (!voiceActiveForElement) return;
 
-  // Unisce il testo di base (già confermato) con la nuova trascrizione in corso.
-  // Aggiunge uno spazio solo se c'è già del testo di base.
-  const newContent = baseTranscriptRef.current 
-    ? baseTranscriptRef.current + ' ' + transcript 
-    : transcript;
+  // STEP 1: NON FARE NULLA IN TEMPO REALE
+  // La funzione non chiama più updateElementContent per ogni piccolo frammento.
+  // Non c'è nessun render continuo. L'UI rimane ferma mentre parli.
 
-  // Aggiorna il contenuto della textarea in tempo reale.
-  // Questo fornisce un feedback visivo immediato e fluido.
-  updateElementContent(voiceActiveForElement, newContent);
-
-  // Quando una frase viene riconosciuta come "finale" dal browser...
+  // STEP 2: AGISCI SOLO QUANDO UNA FRASE È COMPLETA
   if (isFinal) {
-    // ...aggiorniamo il nostro testo di base con il contenuto corrente.
-    // In questo modo, la prossima frase verrà aggiunta dopo questa.
-    baseTranscriptRef.current = newContent;
+    // Abbiamo ricevuto una trascrizione "finale" dal browser (di solito dopo una pausa).
+    
+    // a) Prepara il nuovo contenuto completo.
+    // Unisce il testo di base (già confermato) con la nuova trascrizione appena finalizzata.
+    // Aggiunge uno spazio solo se c'è già del testo di base.
+    const finalContent = baseTranscriptRef.current 
+      ? baseTranscriptRef.current + ' ' + transcript 
+      : transcript;
+
+    // b) ESEGUI IL RENDER - ORA E SOLO ORA
+    // Aggiorna lo stato una sola volta con il testo completo.
+    // Questo causerà il ri-render della textarea, che mostrerà di colpo la nuova frase.
+    updateElementContent(voiceActiveForElement, finalContent);
+
+    // c) AGGIORNA LA MEMORIA PER LA PROSSIMA FRASE
+    // Il nuovo testo completo diventa la base per la prossima dettatura.
+    baseTranscriptRef.current = finalContent;
   }
-}, [voiceActiveForElement, updateElementContent]); // Dipendenze ottimizzate
+}, [voiceActiveForElement, updateElementContent]);
 
 // Auto-speak AI responses - VERSIONE INTEGRATA
 useEffect(() => {
