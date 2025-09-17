@@ -268,7 +268,6 @@ const reinitializeAllCanvases = useCallback(() => {
       // Caso 1: L'utente ferma manualmente la registrazione.
       console.log(`[Mic] Stopping listener for element ID: ${elementId}`);
       voiceUtils.stopListening();
-      baseTranscriptRef.current = ''; // Resetta la base per la prossima sessione.
     
     } else {
       // Caso 2: L'utente avvia una nuova registrazione.
