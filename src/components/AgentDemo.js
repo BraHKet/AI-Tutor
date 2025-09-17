@@ -75,7 +75,7 @@ export default function AgentDemo() {
       {
         id: initialTextId,
         type: 'text',
-        content: 'I campi obbligatori per la configurazione del tuo esame sono i seguenti. Puoi modificarli o aggiungere nuovi elementi. \n\n Argomento principale: Fisica Classica \n Sotto-argomenti: Meccanica, Termodinamica, Onde',
+        content: '',
         timestamp: new Date(initialTextId)
       },
       {
@@ -1112,13 +1112,7 @@ useEffect(() => {
                 )}
 
                 <div className={styles.actionButtonsRight}>
-                  <button
-                    onClick={clearAllElements}
-                    className={styles.clearButton}
-                  >
-                    <Trash2 size={14} />
-                    Clear All
-                  </button>
+                  
 
                   <button
                     onClick={sendSequentialContent}

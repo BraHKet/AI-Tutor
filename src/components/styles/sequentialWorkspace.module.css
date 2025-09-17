@@ -329,7 +329,7 @@
 
 .addElementButton {
   background-color: var(--color-primary);
-  color: white;
+  color: rgb(0, 0, 0);
   border: none;
   padding: 10px 15px;
   border-radius: var(--border-radius-base);
