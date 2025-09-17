@@ -960,13 +960,6 @@ useEffect(() => {
             History
           </button>
 
-          <button
-            onClick={() => setVoiceEnabled(!voiceEnabled)}
-            className={voiceEnabled ? styles.voiceButtonEnabled : styles.voiceButtonDisabled}
-          >
-            <Volume2 size={16} />
-            {voiceEnabled ? 'Voice On' : 'Voice Off'}
-          </button>
 
           <div className={styles.settingsContainer}>
             <button
