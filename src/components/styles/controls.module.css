@@ -7,7 +7,7 @@
   flex-direction: row; /* <-- La riga fondamentale */
   align-items: center;
   gap: 8px;
-  flex-wrap: nowrap;
+  flex-wrap: nowrap; 
 }
 
 .drawingToolsCompact > * {
