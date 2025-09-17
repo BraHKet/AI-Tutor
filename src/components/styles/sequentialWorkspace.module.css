@@ -256,6 +256,9 @@
   background-color: var(--color-background-secondary);
   border-radius: var(--border-radius-base);
   overflow: hidden; /* Per gestire lo scroll interno */
+  height: 100vh; /* o l'altezza che preferisci */
+  overflow-y: auto; /* Permette lo scroll verticale */
+  padding-bottom: 80px; /* Spazio per i bottoni in fondo */
 }
 
 .controlsBar { /* Nuova classe per la toolbar superiore (prima era addElementsToolbar) */
