@@ -918,7 +918,36 @@ useEffect(() => {
 
 
 
+  // useEffect per inizializzare il canvas iniziale
+useEffect(() => {
+  // Trova l'elemento drawing iniziale
+  const initialDrawingElement = sequentialElements.find(el => el.type === 'drawing');
   
+  if (initialDrawingElement && !activeCanvasId) {
+    // Imposta come attivo per mostrare i drawing tools
+    setActiveCanvasId(initialDrawingElement.id);
+    setActiveElementId(initialDrawingElement.id);
+    
+    // Inizializza il canvas con più tentativi
+    const tryInitialize = (attempts = 0) => {
+      if (attempts > 10) return; // Limita i tentativi
+      
+      const canvas = document.getElementById(`canvas-${initialDrawingElement.id}`);
+      if (canvas && canvas.parentElement) {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        if (rect.width > 10) { // Se ha dimensioni valide
+          initializeElementCanvas(initialDrawingElement.id);
+        } else {
+          setTimeout(() => tryInitialize(attempts + 1), 100);
+        }
+      } else {
+        setTimeout(() => tryInitialize(attempts + 1), 100);
+      }
+    };
+    
+    setTimeout(() => tryInitialize(), 500); // Inizia dopo 500ms
+  }
+}, [sequentialElements]); // Dipende da sequentialElements per reagire ai cambiamenti
   
 
 
