@@ -1343,7 +1343,14 @@ useEffect(() => {
                 </div>
               )}
               {/* InitLast viene montato per ultimo */}
-      <InitLast
+      
+            </div>
+
+          </div>
+        </div>
+      )}
+    </div>
+    <InitLast
           onInit={() => {
             // USO DEL functional updater: evita problemi di closure/staleness
             setSequentialElements(prev => {
@@ -1385,12 +1392,6 @@ useEffect(() => {
             });
           }}
         />
-            </div>
-
-          </div>
-        </div>
-      )}
-    </div>
     </>
   );
   
