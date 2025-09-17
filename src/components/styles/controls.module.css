@@ -27,10 +27,6 @@
 // Rende i bottoni stessi dei contenitori flex orizzontali.
 // =================================================================== */
 .toolButtonActive, .toolButtonInactive {
-  display: flex;         /* <-- Tratta il contenuto del bottone come flex */
-  flex-direction: row;   /* <-- Allinea il contenuto (icona e testo) in una riga */
-  align-items: center;   /* <-- Centra verticalmente icona e testo */
-  gap: 8px;              /* <-- Spazio tra icona e testo */
   
   /* Stili estetici */
   background-color: transparent;

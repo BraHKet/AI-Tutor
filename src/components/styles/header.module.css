@@ -27,12 +27,10 @@
 }
 
 .headerCenter {
+  flex-grow: 1; /* Occupa lo spazio disponibile */
   display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: flex-start; /* o space-between se vuoi riempire */
-  flex-grow: 1;                /* occupa tutto lo spazio disponibile */
-  min-width: 0;                /* necessario per evitare overflow con flex items */
+  justify-content: center; /* Centra il contenuto (i tool) */
+  min-width: 0;
 }
 
 .headerRight {
