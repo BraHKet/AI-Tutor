@@ -1,34 +1,33 @@
 /* ==========================================
-// FILE: statusBar.module.css (COMPLETO E FINALE)
+// FILE: statusBar.module.css (FINALE)
 // ========================================== */
 
 .statusBar {
   padding: 8px 24px;
   font-size: 0.875rem; /* 14px */
   font-weight: 500;
-  /* border-bottom è stato rimosso */
 }
 
 .statusError {
   composes: statusBar;
-  background-color: #fee2e2; /* Rosso chiaro */
-  color: #b91c1c; /* Rosso scuro per testo */
+  background-color: #fee2e2;
+  color: #b91c1c;
 }
 
 .statusSuccess {
   composes: statusBar;
-  background-color: #dcfce7; /* Verde chiaro */
-  color: #15803d; /* Verde scuro per testo */
+  background-color: #dcfce7;
+  color: #15803d;
 }
 
 .statusComplete {
   composes: statusBar;
-  background-color: #cffafe; /* Ciano chiaro */
-  color: #0e7490; /* Ciano scuro per testo */
+  background-color: #cffafe;
+  color: #0e7490;
 }
 
 .statusDefault {
   composes: statusBar;
-  background-color: #eef2ff; /* Indaco chiaro */
-  color: #4338ca; /* Indaco scuro per testo */
+  background-color: #eef2ff;
+  color: #4338ca;
 }

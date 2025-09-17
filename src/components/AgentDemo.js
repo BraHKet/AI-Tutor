@@ -10,7 +10,7 @@ import { PhysicsAgent } from '../agents/PhysicsAgent';
 import VoiceManager, { voiceUtils } from './VoiceManager';
 import { 
   Bot, FileText, MessageSquare, Send, Trash2, 
-  History, Mic, X, Volume2, Edit3, Plus, Type, MicOff, Settings, VolumeX, MousePointer2
+  History, Mic, X, Volume2, Edit3, Plus, Type, MicOff, Settings, VolumeX, MousePointer2, Pen, Eraser
 } from 'lucide-react';
 import { usePdf } from "../context/PdfContext";
 import SimpleLoading from './SimpleLoading';
@@ -963,13 +963,15 @@ useEffect(() => {
                   onClick={() => setCurrentTool('pen')}
                   className={currentTool === 'pen' ? styles.toolButtonActive : styles.toolButtonInactive}
                 >
-                  ✏️
+                  <Pen size={18} />
+                    <span>Disegna</span>
                 </button>
                 <button
                   onClick={() => setCurrentTool('eraser')}
                   className={currentTool === 'eraser' ? styles.toolButtonActive : styles.toolButtonInactive}
                 >
-                  🗑️
+                  <Eraser size={18} />
+                    <span>Gomma</span>
                 </button>
                 <input
                   type="color"

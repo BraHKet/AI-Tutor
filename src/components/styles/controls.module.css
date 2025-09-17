@@ -1,55 +1,38 @@
 /* ==========================================
-// FILE: controls.module.css (COMPLETO E FINALE)
+// FILE: controls.module.css (FINALE - Stile OneNote)
 // ========================================== */
 
 .drawingToolsCompact {
-  width: 100%;
-  display: flex;
+  display: flex; /* <-- ECCO LA REGOLA CHIAVE CHE FORZA L'ORIZZONTALITÀ */
   align-items: center;
-  justify-content: center; /* Centra gli strumenti nello spazio disponibile */
-  gap: 8px; /* Spazio tra i gruppi di strumenti */
+  gap: 4px;
 }
 
-/* Stile base per ogni pulsante-strumento */
+/* LA REGOLA PIÙ IMPORTANTE: Rende i bottoni stessi dei contenitori flex */
 .toolButtonActive, .toolButtonInactive {
+  display: flex;
+  flex-direction: row; /* Assicura che icona e testo siano in riga */
+  align-items: center;
+  gap: 8px;
   background-color: transparent;
   border: none;
   border-radius: 6px;
-  padding: 6px 10px;
+  padding: 8px 12px;
   cursor: pointer;
   transition: background-color 0.2s ease-in-out;
-  display: flex;
-  align-items: center;
-  gap: 8px;
   font-size: 14px;
   font-weight: 500;
-  color: #374151; /* Grigio scuro per il testo */
+  color: #374151;
+  white-space: nowrap;
 }
 
 .toolButtonInactive:hover {
-  background-color: #f3f4f6; /* Grigio chiaro al passaggio del mouse */
+  background-color: #e5e7eb;
 }
 
 .toolButtonActive {
-  background-color: #eef2ff; /* Blu molto chiaro per lo strumento attivo */
-  color: #3730a3; /* Blu scuro per il testo attivo */
-}
-
-/* Contenitore per icona + testo, per un allineamento perfetto */
-.toolButton div {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.toolButton span {
-  white-space: nowrap; /* Evita che il testo vada a capo */
-}
-
-/* NUOVO: Separatore verticale tra i gruppi di strumenti */
-.toolSeparator {
-  width: 1px;
-  height: 24px;
-  background-color: #d1d5db; /* Grigio chiaro */
+  background-color: #e0e7ff; /* Azzurro/Viola chiaro */
+  color: #3730a3;
 }
 
 /* Stile per il selettore del colore */
@@ -58,43 +41,46 @@
   width: 28px;
   height: 28px;
   padding: 0;
-  border: 2px solid #e5e7eb; /* Bordo per farlo sembrare un swatch */
+  border: 2px solid transparent;
   border-radius: 50%;
   cursor: pointer;
-  transition: transform 0.2s;
+  background-color: transparent;
+  transition: all 0.2s;
+  margin: 0 8px;
 }
 .colorPickerCompact:hover {
-  transform: scale(1.1);
+  border-color: #9ca3af;
 }
-.colorPickerCompact::-webkit-color-swatch { border-radius: 50%; }
-.colorPickerCompact::-moz-color-swatch { border-radius: 50%; }
+.colorPickerCompact::-webkit-color-swatch { border-radius: 50%; border: 2px solid #d1d5db; }
+.colorPickerCompact::-moz-color-swatch { border-radius: 50%; border: 2px solid #d1d5db; }
 
 /* Stile per lo slider dello spessore */
 .strokeSliderCompact {
   width: 100px;
   cursor: pointer;
+  margin-left: 4px;
 }
 
-/* Stili per il pulsante di invio, ora più coerenti */
+/* Stili per il pulsante di invio */
 .sendButtonActive, .sendButtonDisabled {
   border: none;
   padding: 8px 16px;
-  border-radius: 8px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   gap: 8px;
-  font-weight: 600; /* Più leggibile */
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .sendButtonActive {
-  background: #3b82f6; /* Blu per l'azione principale */
+  background: #16a34a; /* Verde più deciso */
   color: white;
 }
-
 .sendButtonActive:hover {
-  background: #2563eb;
+  background: #15803d;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
 .sendButtonDisabled {
@@ -107,22 +93,18 @@
 // SEZIONE RESPONSIVE
 // ========================================== */
 
-/* Sotto i 1024px, nascondiamo il testo per risparmiare spazio */
+/* Sotto i 1024px, nascondiamo il testo degli strumenti */
 @media (max-width: 1024px) {
-  .toolButton span {
+  .toolButtonActive span, .toolButtonInactive span {
     display: none;
   }
   .toolButtonActive, .toolButtonInactive {
-    padding: 8px; /* Rendi i pulsanti quadrati */
+    padding: 8px;
   }
-}
-
-/* Sotto i 768px, nascondiamo anche il badge del progresso */
-@media (max-width: 768px) {
-  .progressBadge {
+  .sendButtonActive span, .sendButtonDisabled span {
       display: none;
   }
-  .strokeSliderCompact {
-      width: 80px;
+   .sendButtonActive, .sendButtonDisabled {
+    padding: 8px;
   }
 }

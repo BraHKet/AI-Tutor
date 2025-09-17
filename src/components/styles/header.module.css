@@ -1,5 +1,5 @@
 /* ==========================================
-// FILE: header.module.css (COMPLETO E FINALE)
+// FILE: header.module.css (FINALE - Stile OneNote)
 // ========================================== */
 
 .stickyHeaderWrapper {
@@ -7,104 +7,105 @@
   top: 0;
   z-index: 50;
   background-color: white;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 2px 8px rgba(0, 0, 0, 0.05); /* Ombra più complessa e professionale */
 }
 
 .header {
-  background-color: white;
-  padding: 12px 24px;
+  background-color: #f9fafb; /* Sfondo leggermente grigio come OneNote */
+  padding: 8px 24px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
   gap: 16px;
   border-bottom: 1px solid #e5e7eb;
 }
 
-.headerLeft, .headerRight {
+.headerLeft {
   display: flex;
   align-items: center;
   gap: 12px;
-  flex-shrink: 0; /* NON devono restringersi */
+  flex-shrink: 0;
 }
 
 .headerCenter {
-  flex-grow: 1; /* Deve crescere */
-  flex-shrink: 1; /* Può restringersi se necessario */
-  min-width: 0; /* Fix critico per impedire agli elementi interni di "spingere" il contenitore */
+  flex-grow: 1;
+  min-width: 0;
   display: flex;
-  justify-content: center;
+  justify-content: flex-start; /* Allinea gli strumenti a sinistra */
   align-items: center;
-}
-
-.backButton {
-  background: transparent;
-  border: 1px solid #d1d5db;
-  padding: 6px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.title {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: #1e40af;
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 .headerRight {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0;
+}
+
+.backButton {
+  background-color: white;
+  border: 1px solid #d1d5db;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s, box-shadow 0.2s;
+}
+.backButton:hover {
+  background-color: #f3f4f6;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #111827; /* Nero più morbido */
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .progressBadge {
-  font-size: 14px;
-  color: #6b7280;
-  background: #f3f4f6;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #4b5563;
+  background: white;
   padding: 6px 12px;
   border-radius: 20px;
+  border: 1px solid #e5e7eb;
 }
 
-.headerButton {
-  border: none;
+.historyButtonActive, .historyButtonInactive {
+  background-color: white;
+  border: 1px solid #d1d5db;
   padding: 8px 12px;
   border-radius: 6px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
-}
-
-.historyButton {
-  composes: headerButton;
+  gap: 8px;
+  font-weight: 500;
+  transition: all 0.2s;
 }
 
 .historyButtonActive {
-  composes: historyButton;
-  background: #3b82f6;
+  background: #4f46e5; /* Viola Indaco */
+  border-color: #4f46e5;
   color: white;
 }
-
-.historyButtonInactive {
-  composes: historyButton;
-  background: #f3f4f6;
-  color: #374151;
+.historyButtonInactive:hover {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
 }
 
-.voiceButton {
-  composes: headerButton;
-  color: white;
+/* Nasconde elementi non essenziali su schermi più piccoli */
+@media (max-width: 1100px) {
+  .title {
+    display: none;
+  }
 }
-
-.voiceButtonEnabled {
-  composes: voiceButton;
-  background: #10b981;
-}
-
-.voiceButtonDisabled {
-  composes: voiceButton;
-  background: #6b7280;
+@media (max-width: 900px) {
+    .progressBadge, .backButton {
+        display: none;
+    }
 }
