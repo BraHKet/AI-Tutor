@@ -1,87 +1,120 @@
 /* ==========================================
 // FILE: sequentialWorkspace.module.css
+// Versione unificata e senza duplicati
 // ========================================== */
 
+/* Variabili CSS (esempi, assumi che siano definite nel tuo progetto) */
+:root {
+  --color-background-secondary: #f0f2f5; /* Grigio chiaro per lo sfondo del workspace */
+  --color-background-elevated: #ffffff;  /* Bianco per toolbar e footer */
+  --color-border: #e2e8f0;               /* Grigio chiaro per i bordi */
+  --color-border-dark: #cbd5e1;           /* Grigio più scuro per i bordi dashed */
+  --color-primary: #3b82f6;               /* Blu primario */
+  --color-primary-dark: #2563eb;          /* Blu primario al hover */
+  --color-success: #10b981;               /* Verde per successo */
+  --color-success-dark: #15803d;          /* Verde scuro per successo al hover */
+  --color-danger: #ef4444;                /* Rosso per pericolo */
+  --color-warning: #f59e0b;               /* Giallo-arancio per warning */
+  --color-text-primary: #374151;          /* Testo scuro primario */
+  --color-text-secondary: #6b7280;        /* Testo grigio secondario */
+  --color-text-light: #ffffff;            /* Testo bianco */
+  --color-disabled: #d1d5db;              /* Grigio per elementi disabilitati */
+
+  --border-radius-base: 8px;              /* Raggio del bordo base */
+  --border-radius-small: 6px;             /* Raggio del bordo piccolo */
+  --shadow-small: 0 1px 3px rgba(0,0,0,0.05); /* Ombra leggera */
+}
+
+
 .sequentialWorkspace {
-  flex: 1;
   display: flex;
-  flex-direction: column;
-  background-color: white;
+  flex-direction: column; /* Impila toolbar, lista e footer */
+  flex-grow: 1; /* Permette al workspace di occupare lo spazio disponibile */
+  background-color: var(--color-background-secondary);
+  border-radius: var(--border-radius-base);
+  overflow: hidden; /* Gestisce lo scroll interno */
 }
 
-.addElementsToolbar {
-  background-color: white;
-  border-bottom: 1px solid #e5e7eb;
-  padding: 12px 20px;
+.controlsBar { /* Sostituisce la vecchia .addElementsToolbar */
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-}
-
-.addElementButton {
-  background: #3b82f6;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  transition: background-color 0.2s;
-}
-
-.addElementButton:hover {
-  background: #2563eb;
+  padding: 8px 15px;
+  background-color: var(--color-background-elevated);
+  border-bottom: 1px solid var(--color-border);
+  gap: 10px;
+  flex-wrap: wrap; /* Permette ai tool di andare a capo su schermi piccoli */
+  box-shadow: var(--shadow-small); /* Aggiunto da vecchia toolbar */
 }
 
 .drawingToolsCompact {
   display: flex;
+  flex-direction: row; /* La riga fondamentale */
   align-items: center;
   gap: 8px;
-  background: #f8fafc;
-  padding: 6px 12px;
-  border-radius: 6px;
-  border: 1px solid #e2e8f0;
+  flex-wrap: nowrap;
+  background: #f8fafc; /* Ripristinato dallo stile precedente se desiderato */
+  padding: 6px 12px;   /* Ripristinato dallo stile precedente se desiderato */
+  border-radius: 6px;   /* Ripristinato dallo stile precedente se desiderato */
+  border: 1px solid var(--color-border); /* Ripristinato dallo stile precedente se desiderato */
 }
 
-.toolButton {
-  border: none;
-  padding: 4px 8px;
-  border-radius: 4px;
+/* Tutti i figli di drawingToolsCompact non si espandono e restano in riga */
+.drawingToolsCompact > * {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+.toolButtonActive,
+.toolButtonInactive {
+  /* Stili base per i bottoni tool */
+  background-color: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--border-radius-small);
+  padding: 8px 12px;
   cursor: pointer;
-  display: flex;
+  transition: all 0.2s ease-in-out;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  white-space: nowrap; /* Impedisce al testo di andare a capo */
+  display: flex; /* Assicura allineamento interno con icone */
   align-items: center;
-  gap: 4px;
-  font-size: 12px;
+  gap: 6px; /* Spazio tra icona e testo */
+}
+
+.toolButtonInactive:hover {
+  background-color: #f3f4f6; /* Sfondo grigio chiaro al passaggio */
+  border-color: #e5e7eb;
 }
 
 .toolButtonActive {
-  composes: toolButton;
-  background: #3b82f6;
-  color: white;
-}
-
-.toolButtonInactive {
-  composes: toolButton;
-  background: transparent;
-  color: #374151;
+  background-color: #eef2ff; /* Viola/Blu molto chiaro per l'elemento attivo */
+  color: #4338ca; /* Testo viola/blu */
+  border-color: #c7d2fe; /* Bordo viola/blu */
 }
 
 .colorPickerCompact {
-  width: 24px;
-  height: 24px;
-  border: none;
-  border-radius: 3px;
+  appearance: none; /* Rimuove lo stile predefinito del browser */
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 50%;
   cursor: pointer;
+  background-color: transparent;
+  transition: transform 0.2s;
+  border: 2px solid var(--color-border);
+  margin: 0 4px; /* Un po' di respiro */
 }
+.colorPickerCompact:hover {
+  transform: scale(1.1);
+}
+.colorPickerCompact::-webkit-color-swatch { border-radius: 50%; }
+.colorPickerCompact::-moz-color-swatch { border-radius: 50%; }
 
 .strokeSliderCompact {
-  width: 50px;
+  width: 100px; /* Larghezza dello slider */
+  cursor: pointer;
 }
 
 .actionButtonsRight {
@@ -90,9 +123,9 @@
   gap: 8px;
 }
 
-.clearButton {
-  background: #ef4444;
-  color: white;
+.clearButton { /* Pulsante per pulire */
+  background: var(--color-danger);
+  color: var(--color-text-light);
   border: none;
   padding: 6px 12px;
   border-radius: 4px;
@@ -103,70 +136,77 @@
   font-size: 13px;
 }
 
-.sendButton {
-  color: white;
+.sendButtonActive,
+.sendButtonDisabled {
   border: none;
   padding: 8px 16px;
-  border-radius: 4px;
+  border-radius: var(--border-radius-small);
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 500;
+  gap: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
 .sendButtonActive {
-  composes: sendButton;
-  background: #10b981;
-  cursor: pointer;
+  background: var(--color-success);
+  color: var(--color-text-light);
+}
+.sendButtonActive:hover {
+  background: var(--color-success-dark);
+  box-shadow: var(--shadow-small);
 }
 
 .sendButtonDisabled {
-  composes: sendButton;
-  background: #d1d5db;
+  background: var(--color-disabled);
+  color: #9ca3af; /* Colore testo specifico per disabilitato */
   cursor: not-allowed;
 }
 
 .sequentialElementsList {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px;
-  background: #f8fafc;
+  flex-grow: 1; /* Permette alla lista di occupare lo spazio disponibile */
+  overflow-y: auto; /* Rende la lista scrollabile verticalmente */
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  background: #f8fafc; /* Colore di sfondo della lista */
 }
 
 .emptyState {
   text-align: center;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   padding: 60px 20px;
   font-size: 16px;
 }
 
 .sequentialElement {
-  background: white;
-  border: 2px solid #e2e8f0;
-  border-radius: 8px;
-  margin-bottom: 16px;
+  background: var(--color-background-elevated);
+  border: 2px solid var(--color-border);
+  border-radius: var(--border-radius-base);
+  margin-bottom: 0; /* Gap gestito dalla lista */
   overflow: hidden;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .activeElement {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.1);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.1); /* Ombra leggera blu */
 }
 
 .elementHeader {
-  background: #f1f5f9;
+  background: #f1f5f9; /* Grigio molto chiaro per header */
   padding: 12px 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .elementNumber {
   font-weight: 600;
-  color: #475569;
+  color: #475569; /* Grigio scuro per numero elemento */
   font-size: 14px;
 }
 
@@ -185,22 +225,22 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  color: white;
+  color: var(--color-text-light);
 }
 
 .voiceControlActive {
   composes: voiceControlButton;
-  background: #10b981;
+  background: var(--color-success);
 }
 
 .voiceControlInactive {
   composes: voiceControlButton;
-  background: #3b82f6;
+  background: var(--color-primary);
 }
 
 .clearCanvasButton {
-  background: #f59e0b;
-  color: white;
+  background: var(--color-warning);
+  color: var(--color-text-light);
   border: none;
   padding: 4px 8px;
   border-radius: 4px;
@@ -209,8 +249,8 @@
 }
 
 .deleteElementButton {
-  background: #ef4444;
-  color: white;
+  background: var(--color-danger);
+  color: var(--color-text-light);
   border: none;
   padding: 4px 8px;
   border-radius: 4px;
@@ -239,50 +279,19 @@
 .drawingElementContainer {
   display: flex;
   flex-direction: column;
-  background: #fefefe;
+  background: #fefefe; /* Bianco leggero per il contenitore del disegno */
   border: 1px solid #e5e7eb;
   border-radius: 6px;
   padding: 8px;
   width: 100%;
 }
 
-
-/* MODIFICA QUI: Nuovi stili per il workspace sequenziale e i nuovi pulsanti */
-
-.sequentialWorkspace {
-  display: flex;
-  flex-direction: column; /* Cambiato a column per impilare toolbar, lista e footer */
-  flex-grow: 1;
-  background-color: var(--color-background-secondary);
-  border-radius: var(--border-radius-base);
-  overflow: hidden; /* Per gestire lo scroll interno */
-}
-
-.controlsBar { /* Nuova classe per la toolbar superiore (prima era addElementsToolbar) */
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 15px;
-  background-color: var(--color-background-elevated);
-  border-bottom: 1px solid var(--color-border);
-  gap: 10px;
-  flex-wrap: wrap; /* Permette ai tool di andare a capo su schermi piccoli */
-}
-
-
-
-
-
-
-
-
-.sequentialElementsList {
-  flex-grow: 1; /* Permette alla lista di occupare lo spazio disponibile */
-  overflow-y: auto; /* Rende la lista scrollabile verticalmente */
-  padding: 15px;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
+.elementCanvas {
+  border: 1px dashed var(--color-border-dark);
+  border-radius: var(--border-radius-small);
+  background-color: white; /* Importante per l'eraser */
+  touch-action: none; /* Previene lo scroll/zoom su touch devices durante il disegno */
+  box-shadow: var(--shadow-small);
 }
 
 .addElementsFooter { /* Nuova classe per i pulsanti "Add" in fondo */
@@ -297,7 +306,7 @@
 
 .addElementButton {
   background-color: var(--color-primary);
-  color: rgb(0, 0, 0);
+  color: rgb(0, 0, 0); /* Testo nero, come nella nuova definizione */
   border: none;
   padding: 10px 15px;
   border-radius: var(--border-radius-base);
@@ -313,15 +322,26 @@
   background-color: var(--color-primary-dark);
 }
 
-/* Assicurati che il tuo elemento canvas abbia una dimensione minima per essere visibile */
-.elementCanvas {
-  border: 1px dashed var(--color-border-dark);
-  border-radius: var(--border-radius-small);
-  background-color: white; /* Importante per l'eraser */
-  touch-action: none; /* Previene lo scroll/zoom su touch devices durante il disegno */
-  box-shadow: var(--shadow-small);
-}
 
-/* Se avevi già una classe .addElementsToolbar, dovrai rimuoverla o aggiornarla con .controlsBar */
-/* Potrebbe essere necessario regolare anche .actionButtonsRight e .clearButton/.sendButtonActive/.sendButtonDisabled
-   se i loro stili sono troppo legati a .addElementsToolbar e non si adattano alla nuova .controlsBar */
+/* ==========================================
+// SEZIONE RESPONSIVE
+// ========================================== */
+@media (max-width: 1200px) {
+  /* Nasconde il testo quando c'è un po' meno spazio */
+  .toolButtonActive span,
+  .toolButtonInactive span {
+    display: none;
+  }
+  .toolButtonActive,
+  .toolButtonInactive {
+    padding: 8px; /* Rende i bottoni quadrati e compatti */
+  }
+  .sendButtonActive span,
+  .sendButtonDisabled span {
+      display: none;
+  }
+   .sendButtonActive,
+   .sendButtonDisabled {
+    padding: 8px 12px;
+  }
+}
