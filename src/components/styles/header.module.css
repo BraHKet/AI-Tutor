@@ -1,34 +1,60 @@
 /* ==========================================
-// FILE: header.module.css
+// FILE: header.module.css (MODERN & RESPONSIVE)
 // ========================================== */
+
+/* NUOVO: Wrapper "appiccicoso" per header e status bar */
+.stickyHeaderWrapper {
+  position: sticky;
+  top: 0;
+  z-index: 50; /* Assicura che stia sopra a tutto */
+  background-color: white;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08); /* Ombra più morbida e professionale */
+}
 
 .header {
   background-color: white;
-  border-bottom: 1px solid #e5e7eb;
-  padding: 12px 20px;
+  padding: 12px 24px; /* Più spazio laterale */
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  gap: 16px; /* Spazio tra le sezioni left/center/right */
+  border-bottom: 1px solid #e5e7eb;
+  flex-wrap: nowrap; /* Di default, non va a capo */
+  transition: all 0.2s ease-in-out;
 }
 
-.headerLeft {
+.headerLeft, .headerRight {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0; /* Impedisce a queste sezioni di restringersi */
+}
+
+.headerCenter {
+  flex-grow: 1; /* Occupa tutto lo spazio possibile al centro */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 0; /* Fix per flexbox per permettere agli elementi interni di restringersi */
 }
 
 .backButton {
-  background: transparent;
+  background-color: transparent;
   border: 1px solid #d1d5db;
-  padding: 6px 12px;
-  border-radius: 6px;
+  padding: 8px 12px;
+  border-radius: 8px; /* Angoli più arrotondati */
   cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+.backButton:hover {
+  background-color: #f9fafb;
+  border-color: #9ca3af;
 }
 
 .title {
   margin: 0;
-  font-size: 18px;
+  font-size: 1.1rem;
   font-weight: 600;
   color: #1e40af;
   display: flex;
@@ -36,57 +62,79 @@
   gap: 8px;
 }
 
-.headerRight {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
 .progressBadge {
-  font-size: 14px;
-  color: #6b7280;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #4b5563;
   background: #f3f4f6;
   padding: 6px 12px;
   border-radius: 20px;
+  border: 1px solid #e5e7eb;
 }
 
-.headerButton {
+.historyButtonActive, .historyButtonInactive {
   border: none;
   padding: 8px 12px;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
-}
-
-.historyButton {
-  composes: headerButton;
+  gap: 8px;
+  font-weight: 500;
+  transition: all 0.2s;
 }
 
 .historyButtonActive {
-  composes: historyButton;
   background: #3b82f6;
   color: white;
 }
+.historyButtonActive:hover {
+  background: #2563eb;
+}
 
 .historyButtonInactive {
-  composes: historyButton;
   background: #f3f4f6;
   color: #374151;
 }
-
-.voiceButton {
-  composes: headerButton;
-  color: white;
+.historyButtonInactive:hover {
+  background: #e5e7eb;
 }
 
-.voiceButtonEnabled {
-  composes: voiceButton;
-  background: #10b981;
+/* ==========================================
+// SEZIONE RESPONSIVE
+// ========================================== */
+
+/* Per schermi sotto i 900px */
+@media (max-width: 900px) {
+  .title, .progressBadge {
+    display: none; /* Nasconde il titolo e il badge per fare spazio */
+  }
 }
 
-.voiceButtonDisabled {
-  composes: voiceButton;
-  background: #6b7280;
+/* Per schermi mobile sotto i 768px */
+@media (max-width: 768px) {
+  .header {
+    flex-wrap: wrap; /* Permette agli elementi di andare a capo */
+    padding: 12px 16px;
+    row-gap: 12px; /* Spazio tra la riga superiore e quella inferiore */
+  }
+  
+  .headerLeft {
+    order: 1; /* Prima riga, a sinistra */
+    flex-grow: 1; /* Occupa lo spazio disponibile */
+  }
+
+  .headerRight {
+    order: 2; /* Prima riga, a destra */
+  }
+
+  .headerCenter {
+    order: 3; /* Va a capo e diventa la seconda riga */
+    width: 100%; /* Occupa tutta la larghezza */
+  }
+  
+  .backButton span, .historyButtonInactive span, .historyButtonActive span {
+     /* Se avessi del testo nei bottoni, questo lo nasconderebbe */
+     display: none;
+  }
 }

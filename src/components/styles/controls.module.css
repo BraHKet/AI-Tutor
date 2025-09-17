@@ -1,63 +1,108 @@
 /* ==========================================
-// FILE: controls.module.css
+// FILE: controls.module.css (MODERN & RESPONSIVE)
 // ========================================== */
 
-.controls {
-  background-color: white;
-  border-bottom: 1px solid #e5e7eb;
-  padding: 16px 20px;
-  display: flex;
-  gap: 12px;
-}
+/* La vecchia classe .controls non è più usata, si possono rimuovere i suoi stili */
 
-.controlButton {
-  border: none;
-  padding: 10px 16px;
-  border-radius: 6px;
+.drawingToolsCompact {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  background-color: #f3f4f6;
+  padding: 6px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease-in-out;
 }
 
-.analyzeButton {
-  composes: controlButton;
-  color: white;
+.toolButtonActive, .toolButtonInactive {
+  background: transparent;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
 }
 
-.analyzeButtonReady {
-  composes: analyzeButton;
-  background: #10b981;
-  cursor: not-allowed;
-  opacity: 0.7;
+.toolButtonActive {
+  background-color: #3b82f6;
+  color: white; /* Emoji ora bianca su fondo blu */
 }
 
-.analyzeButtonActive {
-  composes: analyzeButton;
-  background: #3b82f6;
+.toolButtonInactive:hover {
+  background-color: #e5e7eb;
+}
+
+.colorPickerCompact {
+  appearance: none;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  background-color: transparent;
+  transition: transform 0.2s;
+}
+.colorPickerCompact:hover {
+  transform: scale(1.1);
+}
+.colorPickerCompact::-webkit-color-swatch {
+  border-radius: 50%;
+  border: 2px solid #d1d5db;
+}
+.colorPickerCompact::-moz-color-swatch {
+  border-radius: 50%;
+  border: 2px solid #d1d5db;
+}
+
+.strokeSliderCompact {
+  width: 80px; /* Più compatto */
   cursor: pointer;
 }
 
-.startButton {
-  composes: controlButton;
+.sendButtonActive, .sendButtonDisabled {
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600; /* Più leggibile */
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sendButtonActive {
+  background: #10b981; /* Verde per l'azione positiva di invio */
   color: white;
 }
-
-.startButtonReady {
-  composes: startButton;
-  background: #10b981;
-  cursor: not-allowed;
-  opacity: 0.7;
+.sendButtonActive:hover {
+  background: #059669;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.startButtonActive {
-  composes: startButton;
-  background: #8b5cf6;
-  cursor: pointer;
+.sendButtonDisabled {
+  background: #e5e7eb;
+  color: #9ca3af;
+  cursor: not-allowed;
 }
 
-.startButtonDisabled {
-  composes: startButton;
-  background: #8b5cf6;
-  cursor: not-allowed;
-  opacity: 0.7;
+/* ==========================================
+// SEZIONE RESPONSIVE
+// ========================================== */
+@media (max-width: 768px) {
+  .strokeSliderCompact {
+    width: 60px; /* Ancora più piccolo su mobile */
+  }
+
+  .drawingToolsCompact {
+    gap: 4px; /* Riduci lo spazio tra gli strumenti */
+  }
 }
