@@ -42,6 +42,7 @@ export default async function handler(req, res) {
       sampleRateHertz: 48000,  // Frequenza di campionamento standard per WEBM_OPUS
       languageCode: 'it-IT',
       enableAutomaticPunctuation: true,
+      model: 'latest_long',
     };
     const request = {
       audio: audio,
