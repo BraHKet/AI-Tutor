@@ -899,43 +899,38 @@ useEffect(() => {
 
 
 
-  // useEffect per creare gli elementi iniziali dopo il primo render
+ // effettua la creazione iniziale una sola volta
 useEffect(() => {
-  // Crea gli elementi iniziali solo se l'array è vuoto
   if (sequentialElements.length === 0) {
     const initialTextId = Date.now();
-    const initialDrawingId = Date.now() + 1;
+    const initialDrawingId = initialTextId + 1;
 
     const initialElements = [
-      {
-        id: initialTextId,
-        type: 'text',
-        content: '',
-        timestamp: new Date(initialTextId)
-      },
-      {
-        id: initialDrawingId,
-        type: 'drawing',
-        content: '',
-        canvasData: null,
-        timestamp: new Date(initialDrawingId)
-      }
+      { id: initialTextId, type: 'text', content: '', timestamp: new Date(initialTextId) },
+      { id: initialDrawingId, type: 'drawing', content: '', canvasData: null, timestamp: new Date(initialDrawingId) }
     ];
 
     setSequentialElements(initialElements);
-    
-    // Imposta il drawing come attivo dopo averlo creato
-    setTimeout(() => {
-      setActiveCanvasId(initialDrawingId);
-      setActiveElementId(initialDrawingId);
-      
-      // Inizializza il canvas dopo un altro piccolo ritardo
-      setTimeout(() => {
-        initializeElementCanvas(initialDrawingId);
-      }, 200);
-    }, 100);
   }
 }, []);
+
+// quando sequentialElements cambia, setta l'elemento attivo e inizializza il canvas
+useEffect(() => {
+  if (sequentialElements.length === 0) return;
+
+  const drawing = sequentialElements.find(e => e.type === 'drawing');
+  if (!drawing) return;
+
+  // imposta gli id attivi
+  setActiveCanvasId(drawing.id);
+  setActiveElementId(drawing.id);
+
+  // assicurati che il DOM sia aggiornato prima di inizializzare il canvas
+  // requestAnimationFrame è più affidabile di setTimeout per sincronizzarsi con il paint
+  requestAnimationFrame(() => {
+    initializeElementCanvas(drawing.id);
+  });
+}, [sequentialElements]);
 
 
 
@@ -1237,7 +1232,25 @@ useEffect(() => {
               </div>
 
 
-                
+              {/* MODIFICA QUI: Pulsanti per aggiungere nuovi elementi in fondo alla lista */}
+              <div className={styles.addElementsFooter}> {/* Nuova classe per lo stile */}
+                <button
+                  onClick={addTextElement}
+                  className={styles.addElementButton}
+                >
+                  <Type size={16} />
+                  Add Text
+                </button>
+
+                <button
+                  onClick={addDrawingElement}
+                  className={styles.addElementButton}
+                >
+                  <Edit3 size={16} />
+                  Add Drawing
+                </button>
+              </div>
+
 
               {/* Voice Manager - POSIZIONATO MEGLIO */}
               
