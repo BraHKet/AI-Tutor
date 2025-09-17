@@ -1344,29 +1344,47 @@ useEffect(() => {
               )}
               {/* InitLast viene montato per ultimo */}
       <InitLast
-        onInit={() => {
-          if (sequentialElements.length === 0) {
-            const initialTextId = Date.now();
-            const initialDrawingId = initialTextId + 1;
+          onInit={() => {
+            // USO DEL functional updater: evita problemi di closure/staleness
+            setSequentialElements(prev => {
+              console.log("[onInit] prev sequentialElements:", prev);
+              if (prev && prev.length > 0) {
+                // già inizializzato -> non facciamo nulla
+                return prev;
+              }
 
-            const initialElements = [
-              { id: initialTextId, type: "text", content: "", timestamp: new Date(initialTextId) },
-              { id: initialDrawingId, type: "drawing", content: "", canvasData: null, timestamp: new Date(initialDrawingId) }
-            ];
+              const initialTextId = Date.now();
+              const initialDrawingId = initialTextId + 1;
 
-            setSequentialElements(initialElements);
+              const initialElements = [
+                {
+                  id: initialTextId,
+                  type: "text",
+                  content: "",
+                  timestamp: new Date(initialTextId)
+                },
+                {
+                  id: initialDrawingId,
+                  type: "drawing",
+                  content: "",
+                  canvasData: null,
+                  timestamp: new Date(initialDrawingId)
+                }
+              ];
 
-            // imposto subito il drawing attivo
-            setActiveCanvasId(initialDrawingId);
-            setActiveElementId(initialDrawingId);
+              // imposto gli active ID subito: gli ID li conosciamo
+              setActiveCanvasId(initialDrawingId);
+              setActiveElementId(initialDrawingId);
 
-            // inizializzo il canvas al frame successivo (DOM già pronto)
-            requestAnimationFrame(() => {
-              initializeElementCanvas(initialDrawingId);
+              // inizializzazione canvas al prossimo paint
+              requestAnimationFrame(() => {
+                initializeElementCanvas(initialDrawingId);
+              });
+
+              return initialElements;
             });
-          }
-        }}
-      />
+          }}
+        />
             </div>
 
           </div>

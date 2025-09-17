@@ -1,11 +1,12 @@
+// InitLast.jsx
 import { useEffect } from "react";
 
-function InitLast({ onInit }) {
+export default function InitLast({ onInit }) {
   useEffect(() => {
+    console.log("[InitLast] mounted -> calling onInit");
     onInit?.();
+    // l'array di dipendenze è [onInit] così reagisce correttamente se onInit cambia
   }, [onInit]);
 
-  return null; // non deve renderizzare nulla
+  return null;
 }
-
-export default InitLast;
