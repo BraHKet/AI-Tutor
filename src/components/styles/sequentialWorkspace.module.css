@@ -271,19 +271,7 @@
 
 
 
-.toolButtonActive,
-.toolButtonInactive {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 5px;
-  border-radius: var(--border-radius-small);
-  color: var(--color-text-secondary);
-  transition: all 0.2s ease;
-  display: flex; /* Centra icona/testo */
-  align-items: center;
-  justify-content: center;
-}
+
 
 .toolButtonActive {
   background-color: var(--color-primary-light);
