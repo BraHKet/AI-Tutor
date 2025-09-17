@@ -1,72 +1,81 @@
 /* ==========================================
-// FILE: controls.module.css (MODERN & RESPONSIVE)
+// FILE: controls.module.css (COMPLETO E FINALE)
 // ========================================== */
 
-/* La vecchia classe .controls non è più usata, si possono rimuovere i suoi stili */
-
 .drawingToolsCompact {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Centra gli strumenti nello spazio disponibile */
+  gap: 8px; /* Spazio tra i gruppi di strumenti */
+}
+
+/* Stile base per ogni pulsante-strumento */
+.toolButtonActive, .toolButtonInactive {
+  background-color: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
   display: flex;
   align-items: center;
   gap: 8px;
-  background-color: #f3f4f6;
-  padding: 6px;
-  border-radius: 10px;
-  border: 1px solid #e5e7eb;
-  transition: all 0.2s ease-in-out;
-}
-
-.toolButtonActive, .toolButtonInactive {
-  background: transparent;
-  border: none;
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 18px;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.2s;
-}
-
-.toolButtonActive {
-  background-color: #3b82f6;
-  color: white; /* Emoji ora bianca su fondo blu */
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151; /* Grigio scuro per il testo */
 }
 
 .toolButtonInactive:hover {
-  background-color: #e5e7eb;
+  background-color: #f3f4f6; /* Grigio chiaro al passaggio del mouse */
 }
 
+.toolButtonActive {
+  background-color: #eef2ff; /* Blu molto chiaro per lo strumento attivo */
+  color: #3730a3; /* Blu scuro per il testo attivo */
+}
+
+/* Contenitore per icona + testo, per un allineamento perfetto */
+.toolButton div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.toolButton span {
+  white-space: nowrap; /* Evita che il testo vada a capo */
+}
+
+/* NUOVO: Separatore verticale tra i gruppi di strumenti */
+.toolSeparator {
+  width: 1px;
+  height: 24px;
+  background-color: #d1d5db; /* Grigio chiaro */
+}
+
+/* Stile per il selettore del colore */
 .colorPickerCompact {
   appearance: none;
   width: 28px;
   height: 28px;
   padding: 0;
-  border: none;
+  border: 2px solid #e5e7eb; /* Bordo per farlo sembrare un swatch */
   border-radius: 50%;
   cursor: pointer;
-  background-color: transparent;
   transition: transform 0.2s;
 }
 .colorPickerCompact:hover {
   transform: scale(1.1);
 }
-.colorPickerCompact::-webkit-color-swatch {
-  border-radius: 50%;
-  border: 2px solid #d1d5db;
-}
-.colorPickerCompact::-moz-color-swatch {
-  border-radius: 50%;
-  border: 2px solid #d1d5db;
-}
+.colorPickerCompact::-webkit-color-swatch { border-radius: 50%; }
+.colorPickerCompact::-moz-color-swatch { border-radius: 50%; }
 
+/* Stile per lo slider dello spessore */
 .strokeSliderCompact {
-  width: 80px; /* Più compatto */
+  width: 100px;
   cursor: pointer;
 }
 
+/* Stili per il pulsante di invio, ora più coerenti */
 .sendButtonActive, .sendButtonDisabled {
   border: none;
   padding: 8px 16px;
@@ -80,12 +89,12 @@
 }
 
 .sendButtonActive {
-  background: #10b981; /* Verde per l'azione positiva di invio */
+  background: #3b82f6; /* Blu per l'azione principale */
   color: white;
 }
+
 .sendButtonActive:hover {
-  background: #059669;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  background: #2563eb;
 }
 
 .sendButtonDisabled {
@@ -97,12 +106,23 @@
 /* ==========================================
 // SEZIONE RESPONSIVE
 // ========================================== */
-@media (max-width: 768px) {
-  .strokeSliderCompact {
-    width: 60px; /* Ancora più piccolo su mobile */
-  }
 
-  .drawingToolsCompact {
-    gap: 4px; /* Riduci lo spazio tra gli strumenti */
+/* Sotto i 1024px, nascondiamo il testo per risparmiare spazio */
+@media (max-width: 1024px) {
+  .toolButton span {
+    display: none;
+  }
+  .toolButtonActive, .toolButtonInactive {
+    padding: 8px; /* Rendi i pulsanti quadrati */
+  }
+}
+
+/* Sotto i 768px, nascondiamo anche il badge del progresso */
+@media (max-width: 768px) {
+  .progressBadge {
+      display: none;
+  }
+  .strokeSliderCompact {
+      width: 80px;
   }
 }

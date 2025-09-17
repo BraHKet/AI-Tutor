@@ -956,7 +956,8 @@ useEffect(() => {
                   onClick={() => setCurrentTool('pointer')}
                   className={currentTool === 'pointer' ? styles.toolButtonActive : styles.toolButtonInactive}
                 >
-                  👆
+                  <MousePointer2 size={18} />
+                    <span>Seleziona</span>
                 </button>
                 <button
                   onClick={() => setCurrentTool('pen')}

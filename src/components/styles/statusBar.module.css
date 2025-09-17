@@ -1,12 +1,12 @@
 /* ==========================================
-// FILE: statusBar.module.css (MODERN)
+// FILE: statusBar.module.css (COMPLETO E FINALE)
 // ========================================== */
 
 .statusBar {
   padding: 8px 24px;
   font-size: 0.875rem; /* 14px */
   font-weight: 500;
-  /* Rimosso border-bottom, l'ombra del wrapper è sufficiente */
+  /* border-bottom è stato rimosso */
 }
 
 .statusError {
