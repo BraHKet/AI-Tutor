@@ -774,26 +774,26 @@ const reinitializeAllCanvases = useCallback(() => {
   }, [pdfFile, navigate]);
 
   // Voice transcript handler - OTTIMIZZATO ANTI-BLOCCO
-  const handleTranscriptUpdate = useCallback((transcript, isFinal) => {
-  if (!voiceActiveForElement) return;
+ const handleTranscriptUpdate = useCallback((newTranscript, isFinal) => {
+  // Procediamo solo quando riceviamo la trascrizione finale da VoiceManager.
+  if (!isFinal || !voiceActiveForElement) return;
 
-  // Unisce il testo di base (già confermato) con la nuova trascrizione in corso.
-  // Aggiunge uno spazio solo se c'è già del testo di base.
-  const newContent = baseTranscriptRef.current 
-    ? baseTranscriptRef.current + ' ' + transcript 
-    : transcript;
+  // 1. Troviamo l'elemento attivo a cui stiamo dettando.
+  const currentElement = sequentialElements.find(el => el.id === voiceActiveForElement);
+  if (!currentElement) return;
 
-  // Aggiorna il contenuto della textarea in tempo reale.
-  // Questo fornisce un feedback visivo immediato e fluido.
-  updateElementContent(voiceActiveForElement, newContent);
+  // 2. Prendiamo il testo già presente nella textarea.
+  const existingContent = currentElement.content;
 
-  // Quando una frase viene riconosciuta come "finale" dal browser...
-  if (isFinal) {
-    // ...aggiorniamo il nostro testo di base con il contenuto corrente.
-    // In questo modo, la prossima frase verrà aggiunta dopo questa.
-    baseTranscriptRef.current = newContent;
-  }
-}, [voiceActiveForElement, updateElementContent]); // Dipendenze ottimizzate
+  // 3. Creiamo il nuovo testo completo, aggiungendo uno spazio per separare le frasi.
+  const combinedContent = existingContent
+    ? existingContent.trim() + ' ' + newTranscript
+    : newTranscript;
+
+  // 4. Aggiorniamo l'elemento con il nuovo testo combinato.
+  updateElementContent(voiceActiveForElement, combinedContent);
+
+}, [voiceActiveForElement, sequentialElements, updateElementContent]);
 
 // Auto-speak AI responses - VERSIONE INTEGRATA
 useEffect(() => {
