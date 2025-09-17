@@ -936,10 +936,30 @@ useEffect(() => {
       if (canvas && canvas.parentElement) {
         const rect = canvas.parentElement.getBoundingClientRect();
         if (rect.width > 10) { // Se ha dimensioni valide
-          initializeElementCanvas(initialDrawingElement.id);
-        } else {
-          setTimeout(() => tryInitialize(attempts + 1), 100);
-        }
+  // Forza il ridimensionamento del canvas
+  const canvas = document.getElementById(`canvas-${initialDrawingElement.id}`);
+  if (canvas) {
+    const width = rect.width;
+    const height = 600; // FIXED_CANVAS_HEIGHT
+    
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+    
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+} else {
+  setTimeout(() => tryInitialize(attempts + 1), 100);
+}
       } else {
         setTimeout(() => tryInitialize(attempts + 1), 100);
       }
