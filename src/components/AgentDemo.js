@@ -405,7 +405,7 @@ const reinitializeAllCanvases = useCallback(() => {
             ctx.lineTo(coords.x, coords.y);
         }
         ctx.stroke();
-      
+       
         const lastCoords = getEventCoords(events[events.length - 1], canvasId);
         if(lastCoords) {
             lastPointRef.current = lastCoords;
