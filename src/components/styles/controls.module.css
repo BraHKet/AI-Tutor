@@ -4,10 +4,19 @@
 
 .drawingToolsCompact {
   display: flex;
+  flex-direction: row;   /* forza l’orizzontale */
   align-items: center;
-  gap: 6px; /* Spazio tra i pulsanti e gli elementi */
+  gap: 8px;
+  flex-wrap: nowrap;     /* evita che vadano a capo */
+  overflow-x: auto;      /* se ce ne sono troppi scroll orizzontale */
+  padding: 4px 0;
 }
 
+.toolButtonActive,
+.toolButtonInactive {
+  padding: 6px 10px;  /* più compatto */
+  font-size: 13px;
+}
 /* ===================================================================
 // QUESTA È LA REGOLA CHIAVE CHE RISOLVE TUTTO
 // Rende i bottoni stessi dei contenitori flex orizzontali.

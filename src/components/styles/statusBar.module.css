@@ -2,32 +2,10 @@
 // FILE: statusBar.module.css (FINALE)
 // ========================================== */
 
-.statusBar {
-  padding: 8px 24px;
-  font-size: 0.875rem; /* 14px */
-  font-weight: 500;
-}
-
-.statusError {
-  composes: statusBar;
-  background-color: #fee2e2;
-  color: #b91c1c;
-}
-
-.statusSuccess {
-  composes: statusBar;
-  background-color: #dcfce7;
-  color: #15803d;
-}
-
-.statusComplete {
-  composes: statusBar;
-  background-color: #cffafe;
-  color: #0e7490;
-}
-
+.statusBar,
+.statusError,
+.statusSuccess,
+.statusComplete,
 .statusDefault {
-  composes: statusBar;
-  background-color: #eef2ff;
-  color: #4338ca;
+  display: none !important;
 }
