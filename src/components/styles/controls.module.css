@@ -6,16 +6,15 @@
   display: flex !important;
   flex-direction: row !important;
   align-items: center !important;
-  justify-content: flex-start !important;
   gap: 8px !important;
   flex-wrap: nowrap !important;
 }
 
 .drawingToolsCompact > * {
-  display: inline-flex !important; /* forza i figli a essere inline-flex */
-  width: auto !important;          /* evita larghezza fissa */
-  flex: 0 0 auto !important;       /* impedisce espansione */
-  margin: 0 !important;            /* reset eventuali margin globali */
+  display: inline-flex !important; /* inline-flex evita che occupino tutta la larghezza */
+  width: auto !important;          /* annulla eventuali width fisse */
+  flex: 0 0 auto !important;       /* non si espandono */
+  margin: 0 !important;            /* reset margin globali */
 }
 
 .toolButtonActive,
