@@ -261,30 +261,35 @@ const reinitializeAllCanvases = useCallback(() => {
   // INIZIO MODIFICA: Nuova funzione per gestire il click sul microfono
   // ====================================================================
   const handleMicClick = (elementId) => {
+  try {
     const isCurrentlyListeningForThis = voiceState.isListening && voiceActiveForElement === elementId;
 
     if (isCurrentlyListeningForThis) {
-      // Se sta già ascoltando, fermalo. 
-      // La logica in handleTranscriptUpdate salverà l'ultimo frammento "finale".
-      // Se l'utente interrompe a metà, l'ultimo frammento parziale non verrà salvato con questo sistema.
-      // (Questo è spesso un comportamento desiderato per evitare testo incompleto)
+      // Caso 1: L'utente ferma manualmente la registrazione.
+      console.log(`[Mic] Stopping listener for element ID: ${elementId}`);
       voiceUtils.stopListening();
-      // Azzeriamo il riferimento, dato che la sessione di dettatura è terminata.
-      baseTranscriptRef.current = ''; 
+      baseTranscriptRef.current = ''; // Resetta la base per la prossima sessione.
+    
     } else {
-      // Se un'altra registrazione è attiva, fermala prima.
+      // Caso 2: L'utente avvia una nuova registrazione.
+      console.log(`[Mic] Starting listener for element ID: ${elementId}`);
       if (voiceState.isListening) {
-        voiceUtils.stopListening();
+        voiceUtils.stopListening(); // Ferma qualsiasi altra registrazione attiva.
       }
       
-      // LA MODIFICA CHIAVE: Salva il testo attuale prima di iniziare a dettare.
+      // Salva il testo attuale come base per la nuova dettatura.
       const currentElement = sequentialElements.find(el => el.id === elementId);
-      baseTranscriptRef.current = currentElement ? currentElement.content : '';
+      const existingText = currentElement ? currentElement.content : '';
+      baseTranscriptRef.current = existingText;
+      console.log(`[Mic] Saved base text: "${existingText}"`);
 
-      // Avvia una nuova registrazione per questo elemento.
+      // Avvia la nuova registrazione.
       setVoiceActiveForElement(elementId);
       setTimeout(() => voiceUtils.startListening(), 100);
     }
+  } catch (error) {
+    console.error("[Mic] Error in handleMicClick:", error);
+  }
 };
 
 
@@ -779,31 +784,41 @@ const reinitializeAllCanvases = useCallback(() => {
 
   // Voice transcript handler - OTTIMIZZATO ANTI-BLOCCO
   const handleTranscriptUpdate = useCallback((transcript, isFinal) => {
-  if (!voiceActiveForElement) return;
+  if (!voiceActiveForElement) {
+    // Esce subito se non c'è un elemento attivo per la dettatura.
+    return;
+  }
 
-  // STEP 1: NON FARE NULLA IN TEMPO REALE
-  // La funzione non chiama più updateElementContent per ogni piccolo frammento.
-  // Non c'è nessun render continuo. L'UI rimane ferma mentre parli.
+  // Log per ogni frammento ricevuto dal sistema di riconoscimento vocale.
+  console.log(`[Transcript] Received: "${transcript}" | Is Final: ${isFinal}`);
 
-  // STEP 2: AGISCI SOLO QUANDO UNA FRASE È COMPLETA
+  // Azione principale: avviene solo se la trascrizione è considerata finale.
   if (isFinal) {
-    // Abbiamo ricevuto una trascrizione "finale" dal browser (di solito dopo una pausa).
-    
-    // a) Prepara il nuovo contenuto completo.
-    // Unisce il testo di base (già confermato) con la nuova trascrizione appena finalizzata.
-    // Aggiunge uno spazio solo se c'è già del testo di base.
-    const finalContent = baseTranscriptRef.current 
-      ? baseTranscriptRef.current + ' ' + transcript 
-      : transcript;
+    try {
+      console.log('[Transcript] Final transcript received. Processing update...');
+      
+      const oldText = baseTranscriptRef.current;
+      console.log(`[Transcript] Old text was: "${oldText}"`);
 
-    // b) ESEGUI IL RENDER - ORA E SOLO ORA
-    // Aggiorna lo stato una sola volta con il testo completo.
-    // Questo causerà il ri-render della textarea, che mostrerà di colpo la nuova frase.
-    updateElementContent(voiceActiveForElement, finalContent);
+      // Combina il vecchio testo con la nuova trascrizione finale.
+      const newCompleteText = oldText ? oldText + ' ' + transcript : transcript;
+      console.log(`[Transcript] New complete text: "${newCompleteText}"`);
 
-    // c) AGGIORNA LA MEMORIA PER LA PROSSIMA FRASE
-    // Il nuovo testo completo diventa la base per la prossima dettatura.
-    baseTranscriptRef.current = finalContent;
+      // 1. ESEGUI L'AGGIORNAMENTO (RENDER)
+      // Questo è l'unico punto in cui l'interfaccia utente viene aggiornata.
+      updateElementContent(voiceActiveForElement, newCompleteText);
+
+      // 2. SALVA IL NUOVO STATO
+      // Il testo appena completato diventa la base per la prossima frase.
+      baseTranscriptRef.current = newCompleteText;
+      console.log('[Transcript] UI updated and base text saved for next phrase.');
+
+    } catch (error) {
+      console.error("[Transcript] Error processing final transcript:", error);
+    }
+  } else {
+    // Se la trascrizione non è finale, viene ignorata ai fini del rendering.
+    console.log('[Transcript] Interim result ignored.');
   }
 }, [voiceActiveForElement, updateElementContent]);
 
