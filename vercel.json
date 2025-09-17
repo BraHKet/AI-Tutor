@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/speechProxy.js": {
+      "maxDuration": 30
+    }
+  }
+}
