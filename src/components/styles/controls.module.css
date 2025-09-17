@@ -12,8 +12,10 @@
 }
 
 .drawingToolsCompact > * {
-  flex: 0 0 auto;      /* impedisce che si allarghino in verticale */
-  display: inline-flex; /* forza gli interni a comportarsi da inline-flex */
+  display: inline-flex !important; /* forza i figli a essere inline-flex */
+  width: auto !important;          /* evita larghezza fissa */
+  flex: 0 0 auto !important;       /* impedisce espansione */
+  margin: 0 !important;            /* reset eventuali margin globali */
 }
 
 .toolButtonActive,
