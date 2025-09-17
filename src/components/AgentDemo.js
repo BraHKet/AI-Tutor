@@ -1237,25 +1237,7 @@ useEffect(() => {
               </div>
 
 
-                      {/* MODIFICA QUI: Pulsanti per aggiungere nuovi elementi in fondo alla lista */}
-              <div className={styles.addElementsFooter}> {/* Nuova classe per lo stile */}
-                <button
-                  onClick={addTextElement}
-                  className={styles.addElementButton}
-                >
-                  <Type size={16} />
-                  Add Text
-                </button>
-
-                <button
-                  onClick={addDrawingElement}
-                  className={styles.addElementButton}
-                >
-                  <Edit3 size={16} />
-                  Add Drawing
-                </button>
-              </div>
-
+                
 
               {/* Voice Manager - POSIZIONATO MEGLIO */}
               
