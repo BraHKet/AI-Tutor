@@ -245,3 +245,115 @@
   padding: 8px;
   width: 100%;
 }
+
+
+/* MODIFICA QUI: Nuovi stili per il workspace sequenziale e i nuovi pulsanti */
+
+.sequentialWorkspace {
+  display: flex;
+  flex-direction: column; /* Cambiato a column per impilare toolbar, lista e footer */
+  flex-grow: 1;
+  background-color: var(--color-background-secondary);
+  border-radius: var(--border-radius-base);
+  overflow: hidden; /* Per gestire lo scroll interno */
+}
+
+.controlsBar { /* Nuova classe per la toolbar superiore (prima era addElementsToolbar) */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 15px;
+  background-color: var(--color-background-elevated);
+  border-bottom: 1px solid var(--color-border);
+  gap: 10px;
+  flex-wrap: wrap; /* Permette ai tool di andare a capo su schermi piccoli */
+}
+
+.drawingToolsCompact {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--color-background-tertiary); /* Sfondo leggermente diverso */
+  padding: 5px 10px;
+  border-radius: var(--border-radius-small);
+}
+
+.toolButtonActive,
+.toolButtonInactive {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: var(--border-radius-small);
+  color: var(--color-text-secondary);
+  transition: all 0.2s ease;
+  display: flex; /* Centra icona/testo */
+  align-items: center;
+  justify-content: center;
+}
+
+.toolButtonActive {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+}
+
+.toolButtonActive:hover {
+  background-color: var(--color-primary-light);
+}
+
+.toolButtonInactive:hover {
+  background-color: var(--color-background-tertiary-hover);
+  color: var(--color-text-primary);
+}
+
+
+.sequentialElementsList {
+  flex-grow: 1; /* Permette alla lista di occupare lo spazio disponibile */
+  overflow-y: auto; /* Rende la lista scrollabile verticalmente */
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.addElementsFooter { /* Nuova classe per i pulsanti "Add" in fondo */
+  padding: 15px;
+  background-color: var(--color-background-elevated);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  gap: 10px;
+  justify-content: center; /* Centra i pulsanti */
+  flex-shrink: 0; /* Impedisce che si rimpicciolisca */
+}
+
+.addElementButton {
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: var(--border-radius-base);
+  cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s ease;
+}
+
+.addElementButton:hover {
+  background-color: var(--color-primary-dark);
+}
+
+/* Assicurati che il tuo elemento canvas abbia una dimensione minima per essere visibile */
+.elementCanvas {
+  border: 1px dashed var(--color-border-dark);
+  border-radius: var(--border-radius-small);
+  background-color: white; /* Importante per l'eraser */
+  touch-action: none; /* Previene lo scroll/zoom su touch devices durante il disegno */
+  box-shadow: var(--shadow-small);
+}
+
+/* Se avevi già una classe .addElementsToolbar, dovrai rimuoverla o aggiornarla con .controlsBar */
+/* Potrebbe essere necessario regolare anche .actionButtonsRight e .clearButton/.sendButtonActive/.sendButtonDisabled
+   se i loro stili sono troppo legati a .addElementsToolbar e non si adattano alla nuova .controlsBar */

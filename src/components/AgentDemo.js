@@ -67,7 +67,26 @@ export default function AgentDemo() {
   const [progress, setProgress] = useState({ covered: 0, total: 0, percentage: 0 });
   
   // Sequential Response states - NUOVO SISTEMA
-  const [sequentialElements, setSequentialElements] = useState([]);
+  const [sequentialElements, setSequentialElements] = useState(() => {
+    const initialTextId = Date.now();
+    const initialDrawingId = Date.now() + 1; // Assicura un ID unico
+
+    return [
+      {
+        id: initialTextId,
+        type: 'text',
+        content: 'I campi obbligatori per la configurazione del tuo esame sono i seguenti. Puoi modificarli o aggiungere nuovi elementi. \n\n Argomento principale: Fisica Classica \n Sotto-argomenti: Meccanica, Termodinamica, Onde',
+        timestamp: new Date(initialTextId)
+      },
+      {
+        id: initialDrawingId,
+        type: 'drawing',
+        content: '',
+        canvasData: null,
+        timestamp: new Date(initialDrawingId)
+      }
+    ];
+  });
   const [activeElementId, setActiveElementId] = useState(null);
   const [currentTool, setCurrentTool] = useState('pointer'); // Solo per i canvas di disegno
   
@@ -1048,34 +1067,25 @@ useEffect(() => {
           {examStarted && !isComplete && (
             <div className={styles.sequentialWorkspace}>
               
-              {/* Add Elements Toolbar */}
-              <div className={styles.addElementsToolbar}>
-                <button
-                  onClick={addTextElement}
-                  className={styles.addElementButton}
-                >
-                  <Type size={16} />
-                  Add Text
-                </button>
+                            {/* MODIFICA QUI: Toolbar di controllo principale con solo Clear e Send, e drawing tools */}
+              <div className={styles.controlsBar}> {/* Ho rinominato la classe per chiarezza */}
                 
-                <button
-                  onClick={addDrawingElement}
-                  className={styles.addElementButton}
-                >
-                  <Edit3 size={16} />
-                  Add Drawing
-                </button>
-
                 {/* Drawing Tools (showed only when there's an active canvas) */}
                 {activeCanvasId && (
                   <div className={styles.drawingToolsCompact}>
+                    <button
+                      onClick={() => setCurrentTool('pointer')} // Aggiunto un tool per "pointer"
+                      className={currentTool === 'pointer' ? styles.toolButtonActive : styles.toolButtonInactive}
+                    >
+                      👆
+                    </button>
                     <button
                       onClick={() => setCurrentTool('pen')}
                       className={currentTool === 'pen' ? styles.toolButtonActive : styles.toolButtonInactive}
                     >
                       ✏️
                     </button>
-                    
+
                     <button
                       onClick={() => setCurrentTool('eraser')}
                       className={currentTool === 'eraser' ? styles.toolButtonActive : styles.toolButtonInactive}
@@ -1089,7 +1099,7 @@ useEffect(() => {
                       onChange={(e) => setStrokeColor(e.target.value)}
                       className={styles.colorPickerCompact}
                     />
-                    
+
                     <input
                       type="range"
                       min="1"
@@ -1109,7 +1119,7 @@ useEffect(() => {
                     <Trash2 size={14} />
                     Clear All
                   </button>
-                  
+
                   <button
                     onClick={sendSequentialContent}
                     disabled={isProcessing || !hasContent()}
@@ -1215,6 +1225,27 @@ useEffect(() => {
                   </div>
                 ))}
               </div>
+
+
+                      {/* MODIFICA QUI: Pulsanti per aggiungere nuovi elementi in fondo alla lista */}
+              <div className={styles.addElementsFooter}> {/* Nuova classe per lo stile */}
+                <button
+                  onClick={addTextElement}
+                  className={styles.addElementButton}
+                >
+                  <Type size={16} />
+                  Add Text
+                </button>
+
+                <button
+                  onClick={addDrawingElement}
+                  className={styles.addElementButton}
+                >
+                  <Edit3 size={16} />
+                  Add Drawing
+                </button>
+              </div>
+
 
               {/* Voice Manager - POSIZIONATO MEGLIO */}
               
