@@ -269,14 +269,7 @@
   flex-wrap: wrap; /* Permette ai tool di andare a capo su schermi piccoli */
 }
 
-.drawingToolsCompact {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background-color: var(--color-background-tertiary); /* Sfondo leggermente diverso */
-  padding: 5px 10px;
-  border-radius: var(--border-radius-small);
-}
+
 
 .toolButtonActive,
 .toolButtonInactive {
