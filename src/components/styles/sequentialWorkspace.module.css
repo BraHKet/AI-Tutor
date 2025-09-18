@@ -251,7 +251,7 @@
   background: transparent;
 }
   
-.drawingElementContainer {
+.drawingElementContainer { 
   display: flex;
   flex-direction: column;
   background: #fefefe; /* Bianco leggero per il contenitore del disegno */
