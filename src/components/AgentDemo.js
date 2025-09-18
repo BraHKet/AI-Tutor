@@ -10,7 +10,7 @@ import { PhysicsAgent } from '../agents/PhysicsAgent';
 import VoiceManager, { voiceUtils } from './VoiceManager';
 import { 
   Bot, FileText, MessageSquare, Send, Trash2, 
-  History, Mic, X, Volume2, Edit3, Plus, Type, MicOff, Settings, VolumeX, MousePointer2, Pen, Eraser
+  History, Mic, X, Volume2, Edit3, Plus, Type, MicOff, Settings, VolumeX, MousePointer2, Pen, Eraser, LogOut
 } from 'lucide-react';
 import { usePdf } from "../context/PdfContext";
 import SimpleLoading from './SimpleLoading';
@@ -938,10 +938,10 @@ useEffect(() => {
         <div className={styles.header}>
           <div className={styles.headerLeft}>
             <button onClick={handleLogout} className={styles.backButton}>
-              ← Logout
+              <LogOut size={18} />
             </button>
             <button onClick={() => navigate("/setpdf")}  className={styles.backButton}>
-              New Pdf
+              New
             </button>
           </div>
           
@@ -995,7 +995,6 @@ useEffect(() => {
               className={showHistory ? styles.historyButtonActive : styles.historyButtonInactive}
             >
               <History size={16} />
-              History
             </button>
             <button
               onClick={sendSequentialContent}
