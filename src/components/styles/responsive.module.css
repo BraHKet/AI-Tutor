@@ -14,8 +14,10 @@ order: 2;
 order: 3;
 margin-left: 0;
 }
+
+}
+
 .elementCanvas {
 max-width: 100%;
 height: auto;
-}
 }
