@@ -169,7 +169,7 @@
     display: none;
   }
 
-  .stickyHeaderWrapper:has(.drawingToolsCompact) {
+  .stickyHeaderWrapper {
     margin-bottom: 60px; /* attivo solo se la toolbar esiste/visibile */
   }
 }
