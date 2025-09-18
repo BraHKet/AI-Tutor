@@ -244,16 +244,16 @@
 }
 
 /* =======================================================
-// FLOATING SEGMENTED CONTROL (CSS-Only, No JSX Change)
-// Unisce i bottoni .addElementButton in un unico blocco
-// fluttuante, posizionato in basso a destra.
+// FLOATING SEGMENTED CONTROL (CSS-Only "WOW" Edition)
+// Stile per i bottoni .addElementButton che li unisce
+// in un unico blocco fluttuante, senza modificare il JSX.
 // ======================================================= */
 
 .addElementButton {
   /* 1. POSIZIONAMENTO FLUTTUANTE (Fisso in basso a destra) */
   position: fixed;
   bottom: 24px;
-  z-index: 1000;
+  z-index: 1000; /* Assicura che sia sempre sopra il video */
 
   /* 2. STILE PREMIUM DI BASE */
   display: flex;
@@ -265,53 +265,52 @@
   font-weight: 600;
   cursor: pointer;
 
-  /* 3. EFFETTO VETRO SMERIGLIATO (FROSTED GLASS) */
-  background-color: rgba(255, 255, 255, 0.7);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  color: #1F2937; /* Testo scuro per leggibilità */
-
-  /* 4. OMBRA REALISTICA E TRANSIZIONE FLUIDA */
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  transition: all 0.2s ease-in-out;
-
+  /* 3. GRADIENTE VIBRANTE E OMBRA REALISTICA */
+  background-image: linear-gradient(45deg, #2563EB 0%, #3B82F6 100%);
+  color: white;
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.35); /* Ombra più pronunciata */
+  
+  /* 4. TRANSIZIONE FLUIDA PER LE INTERAZIONI */
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  
   /* 5. PREPARAZIONE PER IL LOOK "SEGMENTATO" */
   border-radius: 0; /* Rimuoviamo gli angoli arrotondati di default */
 }
 
-/* 6. LOGICA PER UNIRE I BOTTONI E POSIZIONARLI */
+/* 6. LOGICA PER UNIRE I BOTTONI */
 
-/* Applica gli angoli arrotondati di DESTRA all'ULTIMO bottone */
-.addElementButton:last-of-type {
-  border-top-right-radius: 16px;
-  border-bottom-right-radius: 16px;
-  right: 24px; /* Distanza dal bordo destro dello schermo */
-}
-
-/* Applica gli angoli arrotondati di SINISTRA al PRIMO bottone */
+/* Stile per il PRIMO bottone (o l'UNICO bottone) */
 .addElementButton:first-of-type {
-  border-top-left-radius: 16px;
-  border-bottom-left-radius: 16px;
-  /* !! DEVI AGGIUSTARE QUESTO VALORE !! */
-  /* Calcolo: right dell'ultimo bottone (24px) + larghezza dell'ultimo bottone (~150px) */
-  right: 174px; 
+  border-top-left-radius: 14px;
+  border-bottom-left-radius: 14px;
+  right: 173px; /* Posizione del primo bottone da destra (valore da aggiustare) */
 }
 
-/* Aggiunge un separatore tra i bottoni */
-.addElementButton + .addElementButton {
-  border-left: 1px solid rgba(0, 0, 0, 0.1);
+/* Stile per l'ULTIMO bottone (o l'UNICO bottone) */
+.addElementButton:last-of-type {
+  border-top-right-radius: 14px;
+  border-bottom-right-radius: 14px;
+  right: 20px; /* Posizione del secondo bottone da destra */
 }
+
+/* Sposta il secondo bottone (e successivi) attaccato al precedente */
+.addElementButton + .addElementButton {
+  /* Sovrapposizione di 1px per unire perfettamente i bordi */
+  border-left: 1px solid rgba(255, 255, 255, 0.3); 
+}
+
 
 /* 7. MICRO-INTERAZIONI "WOW" */
 
-/* Il bottone attivo o in hover si colora */
-.addElementButton.active,
 .addElementButton:hover {
-  background-image: linear-gradient(45deg, #2563EB 0%, #3B82F6 100%);
-  color: white;
-  transform: translateY(-3px) scale(1.02);
-  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
-  z-index: 1001;
+  transform: translateY(-4px); /* Si solleva al passaggio del mouse */
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.45); /* L'ombra si intensifica */
+  z-index: 1001; /* Si porta sopra gli altri bottoni quando attivo */
+}
+
+.addElementButton:active {
+  transform: translateY(0); /* Simula la pressione */
+  box-shadow: 0 3px 10px rgba(59, 130, 246, 0.3);
 }
 
 

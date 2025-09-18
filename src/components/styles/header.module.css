@@ -145,12 +145,12 @@
 // ========================================== */
 
 @media (max-width: 768px) {
-  .header:has(.drawingToolsCompact) {
+  .header {
     justify-content: space-between;
     padding: 10px 16px; /* Adattiamo il padding */
   }
 
-  .headerCenter:has(.drawingToolsCompact) {
+  .headerCenter {
     position: absolute;
     top: 100%; 
     left: 0;
