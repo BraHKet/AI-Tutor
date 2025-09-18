@@ -906,7 +906,15 @@ useEffect(() => {
 
 
 
-
+  if (isProcessing) {
+    return (
+      <SimpleLoading 
+        message="Il professore sta rispondendo..."
+        size="medium"
+        fullScreen={true}  
+      />
+    );
+  }
 
   if (isAutoSetupInProgress) {
     return (
@@ -1089,17 +1097,6 @@ useEffect(() => {
         {/* Main Workspace */}
         <div className={styles.mainWorkspace}>
           
-
-          {isProcessing && (
-            <div style={styles.processingOverlay}>
-              <SimpleLoading 
-                message="Il professore sta elaborando la tua risposta..." 
-                size="medium" 
-              />
-            </div>
-          )}
-
-
           {/* Sequential Response System */}
           {examStarted && !isComplete && (
             <div className={styles.sequentialWorkspace}>
