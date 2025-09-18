@@ -4,14 +4,18 @@
 
 .historySidebar {
   width: 400px;
+  height: 100vh; /* occupa tutta l'altezza */
   flex-shrink: 0;
   background-color: white;
   border-right: 1px solid #e5e7eb;
   display: flex;
   flex-direction: column;
-  box-shadow: 2px 0 4px rgba(0,0,0,0.1);
-  position: relative;
-  z-index: 10;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.2);
+  
+  position: fixed;   /* overlay */
+  top: 0;
+  left: 0;           /* oppure right: 0 se la vuoi a destra */
+  z-index: 1000;     /* più alto di tutto il resto */
 }
 
 .sidebarHeader {
