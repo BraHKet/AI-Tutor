@@ -2,65 +2,30 @@
 // FILE: canvas.module.css
 // ========================================== */
 
-/* ==========================================
-// FILE: canvas.module.css
-// DESC: Soluzione definitiva per il disegno cross-device (mouse, penna, dita).
-// ========================================== */
-
 .elementCanvas {
-  display: block; /* Comportamento base corretto */
-  width: 100%;
-  background: white; /* Necessario per la gomma e la visibilità */
-  border-radius: 4px;
   border: 1px solid #d1d5db;
-
-  /*
-  // ==================================================================
-  // SEZIONE CRITICA PER LA COMPATIBILITÀ TOUCH (LA SOLUZIONE)
-  // Queste regole impediscono al browser di interferire con il disegno.
-  // ==================================================================
-  */
-
-  /*
-   * [1] LA PROPRIETÀ PIÙ IMPORTANTE: `touch-action: none;`
-   * Disattiva TUTTE le azioni touch predefinite del browser, come lo
-   * scorrimento (pan) e lo zoom (pinch). Lascia il pieno controllo
-   * degli eventi touch al tuo codice JavaScript. Questo risolve il
-   * problema del tratto che si blocca dopo pochi millimetri.
-  */
-  touch-action: none;
-  -ms-touch-action: none; /* Compatibilità per browser Microsoft */
-
-  /*
-   * [2] CONTROLLO DEL CURSORE
-   * Mostra un cursore a mirino su desktop per indicare la modalità disegno.
-  */
+  border-radius: 4px;
+  background: white;
+  display: block;
+  width: 100%;
   cursor: crosshair;
-
-  /*
-   * [3] PREVENZIONE DI AZIONI INDESIDERATE
-   * Queste proprietà impediscono la selezione del testo del canvas o la
-   * comparsa di menu contestuali (es. su iOS) durante il disegno.
-  */
-  -webkit-user-select: none;   /* Safari */
-  -moz-user-select: none;    /* Firefox */
-  -ms-user-select: none;     /* Internet Explorer/Edge */
-  user-select: none;         /* Standard */
-  -webkit-touch-callout: none; /* Disabilita il menu su pressione lunga (iOS) */
-  -webkit-tap-highlight-color: transparent; /* Rimuove l'evidenziazione al tocco */
-
-  /*
-  // ==================================================================
-  // OTTIMIZZAZIONI PER PRESTAZIONI FLUIDE (Consigliate)
-  // ==================================================================
-  */
-
-  /*
-   * Forza il rendering del canvas su un suo layer separato tramite la GPU.
-   * Questo migliora la fluidità del disegno e previene "lag".
-  */
-  will-change: transform;
+  
+  /* PROPRIETÀ CHIAVE PER PRESTAZIONI TOUCH/PAD */
+  touch-action: none; 
+  -ms-touch-action: none;
+  
+  /* FORZA ACCELERAZIONE GPU E ISOLAMENTO DEL LAYER DI RENDERING */
+  will-change: transform, contents; 
+  contain: strict; 
   transform: translateZ(0);
+
+  /* PREVIENE SELEZIONI O AZIONI INDESIDERATE */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .elementCanvas:focus {

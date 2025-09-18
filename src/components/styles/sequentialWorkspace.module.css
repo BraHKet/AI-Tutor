@@ -259,14 +259,35 @@
   border-radius: 6px;
   padding: 8px;
   width: 100%;
+  touch-action: none;
 }
 
+
 .elementCanvas {
+
+  /* 1. DISATTIVA LE AZIONI DEL BROWSER (SCROLL/ZOOM) */
+  /* Questa è la regola più importante per risolvere il blocco del tratto. */
+  touch-action: none;
+  -ms-touch-action: none; /* Compatibilità per browser Microsoft */
+
+  /* 2. PREVIENE SELEZIONI ACCIDENTALI DURANTE IL DISEGNO */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none; /* Disabilita menu su pressione lunga in iOS */
+  
+  /* 3. STILE E COMPORTAMENTO VISIVO */
   border: 1px dashed var(--color-border-dark);
   border-radius: var(--border-radius-small);
-  background-color: white; /* Importante per l'eraser */
-  touch-action: none; /* Previene lo scroll/zoom su touch devices durante il disegno */
+  background-color: white; /* Essenziale per la gomma */
+  cursor: crosshair; /* Cursore per desktop */
   box-shadow: var(--shadow-small);
+
+  /* 4. OTTIMIZZAZIONE DELLE PRESTAZIONI */
+  /* Forza l'accelerazione hardware per un disegno più fluido */
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 .addElementsFooter { /* Nuova classe per i pulsanti "Add" in fondo */
