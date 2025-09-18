@@ -1,140 +1,173 @@
-/* ==========================================
-// FILE: header.module.css (FINALE - Stile OneNote)
-// ========================================== */
+/* =======================================================
+// FILE: header.module.css (FINALE - "WOW" Edition)
+// DESC: Stile premium con gradienti, ombre e animazioni.
+// ======================================================= */
+
+@keyframes subtleGlow {
+  0% { box-shadow: 0 0 4px rgba(79, 70, 229, 0.2); }
+  50% { box-shadow: 0 0 12px rgba(79, 70, 229, 0.4); }
+  100% { box-shadow: 0 0 4px rgba(79, 70, 229, 0.2); }
+}
 
 .stickyHeaderWrapper {
   position: sticky;
   top: 0;
   z-index: 50;
-  background-color: white;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 2px 8px rgba(0, 0, 0, 0.05); /* Ombra più complessa e professionale */
+  /* Ombra più morbida, profonda e realistica per un effetto "fluttuante" */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+  /* Ancora per il responsive */
+  position: relative; 
 }
 
 .header {
-  background-color: #f9fafb; /* Sfondo leggermente grigio come OneNote */
-  padding: 8px 24px;
+  /* BACKGROUND A GRADIENTE: Sottile ma elegante, aggiunge profondità. */
+  background-image: linear-gradient(180deg, #FFFFFF 0%, #F8F9FC 100%);
+  padding: 12px 28px; /* Più spazio per un look premium */
   display: flex;
   align-items: center;
   gap: 16px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid #EAECEF;
 }
 
 .headerLeft {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px; /* Aumentato per più respiro */
   flex-shrink: 0;
 }
 
 .headerCenter {
-  flex-grow: 1; /* Occupa lo spazio disponibile */
+  flex-grow: 1;
   display: flex;
-  justify-content: center; /* Centra il contenuto (i tool) */
+  justify-content: center;
   min-width: 0;
 }
 
 .headerRight {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px; /* Aumentato per più respiro */
   flex-shrink: 0;
 }
 
-.backButton {
-  background-color: white;
-  border: 1px solid #d1d5db;
-  padding: 8px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.2s, box-shadow 0.2s;
-}
-.backButton:hover {
-  background-color: #f3f4f6;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-}
+/* ==========================================
+// BOTTONI PREMIUM (La vera magia!)
+// ========================================== */
 
-.title {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #111827; /* Nero più morbido */
+.backButton,
+.historyButtonInactive {
+  background-color: #FFFFFF;
+  border: none;
+  padding: 9px 16px; /* Leggermente più alti */
+  border-radius: 9px; /* Angoli più arrotondati e moderni */
+  cursor: pointer;
+  font-weight: 600; /* Testo più deciso */
+  color: #374151;
   display: flex;
   align-items: center;
   gap: 8px;
+  /* Ombra per dare un effetto 3D al pulsante */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05), 0 1px 1px rgba(0, 0, 0, 0.03);
+  /* TRANSIZIONE FLUIDA: non lineare, per un feeling più naturale */
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), 
+              box-shadow 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.backButton:hover,
+.historyButtonInactive:hover {
+  /* EFFETTO "LIFT": il pulsante si solleva verso l'utente */
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.07), 0 2px 3px rgba(0, 0, 0, 0.05);
+  background-color: #FBFCFF; /* Leggero cambio di colore per feedback */
+}
+
+/* STATO ATTIVO: il protagonista */
+.historyButtonActive {
+  /* Copia gli stili base per coerenza */
+  padding: 9px 16px;
+  border-radius: 9px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  
+  /* BACKGROUND A GRADIENTE VIBRANTE */
+  background-image: linear-gradient(45deg, #4F46E5 0%, #6366F1 100%);
+  color: white;
+  border: none;
+  
+  /* Ombra che matcha il colore del gradiente per un look integrato */
+  box-shadow: 0 3px 8px rgba(79, 70, 229, 0.3);
+  transform: translateY(-1px); /* Leggermente sollevato di default */
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.historyButtonActive:hover {
+  box-shadow: 0 5px 12px rgba(79, 70, 229, 0.4);
+  transform: translateY(-2px); /* Si solleva ancora di più */
+}
+
+
+/* ==========================================
+// ELEMENTI UI MIGLIORATI
+// ========================================== */
+
+.title {
+  margin: 0;
+  font-size: 1.25rem; /* Più grande e d'impatto */
+  font-weight: 700;
+  color: #111827;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .progressBadge {
   font-size: 0.875rem;
-  font-weight: 500;
-  color: #4b5563;
-  background: white;
-  padding: 6px 12px;
+  font-weight: 600; /* Più leggibile */
+  color: #4338ca; /* Colore primario per coerenza */
+  background-color: #EEF2FF; /* Sfondo in tinta */
+  padding: 7px 14px;
   border-radius: 20px;
-  border: 1px solid #e5e7eb;
-}
-
-.historyButtonActive, .historyButtonInactive {
-  background-color: white;
-  border: 1px solid #d1d5db;
-  padding: 8px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 500;
-  transition: all 0.2s;
-}
-
-.historyButtonActive {
-  background: #4f46e5; /* Viola Indaco */
-  border-color: #4f46e5;
-  color: white;
-}
-.historyButtonInactive:hover {
-  background-color: #f3f4f6;
-  border-color: #9ca3af;
+  border: 1px solid #C7D2FE; /* Bordo in tinta */
+  /* Animazione sottile per attirare l'attenzione */
+  animation: subtleGlow 3s infinite;
 }
 
 
-/* ===================================================================
-// SOLUZIONE RESPONSIVE CON SPOSTAMENTO VIRTUALE (CSS-ONLY)
-// Sotto i 768px, sganciamo gli strumenti e li trasformiamo in una 
-// seconda barra, senza toccare l'HTML.
-// =================================================================== */
+/* ==========================================
+// SEZIONE RESPONSIVE (INVARIATA NELLA LOGICA)
+// ========================================== */
+
+@media (max-width: 900px) {
+  .progressBadge, .title {
+      display: none;
+  }
+}
+
 @media (max-width: 768px) {
   .header {
-    /* Assicura che left e right occupino tutto lo spazio disponibile
-       una volta che .headerCenter è stato rimosso dal flusso. */
     justify-content: space-between;
+    padding: 10px 16px; /* Adattiamo il padding */
   }
 
   .headerCenter {
-    /* 1. Sganciamo l'elemento dal flusso del layout */
     position: absolute;
-    
-    /* 2. Lo posizioniamo sotto l'header principale (alto 100%) */
     top: 100%; 
     left: 0;
-    
-    /* 3. Lo trasformiamo in una barra a piena larghezza */
     width: 100%;
     background-color: white;
     border-bottom: 1px solid #e5e7eb;
     padding: 8px 16px;
-    
-    /* 4. Gestiamo l'overflow INTERNO a questa nuova barra */
-    justify-content: flex-start; /* Allinea gli item a sinistra */
-    overflow-x: auto;            /* Permette lo scroll se necessario */
+    justify-content: flex-start;
+    overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-
-    /* 5. Nascondiamo la scrollbar per un look pulito */
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE, Edge */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
   }
 
   .headerCenter::-webkit-scrollbar {
-    display: none; /* Chrome, Safari */
+    display: none;
   }
 }
