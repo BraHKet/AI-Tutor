@@ -366,8 +366,10 @@ const reinitializeAllCanvases = useCallback(() => {
 
   const startDrawing = useCallback((e, canvasId) => {
     if (currentTool !== 'pen' && currentTool !== 'eraser') return;
-    
+  
     e.preventDefault(); // <-- Usa 'e' direttamente
+    e.target.setPointerCapture(e.pointerId);
+
     setIsDrawing(true);
     setActiveCanvasId(canvasId);
     
@@ -422,7 +424,12 @@ const reinitializeAllCanvases = useCallback(() => {
     });
 }, [isDrawing, activeCanvasId, getEventCoords]);
 
-  const stopDrawing = useCallback((canvasId) => {
+  const stopDrawing = useCallback((e, canvasId) => {
+
+    if (e && e.target && e.pointerId) {
+      e.target.releasePointerCapture(e.pointerId);
+    }
+    
     if (isDrawing && activeCanvasId === canvasId) {
       setIsDrawing(false);
       lastPointRef.current = null; // MODIFICATO: Resetta il ref
@@ -1170,8 +1177,8 @@ useEffect(() => {
                             className={styles.elementCanvas}
                             onPointerDown={(e) => startDrawing(e, element.id)}
                             onPointerMove={(e) => draw(e, element.id)}
-                            onPointerUp={() => stopDrawing(element.id)}
-                            onPointerLeave={() => stopDrawing(element.id)}
+                            onPointerUp={(e) => stopDrawing(e, element.id)}
+                            onPointerLeave={(e) => stopDrawing(e, element.id)}
                             onClick={() => setActiveElementId(element.id)}
                           />
                         </div>

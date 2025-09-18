@@ -21,7 +21,6 @@
   /* 1. IMPEDISCE L'AZIONE DI DRAG-AND-DROP (LA CAUSA DEL BLOCCO) */
   /* Questa è la regola mancante e più importante per il tuo caso. */
   -webkit-user-drag: none;
-  user-drag: none;
 
   /* 2. DISATTIVA LO SCROLL E LO ZOOM SUL CANVAS */
   /* Risolve il problema su mobile e tablet. */
