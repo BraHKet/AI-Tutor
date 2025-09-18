@@ -943,10 +943,6 @@ useEffect(() => {
             <button onClick={() => navigate("/setpdf")}  className={styles.backButton}>
               New Pdf
             </button>
-            <h1 className={styles.title}>
-              <Bot size={20} />
-              AI Exam
-            </h1>
           </div>
           
           <div className={styles.headerCenter}>
@@ -1007,7 +1003,7 @@ useEffect(() => {
               className={hasContent() ? styles.sendButtonActive : styles.sendButtonDisabled}
             >
               <Send size={14} />
-              Send Response
+              
             </button>
             <div className={styles.settingsContainer}>
               <button

@@ -7,11 +7,14 @@
   top: 0;
   z-index: 50;
   background-color: white;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 2px 8px rgba(0, 0, 0, 0.05); /* Ombra più complessa e professionale */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 2px 8px rgba(0, 0, 0, 0.05);
+  /* CHIAVE: Aggiungiamo position: relative per fare da "ancora"
+     all'elemento .headerCenter quando lo sposteremo. */
+  position: relative; 
 }
 
 .header {
-  background-color: #f9fafb; /* Sfondo leggermente grigio come OneNote */
+  background-color: #f9fafb;
   padding: 8px 24px;
   display: flex;
   align-items: center;
@@ -27,9 +30,9 @@
 }
 
 .headerCenter {
-  flex-grow: 1; /* Occupa lo spazio disponibile */
+  flex-grow: 1; 
   display: flex;
-  justify-content: center; /* Centra il contenuto (i tool) */
+  justify-content: center;
   min-width: 0;
 }
 
@@ -39,6 +42,8 @@
   gap: 12px;
   flex-shrink: 0;
 }
+
+/* ... [tutti gli altri stili .backButton, .title, etc. rimangono invariati] ... */
 
 .backButton {
   background-color: white;
@@ -58,7 +63,7 @@
   margin: 0;
   font-size: 1.1rem;
   font-weight: 600;
-  color: #111827; /* Nero più morbido */
+  color: #111827;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -88,7 +93,7 @@
 }
 
 .historyButtonActive {
-  background: #4f46e5; /* Viola Indaco */
+  background: #4f46e5;
   border-color: #4f46e5;
   color: white;
 }
@@ -107,4 +112,45 @@
     .progressBadge, .backButton {
         display: none;
     }
+}
+
+/* ===================================================================
+// SOLUZIONE RESPONSIVE CON SPOSTAMENTO VIRTUALE (CSS-ONLY)
+// Sotto i 768px, sganciamo gli strumenti e li trasformiamo in una 
+// seconda barra, senza toccare l'HTML.
+// =================================================================== */
+@media (max-width: 768px) {
+  .header {
+    /* Assicura che left e right occupino tutto lo spazio disponibile
+       una volta che .headerCenter è stato rimosso dal flusso. */
+    justify-content: space-between;
+  }
+
+  .headerCenter {
+    /* 1. Sganciamo l'elemento dal flusso del layout */
+    position: absolute;
+    
+    /* 2. Lo posizioniamo sotto l'header principale (alto 100%) */
+    top: 100%; 
+    left: 0;
+    
+    /* 3. Lo trasformiamo in una barra a piena larghezza */
+    width: 100%;
+    background-color: white;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 8px 16px;
+    
+    /* 4. Gestiamo l'overflow INTERNO a questa nuova barra */
+    justify-content: flex-start; /* Allinea gli item a sinistra */
+    overflow-x: auto;            /* Permette lo scroll se necessario */
+    -webkit-overflow-scrolling: touch;
+
+    /* 5. Nascondiamo la scrollbar per un look pulito */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE, Edge */
+  }
+
+  .headerCenter::-webkit-scrollbar {
+    display: none; /* Chrome, Safari */
+  }
 }
