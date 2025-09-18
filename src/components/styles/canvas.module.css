@@ -3,29 +3,53 @@
 // ========================================== */
 
 .elementCanvas {
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  background: white;
+  /* --- IMPOSTAZIONI DI BASE --- */
   display: block;
   width: 100%;
-  cursor: crosshair;
-  
-  /* PROPRIETÀ CHIAVE PER PRESTAZIONI TOUCH/PAD */
-  touch-action: none; 
-  -ms-touch-action: none;
-  
-  /* FORZA ACCELERAZIONE GPU E ISOLAMENTO DEL LAYER DI RENDERING */
-  will-change: transform, contents; 
-  contain: strict; 
-  transform: translateZ(0);
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  cursor: crosshair; /* Feedback visivo per l'utente */
 
-  /* PREVIENE SELEZIONI O AZIONI INDESIDERATE */
+  /*
+  // ==================================================================
+  // >> SEZIONE CRITICA PER LA RISOLUZIONE DEL PROBLEMA <<
+  // Questo blocco impedisce al browser di "rubare" gli eventi.
+  // ==================================================================
+  */
+
+  /* 1. IMPEDISCE L'AZIONE DI DRAG-AND-DROP (LA CAUSA DEL BLOCCO) */
+  /* Questa è la regola mancante e più importante per il tuo caso. */
+  -webkit-user-drag: none;
+  user-drag: none;
+
+  /* 2. DISATTIVA LO SCROLL E LO ZOOM SUL CANVAS */
+  /* Risolve il problema su mobile e tablet. */
+  touch-action: none;
+  -ms-touch-action: none;
+
+  /* 3. IMPEDISCE LA SELEZIONE DEL TESTO/CANVAS DURANTE IL DISEGNO */
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
+
+  /* 4. DISABILITA AZIONI EXTRA SU MOBILE (es. menu contestuale su iOS) */
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
+
+  /*
+  // ==================================================================
+  // OTTIMIZZAZIONI PER LE PRESTAZIONI
+  // ==================================================================
+  */
+
+  /* Isola il rendering del canvas per non ricalcolare l'intera pagina */
+  contain: strict;
+
+  /* Forza l'accelerazione hardware via GPU per un disegno più fluido */
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 .elementCanvas:focus {
