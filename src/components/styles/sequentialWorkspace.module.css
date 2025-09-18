@@ -259,9 +259,8 @@
   border-radius: 6px;
   padding: 8px;
   width: 100%;
-  touch-action: none;
 
-  touch-action: none;
+  touch-action: none !important;
 }
 
 
@@ -290,7 +289,7 @@
 
   /* [A] Disattiva TUTTE le azioni touch predefinite (scroll, zoom, etc.). */
   /* Questa è la regola più importante per il funzionamento su mobile e pad. */
-  touch-action: none;
+  touch-action: none !important;
 
   /* [B] Impedisce al browser di provare a selezionare il canvas come se fosse testo. */
   /* Questo previene comportamenti anomali durante il disegno. */
