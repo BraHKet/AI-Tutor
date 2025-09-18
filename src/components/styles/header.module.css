@@ -16,7 +16,6 @@
   /* Ombra più morbida, profonda e realistica per un effetto "fluttuante" */
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
   /* Ancora per il responsive */
-  position: relative; 
 }
 
 .header {
@@ -146,12 +145,12 @@
 // ========================================== */
 
 @media (max-width: 768px) {
-  .header {
+  .header:has(.drawingToolsCompact) {
     justify-content: space-between;
     padding: 10px 16px; /* Adattiamo il padding */
   }
 
-  .headerCenter {
+  .headerCenter:has(.drawingToolsCompact) {
     position: absolute;
     top: 100%; 
     left: 0;
@@ -170,7 +169,7 @@
     display: none;
   }
 
-  .stickyHeaderWrapper {
-    margin-bottom: 60px; /* valore da regolare in base all’altezza della toolbar */
+  .stickyHeaderWrapper:has(.drawingToolsCompact) {
+    margin-bottom: 60px; /* attivo solo se la toolbar esiste/visibile */
   }
 }
