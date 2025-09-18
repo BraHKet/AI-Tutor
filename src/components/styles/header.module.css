@@ -21,7 +21,8 @@
 
 .header {
   /* BACKGROUND A GRADIENTE: Sottile ma elegante, aggiunge profondità. */
-  background-image: linear-gradient(180deg, #FFFFFF 0%, #F8F9FC 100%);
+  background-image: linear-gradient(to right, #1F2937, #111827);
+  border-bottom: 1px solid #374151; /* Bordo abbinato */
   padding: 12px 28px; /* Più spazio per un look premium */
   display: flex;
   align-items: center;
@@ -55,7 +56,7 @@
 // ========================================== */
 
 .backButton,
-.historyButtonInactive {
+.historyButtonInactive, .iconButton {
   background-color: #FFFFFF;
   border: none;
   padding: 9px 16px; /* Leggermente più alti */
@@ -74,7 +75,7 @@
 }
 
 .backButton:hover,
-.historyButtonInactive:hover {
+.historyButtonInactive:hover, .iconButton:hover {
   /* EFFETTO "LIFT": il pulsante si solleva verso l'utente */
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.07), 0 2px 3px rgba(0, 0, 0, 0.05);
