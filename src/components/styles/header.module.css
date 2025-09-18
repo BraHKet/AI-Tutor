@@ -21,8 +21,8 @@
 
 .header {
   /* BACKGROUND A GRADIENTE: Sottile ma elegante, aggiunge profondità. */
-  background-image: linear-gradient(to right, #1F2937, #111827);
-  border-bottom: 1px solid #374151; /* Bordo abbinato */
+  background-image: linear-gradient(to right, #c58e34, #a96e0e);
+  border-bottom: 1px solid #c58e34; /* Bordo abbinato */
   padding: 12px 28px; /* Più spazio per un look premium */
   display: flex;
   align-items: center;
