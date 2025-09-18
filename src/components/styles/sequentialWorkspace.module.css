@@ -135,18 +135,54 @@
 }
 
 .elementHeader {
-  background: #f1f5f9; /* Grigio molto chiaro per header */
+  /* 1. LOOK & FEEL: Sfondo pulito e ombra morbida */
+  background-color: #FFFFFF;
   padding: 12px 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid var(--color-border);
+  
+  /* Sostituiamo il bordo con un'ombra più moderna e soffice */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 2px 8px rgba(0, 0, 0, 0.03);
+  
+  /* 2. BARRA D'ACCENTO LATERALE */
+  /* La barra colorata che crea l'identità visiva */
+  border-left: 5px solid #a0aec0; /* Un grigio neutro di default */
+  transition: border-color 0.3s ease; /* Anima il cambio di colore */
 }
 
-.elementNumber {
+.elementHeader .elementNumber { /* Assumendo una classe per il contenitore del titolo */
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1rem;
   font-weight: 600;
-  color: #475569; /* Grigio scuro per numero elemento */
-  font-size: 14px;
+  color: #1F2937;
+}
+
+/* =======================================================
+// IDENTITÀ VISIVA UNICA (La magia delle Pseudo-classi)
+// ======================================================= */
+
+/* -- Stile per il PRIMO header (.elementHeader) -> TEXT -- */
+.elementHeader:first-of-type {
+  border-left-color: #3B82F6; /* Blu per il testo */
+}
+
+/* Cambia anche il colore dell'icona all'interno del primo header */
+.elementHeader:first-of-type .icon {
+  color: #3B82F6;
+}
+
+
+/* -- Stile per il SECONDO header (.elementHeader) -> DRAWING -- */
+.elementHeader:nth-of-type(2) {
+  border-left-color: #8B5CF6; /* Viola per il disegno */
+}
+
+/* Cambia anche il colore dell'icona all'interno del secondo header */
+.elementHeader:nth-of-type(2) .icon {
+  color: #8B5CF6;
 }
 
 .elementControls {
