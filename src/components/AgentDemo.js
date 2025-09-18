@@ -1091,7 +1091,7 @@ useEffect(() => {
           
 
           {isProcessing && (
-            <div style={inlineStyles.processingOverlay}>
+            <div style={styles.processingOverlay}>
               <SimpleLoading 
                 message="Il professore sta elaborando la tua risposta..." 
                 size="medium" 
