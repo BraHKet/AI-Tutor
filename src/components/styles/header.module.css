@@ -7,14 +7,11 @@
   top: 0;
   z-index: 50;
   background-color: white;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 2px 8px rgba(0, 0, 0, 0.05);
-  /* CHIAVE: Aggiungiamo position: relative per fare da "ancora"
-     all'elemento .headerCenter quando lo sposteremo. */
-  position: relative; 
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 2px 8px rgba(0, 0, 0, 0.05); /* Ombra più complessa e professionale */
 }
 
 .header {
-  background-color: #f9fafb;
+  background-color: #f9fafb; /* Sfondo leggermente grigio come OneNote */
   padding: 8px 24px;
   display: flex;
   align-items: center;
@@ -30,9 +27,9 @@
 }
 
 .headerCenter {
-  flex-grow: 1; 
+  flex-grow: 1; /* Occupa lo spazio disponibile */
   display: flex;
-  justify-content: center;
+  justify-content: center; /* Centra il contenuto (i tool) */
   min-width: 0;
 }
 
@@ -42,8 +39,6 @@
   gap: 12px;
   flex-shrink: 0;
 }
-
-/* ... [tutti gli altri stili .backButton, .title, etc. rimangono invariati] ... */
 
 .backButton {
   background-color: white;
@@ -63,7 +58,7 @@
   margin: 0;
   font-size: 1.1rem;
   font-weight: 600;
-  color: #111827;
+  color: #111827; /* Nero più morbido */
   display: flex;
   align-items: center;
   gap: 8px;
@@ -93,7 +88,7 @@
 }
 
 .historyButtonActive {
-  background: #4f46e5;
+  background: #4f46e5; /* Viola Indaco */
   border-color: #4f46e5;
   color: white;
 }
@@ -102,17 +97,6 @@
   border-color: #9ca3af;
 }
 
-/* Nasconde elementi non essenziali su schermi più piccoli */
-@media (max-width: 1100px) {
-  .title {
-    display: none;
-  }
-}
-@media (max-width: 900px) {
-    .progressBadge, .backButton {
-        display: none;
-    }
-}
 
 /* ===================================================================
 // SOLUZIONE RESPONSIVE CON SPOSTAMENTO VIRTUALE (CSS-ONLY)
