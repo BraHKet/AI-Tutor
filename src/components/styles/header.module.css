@@ -147,36 +147,18 @@
 
 @media (max-width: 768px) {
   .header {
-    /* 1. Permettiamo agli elementi di andare a capo */
-    flex-wrap: wrap;
-    /* Adattiamo il padding per la nuova disposizione */
-    padding: 12px 16px; 
-  }
-
-  .stickyHeaderWrapper {
-    margin-bottom: 60px; /* valore da regolare in base all’altezza della toolbar */
-  }
-
-  .headerLeft {
-    /* 2. Assicuriamo che 'Left' e 'Right' stiano sulla prima riga */
-    order: 1; 
-  }
-  
-  .headerRight {
-    order: 2;
+    justify-content: space-between;
+    padding: 10px 16px; /* Adattiamo il padding */
   }
 
   .headerCenter {
-    /* 3. Forziamo la barra degli strumenti ad andare a capo e occupare tutto lo spazio */
+    position: absolute;
+    top: 100%; 
+    left: 0;
     width: 100%;
-    order: 3; /* Deve apparire dopo Left e Right */
-
-    /* Stili per trasformarla in una barra degli strumenti separata visivamente */
-    margin-top: 12px;      /* Spazio dall'header sopra */
-    padding-top: 12px;     /* Spazio interno */
-    border-top: 1px solid #EAECEF; /* Linea di separazione netta */
-
-    /* Manteniamo lo scroll orizzontale per i tool se non ci stanno */
+    background-color: white;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 8px 16px;
     justify-content: flex-start;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -186,5 +168,9 @@
 
   .headerCenter::-webkit-scrollbar {
     display: none;
+  }
+
+  .stickyHeaderWrapper {
+    margin-bottom: 60px; /* valore da regolare in base all’altezza della toolbar */
   }
 }
