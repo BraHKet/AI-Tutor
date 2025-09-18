@@ -169,5 +169,8 @@
     display: none;
   }
 
+  .stickyHeaderWrapper {
+    margin-bottom: 60px; /* attivo solo quando la toolbar compatta esiste/visibile */
+  }
   
 }
