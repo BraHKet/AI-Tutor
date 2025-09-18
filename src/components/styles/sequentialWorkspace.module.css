@@ -290,7 +290,7 @@
 .addElementButton:last-of-type {
   border-top-right-radius: 14px;
   border-bottom-right-radius: 14px;
-  right: 12px; /* Posizione del secondo bottone da destra */
+  right: 8px; /* Posizione del secondo bottone da destra */
 }
 
 /* Sposta il secondo bottone (e successivi) attaccato al precedente */

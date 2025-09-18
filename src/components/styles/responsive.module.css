@@ -15,6 +15,10 @@ order: 3;
 margin-left: 0;
 }
 
+.stickyHeaderWrapper:has(.drawingToolsCompact) {
+    margin-bottom: 60px; /* attivo solo quando la toolbar compatta esiste/visibile */
+  }
+
 }
 
 .elementCanvas {
