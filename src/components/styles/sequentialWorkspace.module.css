@@ -290,7 +290,7 @@
 .addElementButton:last-of-type {
   border-top-right-radius: 14px;
   border-bottom-right-radius: 14px;
-  right: 8px; /* Posizione del secondo bottone da destra */
+  right: 6px; /* Posizione del secondo bottone da destra */
 }
 
 /* Sposta il secondo bottone (e successivi) attaccato al precedente */
@@ -300,13 +300,7 @@
 }
 
 
-/* 7. MICRO-INTERAZIONI "WOW" */
 
-.addElementButton:hover {
-  transform: translateY(-4px); /* Si solleva al passaggio del mouse */
-  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.45); /* L'ombra si intensifica */
-  z-index: 1001; /* Si porta sopra gli altri bottoni quando attivo */
-}
 
 .addElementButton:active {
   transform: translateY(0); /* Simula la pressione */
