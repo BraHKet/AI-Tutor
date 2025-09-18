@@ -234,11 +234,11 @@
 }
 
 .addElementsFooter { /* Nuova classe per i pulsanti "Add" in fondo */
-  padding: 15px;
+  
   background-color: var(--color-background-elevated);
   border-top: 1px solid var(--color-border);
   display: flex;
-  gap: 10px;
+  
   justify-content: center; /* Centra i pulsanti */
   flex-shrink: 0; /* Impedisce che si rimpicciolisca */
 }
@@ -290,7 +290,7 @@
 .addElementButton:last-of-type {
   border-top-right-radius: 14px;
   border-bottom-right-radius: 14px;
-  right: 16px; /* Posizione del secondo bottone da destra */
+  right: 12px; /* Posizione del secondo bottone da destra */
 }
 
 /* Sposta il secondo bottone (e successivi) attaccato al precedente */
