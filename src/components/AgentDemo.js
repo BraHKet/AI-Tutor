@@ -372,6 +372,7 @@ const reinitializeAllCanvases = useCallback(() => {
 
     setIsDrawing(true);
     setActiveCanvasId(canvasId);
+    setActiveElementId(canvasId);
     
     const canvas = document.getElementById(`canvas-${canvasId}`);
     if (!canvas) return;
