@@ -250,7 +250,7 @@
   min-height: 60px;
   background: transparent;
 }
-
+  
 .drawingElementContainer {
   display: flex;
   flex-direction: column;
