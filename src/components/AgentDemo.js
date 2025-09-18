@@ -372,7 +372,6 @@ const reinitializeAllCanvases = useCallback(() => {
 
     setIsDrawing(true);
     setActiveCanvasId(canvasId);
-    setActiveElementId(canvasId);
     
     const canvas = document.getElementById(`canvas-${canvasId}`);
     if (!canvas) return;
@@ -1090,6 +1089,17 @@ useEffect(() => {
         {/* Main Workspace */}
         <div className={styles.mainWorkspace}>
           
+
+          {isProcessing && (
+            <div style={inlineStyles.processingOverlay}>
+              <SimpleLoading 
+                message="Il professore sta elaborando la tua risposta..." 
+                size="medium" 
+              />
+            </div>
+          )}
+
+
           {/* Sequential Response System */}
           {examStarted && !isComplete && (
             <div className={styles.sequentialWorkspace}>
