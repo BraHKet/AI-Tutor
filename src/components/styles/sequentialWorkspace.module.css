@@ -260,6 +260,8 @@
   padding: 8px;
   width: 100%;
   touch-action: none;
+
+  touch-action: none;
 }
 
 
@@ -284,9 +286,31 @@
   cursor: crosshair; /* Cursore per desktop */
   box-shadow: var(--shadow-small);
 
-  /* 4. OTTIMIZZAZIONE DELLE PRESTAZIONI */
-  /* Forza l'accelerazione hardware per un disegno più fluido */
-  will-change: transform;
+  /* --- 2. PREVENZIONE CONFLITTI CON IL BROWSER (LA PARTE CRITICA) --- */
+
+  /* [A] Disattiva TUTTE le azioni touch predefinite (scroll, zoom, etc.). */
+  /* Questa è la regola più importante per il funzionamento su mobile e pad. */
+  touch-action: none;
+
+  /* [B] Impedisce al browser di provare a selezionare il canvas come se fosse testo. */
+  /* Questo previene comportamenti anomali durante il disegno. */
+  -webkit-user-select: none; /* Per Safari e browser basati su Chrome */
+  -moz-user-select: none;    /* Per Firefox */
+  -ms-user-select: none;     /* Per Internet Explorer/Edge (vecchi) */
+  user-select: none;         /* La proprietà standard */
+
+  /* [C] Disabilita il menu contestuale su pressione prolungata (es. su iOS). */
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent; /* Rimuove l'alone al tocco */
+
+  /* --- 3. OTTIMIZZAZIONE DELLE PRESTAZIONI --- */
+
+  /* Isola il canvas per dire al browser che il suo contenuto cambia spesso, */
+  /* ottimizzando il rendering e rendendo il disegno più fluido. */
+  contain: layout style paint;
+  will-change: contents;
+
+  /* Forza l'accelerazione hardware tramite la GPU dove possibile. */
   transform: translateZ(0);
 }
 
