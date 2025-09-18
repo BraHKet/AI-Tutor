@@ -906,7 +906,7 @@ useEffect(() => {
 
 
 
-  if (isProcessing) {
+  if (isProcessing && !isAutoSetupInProgress) {
     return (
       <SimpleLoading 
         message="Il professore sta rispondendo..."
