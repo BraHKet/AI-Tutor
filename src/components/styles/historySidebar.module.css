@@ -150,10 +150,10 @@
   box-shadow: 2px 0 8px rgba(0,0,0,0.2);
   border-left: 1px solid #e5e7eb;
   flex-shrink: 0;
+  visibility: visible;
+  
 
-  transform: translateX(-100%);
-
-  z-index: 10001; /* assicura che stia sopra agli altri elementi */
+  z-index: 9999; /* assicura che stia sopra agli altri elementi */
   }
 }
 
