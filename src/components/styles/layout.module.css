@@ -64,7 +64,7 @@
 /* ======================================= */
 
 /* Schermi piccoli (mobile, fino a 1023px) */
-@media (max-width: 1023px) {
+@media (max-width: 825px) {
   .mainContent {
     flex-direction: column; /* Gli elementi si impilano su mobile */
     height: auto; /* Altezza automatica */
@@ -79,7 +79,7 @@
 }
 
 /* Schermi grandi (desktop, da 1024px in su) */
-@media (min-width: 1024px) {
+@media (min-width: 826px) {
   .mainContent > .historySidebar.historySidebarVisible ~ .mainWorkspace {
     margin-right: var(--history-sidebar-width);
   }

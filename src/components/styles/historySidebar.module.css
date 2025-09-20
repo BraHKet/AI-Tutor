@@ -136,7 +136,7 @@
 /* ======================================= */
 
 /* Stili per schermi piccoli (mobile, fino a 1023px) */
-@media (max-width: 1023px) {
+@media (max-width: 825px) {
   .historySidebar {
   position: fixed; /* o absolute se vuoi legarla a un container specifico */
   top: 0;
@@ -160,7 +160,7 @@
 }
 
 /* Stili per schermi grandi (desktop, da 1024px in su) */
-@media (min-width: 1024px) {
+@media (min-width: 826px) {
   .historySidebar {
     position: sticky;
     top: var(--header-height, 0px);
