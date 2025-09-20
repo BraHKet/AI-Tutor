@@ -96,3 +96,12 @@
   text-align: right;
   margin-top: 8px;
 }
+
+/* Stili per schermi piccoli (es. telefoni) */
+@media (max-width: 600px) {
+  .historySidebar {
+    width: 100%;
+    border-right: none; /* Rimuove il bordo destro */
+    box-shadow: none;   /* Rimuove l'ombra */
+  }
+}
