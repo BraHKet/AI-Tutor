@@ -3,20 +3,26 @@
 // ========================================== */
 
 .historySidebar {
-  width: 400px;
-  height: 100vh; /* occupa tutta l'altezza */
-  flex-shrink: 0;
+  /* Stili di base: applicati a tutti, ma poi sovrascritti dai media query */
+  width: 400px; /* Larghezza di default per desktop, sovrascritta per mobile */
   background-color: white;
-  border-right: 1px solid #e5e7eb;
   display: flex;
   flex-direction: column;
-  box-shadow: 2px 0 8px rgba(0,0,0,0.2);
-  
-  position: fixed;   /* overlay */
-  top: 0;
-  left: 0;           /* oppure right: 0 se la vuoi a destra */
-  z-index: 1000;     /* più alto di tutto il resto */
+  box-shadow: 2px 0 8px rgba(0,0,0,0.2); /* Ombra di default per desktop */
+  border-left: 1px solid #e5e7eb; /* Bordo a sinistra quando è affiancata a destra */
+  /* NOTA: Rimosso height: 100vh; e position: fixed; dalla base */
+  /* saranno applicati solo per mobile */
+
+  /* Inizialmente nascosta e fuori schermo per le transizioni */
+  transform: translateX(100%);
+  transition: transform 0.3s ease-out; /* Aggiungi transizione per apertura/chiusura */
 }
+
+/* Stili specifici per la sidebar quando è visibile (controllo in JS con className) */
+.historySidebarVisible {
+  transform: translateX(0);
+}
+
 
 .sidebarHeader {
   padding: 16px;
@@ -24,6 +30,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0; /* Impedisce all'header di restringersi */
 }
 
 .sidebarTitle {
@@ -40,9 +47,10 @@
 }
 
 .conversationContainer {
-  flex: 1;
-  overflow-y: auto;
+  flex-grow: 1; /* Permette al container della conversazione di occupare lo spazio rimanente */
+  overflow-y: auto; /* Abilita lo scroll verticale solo per questo container */
   padding: 16px;
+  /* Aggiungi padding-bottom se necessario per non far toccare l'ultimo messaggio */
 }
 
 .conversationTurn {
@@ -97,20 +105,46 @@
   margin-top: 8px;
 }
 
-/* Stili per schermi piccoli (es. telefoni) */
-@media (max-width: 600px) {
+/* ======================================= */
+/* MEDIA QUERIES                           */
+/* ======================================= */
+
+/* Stili per schermi piccoli (es. telefoni - fino a 1023px) */
+@media (max-width: 1023px) { /* Usiamo 1023px come breakpoint per coerenza con min-width: 1024px */
   .historySidebar {
-    width: 100%;
-    border-right: none; /* Rimuove il bordo destro */
-    box-shadow: none;   /* Rimuove l'ombra */
+    width: 100vw; /* Occupare tutta la larghezza della viewport */
+    height: 100vh; /* Occupare tutta l'altezza della viewport */
+    position: fixed; /* Rendila un overlay */
+    top: 0;
+    right: 0; /* Appare da destra */
+    left: auto; /* Assicurati che non ci siano conflitti con left:0 */
+    z-index: 1000;
+    box-shadow: -2px 0 8px rgba(0,0,0,0.2); /* Ombra per l'overlay */
+    border-left: none; /* Nessun bordo verticale se occupa tutta la larghezza */
+  }
+
+  /* Per la transizione mobile: nascosta di default, visibile con .historySidebarVisible */
+  .historySidebar:not(.historySidebarVisible) {
+      transform: translateX(100%);
+  }
+  .historySidebarVisible {
+      transform: translateX(0);
   }
 }
 
-/* NUOVO: Stili per schermi grandi (PC) */
+/* Stili per schermi grandi (PC - da 1024px in su) */
 @media (min-width: 1024px) {
   .historySidebar {
-    position: static;  /* Rimuove l'overlay e la fa rientrare nel flusso della pagina */
-    z-index: auto;     /* Resetta lo z-index */
-    box-shadow: none;  /* L'ombra non ha più senso se è affiancata */
+    position: sticky; /* O 'static' se non vuoi che si "appiccichi" in alto */
+    top: var(--header-height, 0px); /* Si attacca sotto l'header. Usa un fallback se la variabile non è definita */
+    height: calc(100vh - var(--header-height, 0px)); /* Prende l'altezza rimanente */
+    width: 400px; /* Larghezza fissa per desktop */
+    left: auto; /* Annulla eventuali posizionamenti di left */
+    right: 0; /* Allineata a destra del contenitore padre */
+    z-index: auto; /* Resetta lo z-index */
+    box-shadow: none; /* Rimuove l'ombra perché è affiancata */
+    transform: translateX(0); /* Sempre visibile per desktop, nessuna transizione */
+    transition: none; /* Disabilita la transizione per desktop */
+    border-left: 1px solid #e5e7eb; /* Bordo a sinistra quando è affiancata a destra */
   }
 }
