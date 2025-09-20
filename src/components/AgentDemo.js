@@ -114,7 +114,7 @@ export default function AgentDemo() {
   // AI Response states
   const [showAIResponse, setShowAIResponse] = useState(false);
   const [currentAIResponse, setCurrentAIResponse] = useState('');
-  const [showHistory, setShowHistory] = useState(false);
+  const [showHistory, setShowHistory] = useState(true);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [autoSpeak, setAutoSpeak] = useState(true);
 

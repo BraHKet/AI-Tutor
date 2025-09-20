@@ -174,3 +174,10 @@
   }
   
 }
+
+
+@media (min-width: 1024px) {
+  .historyButtonInactive, .historyButtonActive {
+    display: none;
+  }
+}
