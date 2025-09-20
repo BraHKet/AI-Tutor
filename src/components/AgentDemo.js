@@ -1019,7 +1019,7 @@ useEffect(() => {
       {/* ========= INIZIO DELLA NUOVA STRUTTURA ORGANIZZATIVA ============= */}
       {/* ================================================================== */}
 
-      <div className={styles.stickyHeaderWrapper}>
+      <div className={styles.stickyHeaderWrapper} style={{ marginBottom: isDrawingToolsCompact ? "60px" : "0" }}>
         <div className={styles.header}>
           <div className={styles.headerLeft}>
             <button onClick={handleLogout} className={styles.backButton}>
