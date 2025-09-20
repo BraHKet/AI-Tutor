@@ -1274,7 +1274,6 @@ useEffect(() => {
                   className={styles.addElementButton}
                 >
                   <Type size={16} />
-                  Add Text
                 </button>
 
                 <button
@@ -1282,7 +1281,6 @@ useEffect(() => {
                   className={styles.addElementButton}
                 >
                   <Edit3 size={16} />
-                  Add Drawing
                 </button>
               </div>
 

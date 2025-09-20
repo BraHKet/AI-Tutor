@@ -347,7 +347,7 @@
   font-size: 16px;
   font-weight: 600;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  bottom:10%;
+  bottom:5%;
 
   /* EFFETTO GRADIENTE E OMBRA */
   background-image: linear-gradient(135deg, #2563EB 0%, #60A5FA 100%);
@@ -356,13 +356,13 @@
 
 /* PRIMO BOTTONE */
 .addElementButton:first-of-type {
-  left: calc(65% + 25px);  
+  left: calc(85% + 25px);  
   background-image: linear-gradient(135deg, #2563EB 0%, #60A5FA 100%);
 }
 
 /* SECONDO BOTTONE */
 .addElementButton:last-of-type {
-  left: calc(75% + 25px);
+  left: calc(90% + 25px);
   background-image: linear-gradient(135deg, #F59E0B 0%, #FCD34D 100%);
 }
 
