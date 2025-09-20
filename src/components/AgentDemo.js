@@ -123,6 +123,9 @@ export default function AgentDemo() {
 
   const mainWorkspaceRef = useRef(null);
 
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+
   // Gestisce l'avvio e lo stop della riproduzione per un messaggio specifico.
   const handleRepeatOrStop = (message) => {
     const messageId = message.timestamp;
@@ -961,6 +964,18 @@ useEffect(() => {
   }, [reinitializeAllCanvases]); // Dipende da reinitializeAllCanvases
 
 
+  useEffect(() => {
+  const handleResize = () => {
+    setIsMobile(window.innerWidth < 768);
+  };
+
+  window.addEventListener("resize", handleResize);
+  return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const isDrawingToolsCompact = isMobile && sequentialElements.some(el => el.type === 'drawing');
+
+
   if (isProcessing && !isAutoSetupInProgress) {
     return (
       <SimpleLoading 
@@ -1015,7 +1030,7 @@ useEffect(() => {
             </button>
           </div>
           
-          <div className={styles.headerCenter} style={{ padding: sequentialElements.some(el => el.type === 'drawing') ? "8px 16px" : "0" }}>
+          <div className={styles.headerCenter} style={{ padding: isDrawingToolsCompact ? "0" : "8px 16px" }}>
             {activeCanvasId && (
               <div className={styles.drawingToolsCompact}>
                 <button
