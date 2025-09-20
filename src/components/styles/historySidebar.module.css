@@ -151,6 +151,7 @@
   border-left: 1px solid #e5e7eb;
   flex-shrink: 0;
 
+  transform: translateX(-50%);
 
   z-index: 9999; /* assicura che stia sopra agli altri elementi */
   }
