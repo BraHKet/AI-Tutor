@@ -142,7 +142,7 @@
   top: 0;
   right: 0;
   height: 100vh; /* riempie l’altezza dello schermo */
-  width: 400px;
+  width: 100vw; 
   right: auto;
   left: 0;
 
@@ -159,7 +159,7 @@
   }
 
   .closeButton {
-    z-index: 9999;
+    pointer-events: auto;
   }
 }
 
