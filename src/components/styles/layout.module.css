@@ -45,9 +45,8 @@
 
 .mainWorkspace {
   flex: 1; /* Occupa lo spazio disponibile */
-  display: flex;
+
   flex-direction: column;
-  padding: 20px;
 
   /* MODIFICATO: ABILITA LO SCROLL INDIPENDENTE PER IL WORKSPACE */
   overflow-y: auto;
