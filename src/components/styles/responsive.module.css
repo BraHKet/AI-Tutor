@@ -24,5 +24,5 @@ height: auto;
 }
 
 @media (max-width: 768px) {
-    .headerCenter {padding:0;}
+    .headerCenter {padding:auto !important;} 
 }
