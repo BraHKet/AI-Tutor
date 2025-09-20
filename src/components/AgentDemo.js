@@ -1015,7 +1015,7 @@ useEffect(() => {
             </button>
           </div>
           
-          <div className={styles.headerCenter}>
+          <div className={styles.headerCenter} style={{ padding: isDrawingToolsCompact ? "0" : "8px 16px" }}>
             {activeCanvasId && (
               <div className={styles.drawingToolsCompact}>
                 <button
