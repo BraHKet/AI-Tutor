@@ -3,26 +3,28 @@
 // ========================================== */
 
 .historySidebar {
-  /* Stili di base: applicati a tutti, ma poi sovrascritti dai media query */
-  width: 400px; /* Larghezza di default per desktop, sovrascritta per mobile */
+  width: 400px; /* Larghezza di default per desktop */
   background-color: white;
   display: flex;
   flex-direction: column;
-  box-shadow: 2px 0 8px rgba(0,0,0,0.2); /* Ombra di default per desktop */
-  border-left: 1px solid #e5e7eb; /* Bordo a sinistra quando è affiancata a destra */
-  /* NOTA: Rimosso height: 100vh; e position: fixed; dalla base */
-  /* saranno applicati solo per mobile */
+  box-shadow: 2px 0 8px rgba(0,0,0,0.2);
+  border-left: 1px solid #e5e7eb; /* Bordo a sinistra quando affiancata a destra */
+  flex-shrink: 0; /* Impedisce alla sidebar di restringersi */
 
-  /* Inizialmente nascosta e fuori schermo per le transizioni */
+  /* NUOVA REGOLA: Inizialmente nascosta e fuori schermo per le transizioni (spec. mobile) */
   transform: translateX(100%);
-  transition: transform 0.3s ease-out; /* Aggiungi transizione per apertura/chiusura */
+  transition: transform 0.3s ease-out, visibility 0.3s ease-out; /* Transizione per scorrimento e visibilità */
+  visibility: hidden; /* Nascosta di default */
+  pointer-events: none; /* Non intercettare eventi quando nascosta */
 }
 
-/* Stili specifici per la sidebar quando è visibile (controllo in JS con className) */
+/* NUOVA REGOLA: Quando showHistory è true, questa classe rende la sidebar visibile */
+/* Il tuo JS applica questa classe condizionalmente (styles.historySidebar + (showHistory ? styles.historySidebarVisible : '')) */
 .historySidebarVisible {
-  transform: translateX(0);
+  transform: translateX(0); /* Porta la sidebar in vista */
+  visibility: visible;
+  pointer-events: auto; /* Abilita gli eventi quando visibile */
 }
-
 
 .sidebarHeader {
   padding: 16px;
@@ -48,7 +50,7 @@
 
 .conversationContainer {
   flex-grow: 1; /* Permette al container della conversazione di occupare lo spazio rimanente */
-  overflow-y: auto; /* Abilita lo scroll verticale solo per questo container */
+  overflow-y: auto; /* ABILITA LO SCROLL VERTICALE SOLO PER QUESTO CONTAINER */
   padding: 16px;
   /* Aggiungi padding-bottom se necessario per non far toccare l'ultimo messaggio */
 }
@@ -62,6 +64,7 @@
 .professorTurn {
   composes: conversationTurn;
   background: #dbeafe;
+  position: relative; /* NUOVA REGOLA: Per posizionare il pulsante "R" */
 }
 
 .studentTurn {
@@ -73,6 +76,8 @@
   font-weight: 600;
   margin-bottom: 8px;
   font-size: 14px;
+  display: flex; /* NUOVA REGOLA: Permette di allineare icone/testo */
+  align-items: center; /* NUOVA REGOLA: Allineamento verticale */
 }
 
 .professorSpeaker {
@@ -105,12 +110,37 @@
   margin-top: 8px;
 }
 
+/* NUOVA REGOLA: Stili del pulsante "R" (Repeat) per il professore */
+.repeatButton {
+  position: absolute;
+  top: 10px; /* Regola la posizione verticale */
+  right: 10px; /* Regola la posizione orizzontale */
+  background: #60a5fa; /* Colore di sfondo */
+  color: white;
+  border: none;
+  border-radius: 50%; /* Rende il pulsante circolare */
+  width: 24px; /* Dimensione */
+  height: 24px; /* Dimensione */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  z-index: 10; /* Assicura che sia sopra il contenuto */
+}
+
+.repeatButton:hover {
+  background-color: #3b82f6;
+}
+
 /* ======================================= */
 /* MEDIA QUERIES                           */
 /* ======================================= */
 
-/* Stili per schermi piccoli (es. telefoni - fino a 1023px) */
-@media (max-width: 1023px) { /* Usiamo 1023px come breakpoint per coerenza con min-width: 1024px */
+/* Stili per schermi piccoli (mobile, fino a 1023px) */
+@media (max-width: 1023px) {
   .historySidebar {
     width: 100vw; /* Occupare tutta la larghezza della viewport */
     height: 100vh; /* Occupare tutta l'altezza della viewport */
@@ -122,29 +152,23 @@
     box-shadow: -2px 0 8px rgba(0,0,0,0.2); /* Ombra per l'overlay */
     border-left: none; /* Nessun bordo verticale se occupa tutta la larghezza */
   }
-
-  /* Per la transizione mobile: nascosta di default, visibile con .historySidebarVisible */
-  .historySidebar:not(.historySidebarVisible) {
-      transform: translateX(100%);
-  }
-  .historySidebarVisible {
-      transform: translateX(0);
-  }
 }
 
-/* Stili per schermi grandi (PC - da 1024px in su) */
+/* Stili per schermi grandi (desktop, da 1024px in su) */
 @media (min-width: 1024px) {
   .historySidebar {
-    position: sticky; /* O 'static' se non vuoi che si "appiccichi" in alto */
-    top: var(--header-height, 0px); /* Si attacca sotto l'header. Usa un fallback se la variabile non è definita */
+    /* MODIFICATO: Rende la sidebar "appiccicosa" sotto l'header */
+    position: sticky;
+    top: var(--header-height, 0px); /* Inizia sotto l'header. --header-height deve essere definito */
     height: calc(100vh - var(--header-height, 0px)); /* Prende l'altezza rimanente */
     width: 400px; /* Larghezza fissa per desktop */
     left: auto; /* Annulla eventuali posizionamenti di left */
-    right: 0; /* Allineata a destra del contenitore padre */
-    z-index: auto; /* Resetta lo z-index */
+    right: 0; /* Allineata a destra del contenitore padre (mainContent) */
+    z-index: auto; /* Resetta lo z-index, non è più un overlay */
     box-shadow: none; /* Rimuove l'ombra perché è affiancata */
     transform: translateX(0); /* Sempre visibile per desktop, nessuna transizione */
     transition: none; /* Disabilita la transizione per desktop */
-    border-left: 1px solid #e5e7eb; /* Bordo a sinistra quando è affiancata a destra */
+    visibility: visible; /* Sempre visibile */
+    pointer-events: auto; /* Sempre interattiva */
   }
 }
