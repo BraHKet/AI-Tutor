@@ -347,6 +347,7 @@
   font-size: 16px;
   font-weight: 600;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  bottom:10%;
 
   /* EFFETTO GRADIENTE E OMBRA */
   background-image: linear-gradient(135deg, #2563EB 0%, #60A5FA 100%);
@@ -355,35 +356,13 @@
 
 /* PRIMO BOTTONE */
 .addElementButton:first-of-type {
-  right: 72px;  
+  left: calc(65% + 25px);  
   background-image: linear-gradient(135deg, #2563EB 0%, #60A5FA 100%);
 }
 
 /* SECONDO BOTTONE */
 .addElementButton:last-of-type {
-  right: 24px;  
+  left: calc(75% + 25px);
   background-image: linear-gradient(135deg, #F59E0B 0%, #FCD34D 100%);
 }
 
-/* HOVER CON EFFETTO “GLOW” */
-.addElementButton:hover {
-  transform: scale(1.2);
-  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.6), 0 0 15px rgba(37, 99, 235, 0.4);
-}
-
-/* HOVER SECONDO BOTTONE GLOW COLORE DIVERSO */
-.addElementButton:last-of-type:hover {
-  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.6), 0 0 15px rgba(245, 158, 11, 0.4);
-}
-
-
-
-
-
-
-/* ==========================================
-// SEZIONE RESPONSIVE
-// ========================================== */
-@media (max-width: 1200px) {
-
-}
