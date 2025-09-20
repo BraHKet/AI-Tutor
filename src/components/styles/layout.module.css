@@ -2,7 +2,7 @@
 // FILE: layout.module.css
 // ========================================== */
 
-/* NUOVA REGOLA: Definizione delle variabili CSS globali */
+/* Definizione delle variabili CSS globali (NUOVA REGOLA, ma era già presente) */
 :root {
   --header-height: 60px; /* Assicurati che questo corrisponda all'altezza reale del tuo header */
   --history-sidebar-width: 400px; /* Coerente con la larghezza della sidebar */
@@ -14,51 +14,48 @@
   background-color: #f5f5f5;
   display: flex;
   flex-direction: column;
+  /* MODIFICATO: Rimosso overflow: hidden; da qui, lo scroll è demandato ai figli */
 }
 
 .stickyHeaderWrapper {
-  /* MODIFICATO: Aggiungi questi stili per un header fisso in alto */
   position: sticky;
   top: 0;
-  z-index: 999; /* Leggermente meno della sidebar mobile, più del mainContent */
-  background-color: white; /* Assicurati che l'header abbia un background solido */
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Ombra leggera sotto l'header */
+  z-index: 999;
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .header {
-  /* MODIFICATO: Assicurati che l'altezza dell'header sia definita per la variabile */
   height: var(--header-height);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 15px; /* Esempio */
+  padding: 0 15px;
   border-bottom: 1px solid #eee;
 }
 
 .mainContent {
-  flex: 1;
+  flex: 1; /* MODIFICATO: Permette al mainContent di occupare lo spazio rimanente nel container */
   display: flex;
-  position: relative; /* Mantiene la compatibilità per posizionamenti interni se ci fossero */
-
-  /* NUOVA REGOLA: Per desktop, il mainContent è un contenitore flex per affiancare workspace e sidebar */
-  /* MODIFICATO: Altezza completa meno l'header per lo scroll indipendente */
-  height: calc(100vh - var(--header-height));
-  overflow: hidden; /* Nasconde le barre di scorrimento extra dal mainContent */
+  position: relative; /* Utile per z-index o posizionamenti interni */
+  /* MODIFICATO: Rimosso height: calc(...) e overflow: hidden; da qui */
+  /* Lo scroll complessivo della pagina sarà sul body (o sul container se necessario) */
+  /* Gli scroll interni saranno gestiti da mainWorkspace e historySidebar */
 }
 
 .mainWorkspace {
-  flex: 1; /* Prende lo spazio disponibile */
+  flex: 1; /* Occupa lo spazio disponibile */
   display: flex;
   flex-direction: column;
-  padding: 20px; /* Padding interno */
+  padding: 20px;
 
-  /* NUOVA REGOLA: ABILITA LO SCROLL INDIPENDENTE PER IL WORKSPACE */
+  /* MODIFICATO: ABILITA LO SCROLL INDIPENDENTE PER IL WORKSPACE */
   overflow-y: auto;
-  height: 100%; /* Occupa l'altezza completa del mainContent */
+  /* MODIFICATO: Altezza 100% per far sì che lo scroll sia interno a mainWorkspace */
+  height: 100%;
 
-  /* NUOVA REGOLA: Margine destro che si adatta alla presenza della sidebar */
-  margin-right: 0; /* Default: nessun margine */
-  transition: margin-right 0.3s ease-out; /* Transizione per il margin */
+  margin-right: 0;
+  transition: margin-right 0.3s ease-out;
 }
 
 
@@ -70,28 +67,26 @@
 @media (max-width: 1023px) {
   .mainContent {
     flex-direction: column; /* Gli elementi si impilano su mobile */
-    height: auto; /* Altezza automatica, permette lo scroll della pagina */
+    height: auto; /* Altezza automatica */
     overflow: auto; /* Permetti lo scroll della pagina su mobile */
   }
 
   .mainWorkspace {
-    margin-right: 0 !important; /* Nessun margine a destra su mobile */
+    margin-right: 0 !important;
     height: auto; /* Altezza automatica */
-    overflow-y: auto; /* Permette lo scroll del contenuto del workspace stesso */
+    overflow-y: auto; /* Scroll del contenuto del workspace */
   }
 }
 
 /* Schermi grandi (desktop, da 1024px in su) */
 @media (min-width: 1024px) {
-  /* NUOVA REGOLA: Selettore fratello per influenzare mainWorkspace quando historySidebar è presente e visibile */
-  /* Questo funziona perché historySidebar precede mainWorkspace nel DOM quando showHistory è true. */
   .mainContent > .historySidebar.historySidebarVisible ~ .mainWorkspace {
-    margin-right: var(--history-sidebar-width); /* Lascia spazio alla sidebar quando è visibile */
+    margin-right: var(--history-sidebar-width);
   }
 
   .mainContent {
-    /* MODIFICATO: Aggiungi questi stili per allineare workspace e sidebar */
-    flex-direction: row;
+    flex-direction: row; /* Affianca workspace e sidebar */
     align-items: flex-start; /* Allinea gli elementi in alto nel mainContent */
+    /* MODIFICATO: Rimosso height: calc(...) e overflow: hidden; da qui, lo scroll è sui figli */
   }
 }
