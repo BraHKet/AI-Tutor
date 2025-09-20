@@ -137,17 +137,7 @@
 
 /* Stili per schermi piccoli (mobile, fino a 1023px) */
 @media (max-width: 1023px) {
-  .historySidebar {
-    width: 100vw;
-    height: 100vh; /* MODIFICATO: Altezza completa per overlay mobile */
-    position: fixed;
-    top: 0;
-    right: 0;
-    left: auto;
-    z-index: 1000;
-    box-shadow: -2px 0 8px rgba(0,0,0,0.2);
-    border-left: none;
-  }
+  
 }
 
 /* Stili per schermi grandi (desktop, da 1024px in su) */
