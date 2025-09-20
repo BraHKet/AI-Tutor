@@ -157,6 +157,10 @@
 
   z-index: 9999; /* assicura che stia sopra agli altri elementi */
   }
+
+  .closeButton {
+    z-index: 9999;
+  }
 }
 
 /* Stili per schermi grandi (desktop, da 1024px in su) */
