@@ -222,59 +222,48 @@ export default function AgentDemo() {
   
   const initializeElementCanvas = useCallback((elementId) => {
     const canvas = document.getElementById(`canvas-${elementId}`);
-    if (!canvas) return;
+    if (canvas) {
+        const container = canvas.parentElement;
+        if (!container) return;
 
-    const container = canvas.parentElement;
-    if (!container) return;
+        const rect = container.getBoundingClientRect();
+        if (rect.width <= 0) return;
 
-    const rect = container.getBoundingClientRect();
-    if (rect.width <= 0) return;
+        const width = rect.width;
+        const height = FIXED_CANVAS_HEIGHT; // Usa la costante
+        
+        const dpr = window.devicePixelRatio || 1;
+        
+        // Salva il contenuto corrente del canvas PRIMA di ridimensionarlo
+        const ctx = canvas.getContext('2d');
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height); // Salva i pixel attuali
+        const currentDataURL = canvas.toDataURL('image/png'); // Salva come URL per ripristinare il disegno
 
-    const width = rect.width;
-    const height = FIXED_CANVAS_HEIGHT;
-    
-    const dpr = window.devicePixelRatio || 1;
-    
-    // Controlla se le dimensioni attuali del canvas sono diverse da quelle calcolate
-    const needsResize = canvas.width !== width * dpr || canvas.height !== height * dpr;
-
-    // Salva il contenuto corrente solo se è necessario un ridimensionamento O se non c'è canvasData
-    // e vogliamo salvare l'immagine attuale come base.
-    let currentDataURL = null;
-    if (needsResize || !sequentialElements.find(el => el.id === elementId)?.canvasData) {
-        currentDataURL = canvas.toDataURL('image/png'); // Salva il disegno attuale PRIMA del resize
-    }
-
-    // Esegui il ridimensionamento SOLO se necessario
-    if (needsResize) {
         canvas.width = width * dpr;
         canvas.height = height * dpr;
+        
         canvas.style.width = `${width}px`;
         canvas.style.height = `${height}px`;
+        
+        ctx.scale(dpr, dpr);
+
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Ripristina il disegno precedente se esistente
+        if (currentDataURL && currentDataURL !== 'data:,') { // 'data:,' è il DataURL di un canvas vuoto
+            const img = new Image();
+            img.onload = () => {
+                ctx.drawImage(img, 0, 0, width, height); // Disegna l'immagine salvata alle nuove dimensioni logiche
+            };
+            img.src = currentDataURL;
+        }
     }
-    
-    const ctx = canvas.getContext('2d');
-    ctx.scale(dpr, dpr); // Applica la scala DPR dopo il ridimensionamento
-
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    
-    ctx.clearRect(0, 0, canvas.width, canvas.height); // Pulisci sempre prima di disegnare
-
-    // Ripristina il disegno precedente
-    const element = sequentialElements.find(el => el.id === elementId);
-    const dataToLoad = element?.canvasData || currentDataURL; // Preferisci canvasData dallo stato
-
-    if (dataToLoad && dataToLoad !== 'data:,') {
-        const img = new Image();
-        img.onload = () => {
-            ctx.drawImage(img, 0, 0, width, height);
-        };
-        img.src = dataToLoad;
-    }
-}, [sequentialElements]);
+}, []);
 
 const reinitializeAllCanvases = useCallback(() => {
     sequentialElements.forEach(element => {
@@ -452,36 +441,31 @@ const reinitializeAllCanvases = useCallback(() => {
 }, [isDrawing, activeCanvasId, getEventCoords]);
 
   const stopDrawing = useCallback((e, canvasId) => {
+
     if (e && e.target && e.pointerId) {
       e.target.releasePointerCapture(e.pointerId);
     }
     
     if (isDrawing && activeCanvasId === canvasId) {
       setIsDrawing(false);
-      lastPointRef.current = null;
+      lastPointRef.current = null; // MODIFICATO: Resetta il ref
       
       if (drawingAnimationFrame.current) {
         cancelAnimationFrame(drawingAnimationFrame.current);
         drawingAnimationFrame.current = null;
       }
       
-      // *** MODIFICA QUI: Rimuovi il setTimeout e aggiorna canvasData in modo più controllato. ***
-      // L'obiettivo è aggiornare canvasData SOLO quando serve per la persistenza/salvataggio finale,
-      // ma NON in un modo che faccia ricaricare il canvas "live" immediatamente.
-
-      const canvas = document.getElementById(`canvas-${canvasId}`);
-      if (canvas) {
-        // Salva il canvasData. Questo aggiornerà lo stato ma il canvas NON dovrebbe ri-renderizzarsi
-        // in un modo che causi sfarfallio, perché il contenuto è già lì.
-        // La chiave è come initializeElementCanvas gestisce il ricaricamento.
-        const dataURL = canvas.toDataURL('image/png');
-        setSequentialElements(prev => prev.map(element => 
-          element.id === canvasId 
-            ? { ...element, canvasData: dataURL }
-            : element
-        ));
-      }
-      // *** FINE MODIFICA ***
+      setTimeout(() => {
+        const canvas = document.getElementById(`canvas-${canvasId}`);
+        if (canvas) {
+          const dataURL = canvas.toDataURL('image/png');
+          setSequentialElements(prev => prev.map(element => 
+            element.id === canvasId 
+              ? { ...element, canvasData: dataURL }
+              : element
+          ));
+        }
+      }, 100);
     }
 }, [isDrawing, activeCanvasId]);
 
