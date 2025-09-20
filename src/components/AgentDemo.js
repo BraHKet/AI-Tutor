@@ -231,13 +231,18 @@ export default function AgentDemo() {
         const height = FIXED_CANVAS_HEIGHT; // Usa la costante
         
         const dpr = window.devicePixelRatio || 1;
+        
+        // Salva il contenuto corrente del canvas PRIMA di ridimensionarlo
+        const ctx = canvas.getContext('2d');
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height); // Salva i pixel attuali
+        const currentDataURL = canvas.toDataURL('image/png'); // Salva come URL per ripristinare il disegno
+
         canvas.width = width * dpr;
         canvas.height = height * dpr;
         
         canvas.style.width = `${width}px`;
         canvas.style.height = `${height}px`;
         
-        const ctx = canvas.getContext('2d');
         ctx.scale(dpr, dpr);
 
         ctx.lineCap = 'round';
@@ -246,6 +251,15 @@ export default function AgentDemo() {
         ctx.imageSmoothingQuality = 'high';
         
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Ripristina il disegno precedente se esistente
+        if (currentDataURL && currentDataURL !== 'data:,') { // 'data:,' è il DataURL di un canvas vuoto
+            const img = new Image();
+            img.onload = () => {
+                ctx.drawImage(img, 0, 0, width, height); // Disegna l'immagine salvata alle nuove dimensioni logiche
+            };
+            img.src = currentDataURL;
+        }
     }
 }, []);
 
@@ -904,6 +918,27 @@ useEffect(() => {
     };
   }, [settingsMenuRef]);
 
+
+  useEffect(() => {
+    // Aggiungi un debounce per evitare di chiamare troppe volte la ri-inizializzazione
+    // durante un rapido ridimensionamento.
+    let resizeTimer;
+    const handleResize = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        console.log("Window resized, reinitializing canvases...");
+        reinitializeAllCanvases();
+      }, 200); // Debounce di 200ms
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    // Cleanup function: rimuovi l'event listener quando il componente viene smontato
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(resizeTimer); // Pulisci anche il timer
+    };
+  }, [reinitializeAllCanvases]); // Dipende da reinitializeAllCanvases
 
 
   if (isProcessing && !isAutoSetupInProgress) {
