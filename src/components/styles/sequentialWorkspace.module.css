@@ -330,62 +330,47 @@
 // ======================================================= */
 
 .addElementButton {
-  /* 1. POSIZIONAMENTO FLUTTUANTE (Fisso in basso a destra) */
+  /* 1. POSIZIONAMENTO FISSO AL CENTRO */
   position: fixed;
-  bottom: 24px;
-  z-index: 1000; /* Assicura che sia sempre sopra il video */
+  bottom: 50%;  /* Centra verticalmente */
+  transform: translateY(50%); /* Compensa verticalmente per il centro */
 
-  /* 2. STILE PREMIUM DI BASE */
+  /* 2. DIMENSIONE E FORMA */
+  width: 38px;    /* Circa 1 cm */
+  height: 38px;   /* Circa 1 cm */
+  border-radius: 50%; /* Bottone completamente rotondo */
+
+  /* 3. STILE VISIVO BASE */
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
+  justify-content: center;
   border: none;
-  font-size: 15px;
-  font-weight: 600;
   cursor: pointer;
-
-  /* 3. GRADIENTE VIBRANTE E OMBRA REALISTICA */
-  background-image: linear-gradient(45deg, #2563EB 0%, #3B82F6 100%);
   color: white;
-  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.35); /* Ombra più pronunciata */
-  
-  /* 4. TRANSIZIONE FLUIDA PER LE INTERAZIONI */
+  font-size: 16px;
+  font-weight: 600;
   transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  
-  /* 5. PREPARAZIONE PER IL LOOK "SEGMENTATO" */
-  border-radius: 0; /* Rimuoviamo gli angoli arrotondati di default */
+  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
 }
 
-/* 6. LOGICA PER UNIRE I BOTTONI */
-
-/* Stile per il PRIMO bottone (o l'UNICO bottone) */
+/* Primo bottone */
 .addElementButton:first-of-type {
-  border-top-left-radius: 14px;
-  border-bottom-left-radius: 14px;
-  right: 173px; /* Posizione del primo bottone da destra (valore da aggiustare) */
+  left: calc(50% - 25px); /* Sposta a sinistra rispetto al centro (metà distanza) */
+  background-image: linear-gradient(45deg, #2563EB 0%, #3B82F6 100%);
 }
 
-/* Stile per l'ULTIMO bottone (o l'UNICO bottone) */
+/* Secondo bottone */
 .addElementButton:last-of-type {
-  border-top-right-radius: 14px;
-  border-bottom-right-radius: 14px;
-  right: 6px; /* Posizione del secondo bottone da destra */
+  left: calc(50% + 25px); /* Sposta a destra rispetto al centro (metà distanza) */
+  background-image: linear-gradient(45deg, #F59E0B 0%, #FBBF24 100%);
 }
 
-/* Sposta il secondo bottone (e successivi) attaccato al precedente */
-.addElementButton + .addElementButton {
-  /* Sovrapposizione di 1px per unire perfettamente i bordi */
-  border-left: 1px solid rgba(255, 255, 255, 0.3); 
+/* Effetto hover */
+.addElementButton:hover {
+  transform: scale(1.1);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
 }
 
-
-
-
-.addElementButton:active {
-  transform: translateY(0); /* Simula la pressione */
-  box-shadow: 0 3px 10px rgba(59, 130, 246, 0.3);
-}
 
 
 /* ==========================================
