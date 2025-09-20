@@ -2,7 +2,7 @@
 // FILE: layout.module.css
 // ========================================== */
 
-/* Definizione delle variabili CSS globali */
+/* Definizione delle variabili CSS globali (NUOVA REGOLA, ma era già presente) */
 :root {
   --header-height: 60px; /* Assicurati che questo corrisponda all'altezza reale del tuo header */
   --history-sidebar-width: 400px; /* Coerente con la larghezza della sidebar */
@@ -14,6 +14,7 @@
   background-color: #f5f5f5;
   display: flex;
   flex-direction: column;
+  /* MODIFICATO: Rimosso overflow: hidden; da qui, lo scroll è demandato ai figli */
 }
 
 .stickyHeaderWrapper {
@@ -34,21 +35,23 @@
 }
 
 .mainContent {
-  flex: 1;
+  flex: 1; /* MODIFICATO: Permette al mainContent di occupare lo spazio rimanente nel container */
   display: flex;
-  position: relative;
-  height: calc(100vh - var(--header-height)); /* MODIFICATO: Altezza fissa su desktop per il flex container */
-  /* NUOVA REGOLA: overflow solo per desktop, su mobile sarà auto */
-  overflow: hidden; 
+  position: relative; /* Utile per z-index o posizionamenti interni */
+  /* MODIFICATO: Rimosso height: calc(...) e overflow: hidden; da qui */
+  /* Lo scroll complessivo della pagina sarà sul body (o sul container se necessario) */
+  /* Gli scroll interni saranno gestiti da mainWorkspace e historySidebar */
 }
 
 .mainWorkspace {
-  flex: 1;
+  flex: 1; /* Occupa lo spazio disponibile */
   display: flex;
   flex-direction: column;
   padding: 20px;
 
+  /* MODIFICATO: ABILITA LO SCROLL INDIPENDENTE PER IL WORKSPACE */
   overflow-y: auto;
+  /* MODIFICATO: Altezza 100% per far sì che lo scroll sia interno a mainWorkspace */
   height: 100%;
 
   margin-right: 0;
@@ -62,17 +65,7 @@
 
 /* Schermi piccoli (mobile, fino a 1023px) */
 @media (max-width: 1023px) {
-  .mainContent {
-    flex-direction: column;
-    height: auto; /* Altezza automatica */
-    overflow: auto; /* Permetti lo scroll della pagina su mobile */
-  }
-
-  .mainWorkspace {
-    margin-right: 0 !important;
-    height: auto;
-    overflow-y: auto;
-  }
+  
 }
 
 /* Schermi grandi (desktop, da 1024px in su) */
@@ -82,9 +75,8 @@
   }
 
   .mainContent {
-    flex-direction: row;
-    align-items: flex-start;
-    /* NUOVA REGOLA: Reimposta overflow su hidden per desktop, lo scroll è demandato ai figli */
-    overflow: hidden;
+    flex-direction: row; /* Affianca workspace e sidebar */
+    align-items: flex-start; /* Allinea gli elementi in alto nel mainContent */
+    /* MODIFICATO: Rimosso height: calc(...) e overflow: hidden; da qui, lo scroll è sui figli */
   }
 }
