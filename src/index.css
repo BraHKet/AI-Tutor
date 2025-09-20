@@ -5,9 +5,13 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: #ffffff; /* Imposta lo sfondo di default della pagina */
-  -ms-overflow-style: none;     
-  scrollbar-width: none;
 }
+html, body {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar,
 body::-webkit-scrollbar {
   display: none;
 }
