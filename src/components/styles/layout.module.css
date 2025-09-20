@@ -65,7 +65,17 @@
 
 /* Schermi piccoli (mobile, fino a 1023px) */
 @media (max-width: 1023px) {
-  
+  .mainContent {
+    flex-direction: column; /* Gli elementi si impilano su mobile */
+    height: auto; /* Altezza automatica */
+    overflow: auto; /* Permetti lo scroll della pagina su mobile */
+  }
+
+  .mainWorkspace {
+    margin-right: 0 !important;
+    height: auto; /* Altezza automatica */
+    overflow-y: auto; /* Scroll del contenuto del workspace */
+  }
 }
 
 /* Schermi grandi (desktop, da 1024px in su) */
