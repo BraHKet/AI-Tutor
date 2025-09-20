@@ -9,20 +9,18 @@
   flex-direction: column;
   box-shadow: 2px 0 8px rgba(0,0,0,0.2);
   border-left: 1px solid #e5e7eb; /* Bordo a sinistra quando affiancata a destra */
-  flex-shrink: 0; /* Impedisce alla sidebar di restringersi */
+  flex-shrink: 0;
 
-  transform: translateX(100%);
-  transition: transform 0.3s ease-out, visibility 0.3s ease-out;
-  visibility: hidden;
-  pointer-events: none;
-  /* MODIFICATO: Rimosso height: 100vh; da qui, sarà specifico per media query o calcolato */
+  /* MODIFICATO: Rimosso transform, transition, visibility, pointer-events da qui */
+  /* Saranno applicati specificamente nei media query dove servono */
 }
 
+/* NUOVA REGOLA: Questa classe è ora attiva solo quando è un overlay (su mobile) */
+/* Serve per l'animazione di entrata/uscita solo su mobile */
 .historySidebarVisible {
-  transform: translateX(0);
-  visibility: visible;
-  pointer-events: auto;
+  /* Questo blocco sarà riempito nel media query per mobile */
 }
+
 
 .sidebarHeader {
   padding: 16px;
@@ -139,7 +137,7 @@
 @media (max-width: 1023px) {
   .historySidebar {
     width: 100vw;
-    height: 100vh; /* MODIFICATO: Altezza completa per overlay mobile */
+    height: 100vh;
     position: fixed;
     top: 0;
     right: 0;
@@ -147,6 +145,19 @@
     z-index: 1000;
     box-shadow: -2px 0 8px rgba(0,0,0,0.2);
     border-left: none;
+
+    /* NUOVA REGOLA: Nascondi e anima l'overlay mobile */
+    transform: translateX(100%);
+    transition: transform 0.3s ease-out, visibility 0.3s ease-out;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  /* NUOVA REGOLA: Rendi visibile l'overlay mobile quando la classe è applicata */
+  .historySidebarVisible {
+    transform: translateX(0);
+    visibility: visible;
+    pointer-events: auto;
   }
 }
 
@@ -155,15 +166,16 @@
   .historySidebar {
     position: sticky;
     top: var(--header-height, 0px);
-    height: calc(100vh - var(--header-height, 0px)); /* MODIFICATO: Calcola altezza desktop */
+    height: calc(100vh - var(--header-height, 0px));
     width: 400px;
     left: auto;
     right: 0;
     z-index: auto;
     box-shadow: none;
+    /* NUOVA REGOLA: Su desktop, la sidebar è sempre nel suo stato finale (visibile) */
     transform: translateX(0);
-    transition: none;
-    visibility: visible;
-    pointer-events: auto;
+    transition: none; /* Disabilita la transizione */
+    visibility: visible; /* Sempre visibile */
+    pointer-events: auto; /* Sempre interattiva */
   }
 }
