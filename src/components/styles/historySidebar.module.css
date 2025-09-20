@@ -143,6 +143,8 @@
   right: 0;
   height: 100vh; /* riempie l’altezza dello schermo */
   width: 400px;
+  right: auto;
+  left: 0;
 
   background-color: white;
   display: flex;
