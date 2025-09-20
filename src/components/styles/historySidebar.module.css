@@ -105,3 +105,12 @@
     box-shadow: none;   /* Rimuove l'ombra */
   }
 }
+
+/* NUOVO: Stili per schermi grandi (PC) */
+@media (min-width: 1024px) {
+  .historySidebar {
+    position: static;  /* Rimuove l'overlay e la fa rientrare nel flusso della pagina */
+    z-index: auto;     /* Resetta lo z-index */
+    box-shadow: none;  /* L'ombra non ha più senso se è affiancata */
+  }
+}
