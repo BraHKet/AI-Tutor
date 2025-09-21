@@ -926,7 +926,44 @@ useEffect(() => {
   }, [settingsMenuRef]);
 
 
-  
+    // Modifica l'ultimo useEffect per usare ResizeObserver e window.resize
+  useEffect(() => {
+    // Aggiungi un debounce per evitare chiamate troppo frequenti
+    let resizeTimer;
+    const handleResizeOrLayoutChange = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        console.log("Layout or window resized, reinitializing canvases...");
+        reinitializeAllCanvases();
+      }, 200); // Debounce di 200ms
+    };
+
+    // Gestione del ridimensionamento della finestra
+    window.addEventListener('resize', handleResizeOrLayoutChange);
+
+    // Gestione dei cambiamenti di dimensione dell'elemento workspace con ResizeObserver
+    let observer;
+    if (mainWorkspaceRef.current) {
+      observer = new ResizeObserver(entries => {
+        // La callback viene triggerata per ogni entry osservata
+        for (let entry of entries) {
+          // Puoi aggiungere un log specifico se vuoi vedere quale elemento cambia
+          // console.log(`Element ${entry.target.className} resized to ${entry.contentRect.width}x${entry.contentRect.height}`);
+          handleResizeOrLayoutChange(); // Richiama la funzione debounce
+        }
+      });
+      observer.observe(mainWorkspaceRef.current);
+    }
+
+    // Cleanup function: rimuovi entrambi gli event listener
+    return () => {
+      window.removeEventListener('resize', handleResizeOrLayoutChange);
+      if (observer) {
+        observer.disconnect(); // Disconnetti l'osservatore
+      }
+      clearTimeout(resizeTimer); // Pulisci anche il timer
+    };
+  }, [reinitializeAllCanvases]); // Dipende da reinitializeAllCanvases
 
 
   useEffect(() => {

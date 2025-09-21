@@ -161,6 +161,10 @@
   .closeButton {
     pointer-events: auto;
   }
+
+  .conversationContainer {
+    max-height: 100%;
+  }
 }
 
 /* Stili per schermi grandi (desktop, da 1024px in su) */
