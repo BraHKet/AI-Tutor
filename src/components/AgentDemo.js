@@ -125,6 +125,8 @@ export default function AgentDemo() {
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
 
   // Gestisce l'avvio e lo stop della riproduzione per un messaggio specifico.
   const handleRepeatOrStop = (message) => {
@@ -274,7 +276,7 @@ const reinitializeAllCanvases = useCallback(() => {
             initializeElementCanvas(element.id);
         }
     });
-}, [initializeElementCanvas]);
+}, [initializeElementCanvas, windowWidth]);
 
 
   // ====================================================================
@@ -974,6 +976,13 @@ useEffect(() => {
   }, []);
 
   const isDrawingToolsCompact = isMobile && sequentialElements.some(el => el.type === 'drawing');
+
+  useEffect(() => {
+  const handleResize = () => setWindowWidth(window.innerWidth);
+  window.addEventListener('resize', handleResize);
+  return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
 
 
   if (isProcessing && !isAutoSetupInProgress) {
