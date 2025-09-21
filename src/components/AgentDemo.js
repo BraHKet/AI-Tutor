@@ -280,7 +280,7 @@ const initializeElementCanvas = useCallback((elementId) => {
     if (currentDataURL && currentDataURL !== 'data:,') {
         const img = new Image();
         img.onload = () => {
-            ctx.drawImage(img, 0, 0);
+            ctx.drawImage(img, 0, 0, logicalWidth, logicalHeight);
         };
         img.src = currentDataURL;
     }
