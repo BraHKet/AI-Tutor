@@ -292,7 +292,7 @@ const reinitializeAllCanvases = useCallback(() => {
             initializeElementCanvas(element.id);
         }
     });
-}, [initializeElementCanvas, windowWidth]);
+}, [initializeElementCanvas, windowWidth, showHistory]);
 
 
   // ====================================================================
