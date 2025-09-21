@@ -225,48 +225,63 @@ export default function AgentDemo() {
 
 
   
-  const initializeElementCanvas = useCallback((elementId) => {
+  // NUOVA VERSIONE DEFINITIVA
+const initializeElementCanvas = useCallback((elementId) => {
     const canvas = document.getElementById(`canvas-${elementId}`);
-    if (canvas) {
-        const container = canvas.parentElement;
-        if (!container) return;
+    if (!canvas) return;
 
-        const rect = container.getBoundingClientRect();
-        if (rect.width <= 0) return;
+    // ====================================================================
+    // MODIFICA CHIAVE: leggiamo le dimensioni reali del canvas, non del suo contenitore.
+    // clientWidth ci dà la larghezza effettiva renderizzata dal CSS, escludendo bordi e scrollbar.
+    // Questo è il valore che corrisponde a quello che BoundingClientRect userà.
+    // ====================================================================
+    const logicalWidth = canvas.clientWidth;
+    const logicalHeight = FIXED_CANVAS_HEIGHT; // Manteniamo l'altezza fissa
 
-        const width = rect.width;
-        const height = FIXED_CANVAS_HEIGHT; // Usa la costante
-        
-        const dpr = window.devicePixelRatio || 1;
-        
-        // Salva il contenuto corrente del canvas PRIMA di ridimensionarlo
-        const ctx = canvas.getContext('2d');
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height); // Salva i pixel attuali
-        const currentDataURL = canvas.toDataURL('image/png'); // Salva come URL per ripristinare il disegno
+    // Se il canvas non è ancora stato renderizzato dal layout (larghezza 0), usciamo per evitare errori.
+    if (logicalWidth <= 0) {
+        return;
+    }
 
-        canvas.width = width * dpr;
-        canvas.height = height * dpr;
-        
-        canvas.style.width = `${width}px`;
-        canvas.style.height = `${height}px`;
-        
-        ctx.scale(dpr, dpr);
+    const dpr = window.devicePixelRatio || 1;
+    const physicalWidth = logicalWidth * dpr;
+    const physicalHeight = logicalHeight * dpr;
 
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Controlliamo se le dimensioni del buffer sono già corrette.
+    // Questo previene un ciclo di ridisegno infinito e la perdita del disegno se non necessario.
+    if (canvas.width === physicalWidth && canvas.height === physicalHeight) {
+        return;
+    }
 
-        // Ripristina il disegno precedente se esistente
-        if (currentDataURL && currentDataURL !== 'data:,') { // 'data:,' è il DataURL di un canvas vuoto
-            const img = new Image();
-            img.onload = () => {
-                ctx.drawImage(img, 0, 0, width, height); // Disegna l'immagine salvata alle nuove dimensioni logiche
-            };
-            img.src = currentDataURL;
-        }
+    console.log(`[Canvas Init] Ricalibrazione per ${elementId}. Larghezza logica: ${logicalWidth}px`);
+
+    const currentDataURL = canvas.toDataURL('image/png');
+
+    // 1. Imposta le dimensioni del buffer di disegno (questo resetta il context)
+    canvas.width = physicalWidth;
+    canvas.height = physicalHeight;
+
+    // 2. Imposta le dimensioni di visualizzazione CSS (assicurandoci che corrispondano)
+    canvas.style.width = `${logicalWidth}px`;
+    canvas.style.height = `${logicalHeight}px`;
+
+    // 3. Ottieni il context ORA, dopo che è stato resettato
+    const ctx = canvas.getContext('2d');
+
+    // 4. Applica TUTTE le trasformazioni e le proprietà di stile
+    ctx.scale(dpr, dpr);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    
+    // 5. Ripristina il disegno precedente, se esisteva
+    if (currentDataURL && currentDataURL !== 'data:,') {
+        const img = new Image();
+        img.onload = () => {
+            ctx.drawImage(img, 0, 0, logicalWidth, logicalHeight);
+        };
+        img.src = currentDataURL;
     }
 }, []);
 
