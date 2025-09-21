@@ -274,7 +274,7 @@ const reinitializeAllCanvases = useCallback(() => {
             initializeElementCanvas(element.id);
         }
     });
-}, [sequentialElements, initializeElementCanvas]);
+}, [initializeElementCanvas]);
 
 
   // ====================================================================
