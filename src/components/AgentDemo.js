@@ -280,7 +280,7 @@ const initializeElementCanvas = useCallback((elementId) => {
     if (currentDataURL && currentDataURL !== 'data:,') {
         const img = new Image();
         img.onload = () => {
-            ctx.drawImage(img, 0, 0, logicalWidth, logicalHeight);
+            ctx.drawImage(img, 0, 0);
         };
         img.src = currentDataURL;
     }
@@ -991,7 +991,26 @@ useEffect(() => {
   }, []);
 
 
-  
+  // Effetto per ricalibrare i canvas quando la sidebar della cronologia viene aperta/chiusa.
+  useEffect(() => {
+    // Non fare nulla se non c'è almeno un canvas da ridimensionare.
+    if (sequentialElements.some(el => el.type === 'drawing')) {
+      
+      // La sidebar probabilmente ha una transizione CSS (es. 300ms).
+      // Aspettiamo un breve istante in più per assicurarci che l'animazione
+      // del layout sia completamente terminata prima di misurare le nuove dimensioni.
+      const resizeTimer = setTimeout(() => {
+        console.log('[Layout Effect] La visibilità della cronologia è cambiata. Ricalibro i canvas...');
+        reinitializeAllCanvases();
+      }, 350); // Un valore leggermente superiore alla durata tipica di una transizione CSS.
+
+      // È fondamentale pulire il timer se il componente viene smontato
+      // o se lo stato `showHistory` cambia di nuovo rapidamente.
+      return () => clearTimeout(resizeTimer);
+    }
+  }, [showHistory, reinitializeAllCanvases]); // Le dipendenze: si attiva quando showHistory cambia.
+
+
 
 
   if (isProcessing && !isAutoSetupInProgress) {
