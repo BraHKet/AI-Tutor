@@ -369,20 +369,30 @@ const reinitializeAllCanvases = useCallback(() => {
   };
 
 
+  // NUOVA VERSIONE CON DIAGNOSTICA
   const getEventCoords = useCallback((e, canvasId) => {
-    // Se l'evento non è valido, esci subito.
     if (!e) return null;
 
     const canvas = document.getElementById(`canvas-${canvasId}`);
     if (!canvas) return null;
     
     const rect = canvas.getBoundingClientRect();
-    
-    // Un PointerEvent avrà sempre clientX e clientY.
-    return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
-    };
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    // --- LOG DI DEBUG: Aggiungi questo blocco ---
+    if (e.type === 'pointerdown') { // Stampa solo all'inizio del disegno
+        console.log('--- INIZIO DISEGNO ---');
+        console.log('Dimensioni CSS (style):', canvas.style.width, canvas.style.height);
+        console.log('Dimensioni Buffer (attributo):', canvas.width, canvas.height);
+        console.log('BoundingClientRect (rect):', rect.width, rect.height);
+        console.log('Coordinate Mouse (e.clientX):', e.clientX);
+        console.log('Posizione Canvas (rect.left):', rect.left);
+        console.log('===> Coordinata X Calcolata:', x);
+    }
+    // --- FINE LOG DI DEBUG ---
+
+    return { x, y };
 }, []);
 
   const startDrawing = useCallback((e, canvasId) => {
