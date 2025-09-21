@@ -225,20 +225,22 @@ export default function AgentDemo() {
 
 
   
-  // NUOVA VERSIONE DEFINITIVA
+  // NUOVA VERSIONE FINALE E CORRETTA
 const initializeElementCanvas = useCallback((elementId) => {
     const canvas = document.getElementById(`canvas-${elementId}`);
     if (!canvas) return;
 
     // ====================================================================
-    // MODIFICA CHIAVE: leggiamo le dimensioni reali del canvas, non del suo contenitore.
-    // clientWidth ci dà la larghezza effettiva renderizzata dal CSS, escludendo bordi e scrollbar.
-    // Questo è il valore che corrisponde a quello che BoundingClientRect userà.
+    // MODIFICA CHIAVE: Rilascia lo stile inline esistente.
+    // Questa riga permette al canvas di espandersi e occupare lo spazio
+    // che il suo contenitore (governato dal CSS) gli concede.
+    canvas.style.width = '';
     // ====================================================================
-    const logicalWidth = canvas.clientWidth;
-    const logicalHeight = FIXED_CANVAS_HEIGHT; // Manteniamo l'altezza fissa
 
-    // Se il canvas non è ancora stato renderizzato dal layout (larghezza 0), usciamo per evitare errori.
+    // ORA, e solo ora, misuriamo la sua larghezza effettiva.
+    const logicalWidth = canvas.clientWidth;
+    const logicalHeight = FIXED_CANVAS_HEIGHT; 
+
     if (logicalWidth <= 0) {
         return;
     }
@@ -247,35 +249,34 @@ const initializeElementCanvas = useCallback((elementId) => {
     const physicalWidth = logicalWidth * dpr;
     const physicalHeight = logicalHeight * dpr;
 
-    // Controlliamo se le dimensioni del buffer sono già corrette.
-    // Questo previene un ciclo di ridisegno infinito e la perdita del disegno se non necessario.
     if (canvas.width === physicalWidth && canvas.height === physicalHeight) {
+        // Le dimensioni sono già corrette, ma riapplichiamo lo stile per sicurezza.
+        canvas.style.width = `${logicalWidth}px`;
+        canvas.style.height = `${logicalHeight}px`;
         return;
     }
-
-    console.log(`[Canvas Init] Ricalibrazione per ${elementId}. Larghezza logica: ${logicalWidth}px`);
-
+    
     const currentDataURL = canvas.toDataURL('image/png');
 
-    // 1. Imposta le dimensioni del buffer di disegno (questo resetta il context)
+    // 1. Imposta le dimensioni del buffer
     canvas.width = physicalWidth;
     canvas.height = physicalHeight;
 
-    // 2. Imposta le dimensioni di visualizzazione CSS (assicurandoci che corrispondano)
+    // 2. Imposta le dimensioni CSS (ora che conosciamo la larghezza corretta)
     canvas.style.width = `${logicalWidth}px`;
     canvas.style.height = `${logicalHeight}px`;
 
-    // 3. Ottieni il context ORA, dopo che è stato resettato
+    // 3. Ottieni il context
     const ctx = canvas.getContext('2d');
 
-    // 4. Applica TUTTE le trasformazioni e le proprietà di stile
+    // 4. Applica trasformazioni e stili
     ctx.scale(dpr, dpr);
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
     
-    // 5. Ripristina il disegno precedente, se esisteva
+    // 5. Ripristina il disegno
     if (currentDataURL && currentDataURL !== 'data:,') {
         const img = new Image();
         img.onload = () => {
@@ -384,30 +385,20 @@ const reinitializeAllCanvases = useCallback(() => {
   };
 
 
-  // NUOVA VERSIONE CON DIAGNOSTICA
   const getEventCoords = useCallback((e, canvasId) => {
+    // Se l'evento non è valido, esci subito.
     if (!e) return null;
 
     const canvas = document.getElementById(`canvas-${canvasId}`);
     if (!canvas) return null;
     
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    // --- LOG DI DEBUG: Aggiungi questo blocco ---
-    if (e.type === 'pointerdown') { // Stampa solo all'inizio del disegno
-        console.log('--- INIZIO DISEGNO ---');
-        console.log('Dimensioni CSS (style):', canvas.style.width, canvas.style.height);
-        console.log('Dimensioni Buffer (attributo):', canvas.width, canvas.height);
-        console.log('BoundingClientRect (rect):', rect.width, rect.height);
-        console.log('Coordinate Mouse (e.clientX):', e.clientX);
-        console.log('Posizione Canvas (rect.left):', rect.left);
-        console.log('===> Coordinata X Calcolata:', x);
-    }
-    // --- FINE LOG DI DEBUG ---
-
-    return { x, y };
+    
+    // Un PointerEvent avrà sempre clientX e clientY.
+    return {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    };
 }, []);
 
   const startDrawing = useCallback((e, canvasId) => {
