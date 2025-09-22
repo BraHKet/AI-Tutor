@@ -543,21 +543,22 @@ const reinitializeAllCanvases = useCallback(() => {
         combinedText += `[Disegno/Formula ${index + 1}]\n\n`;
         sequentialData.push({
           type: 'drawing',
-          content: element.canvasData,
+          content: element.canvasData, // Usa il canvasData che è una stringa base64
           index: index
         });
       }
     });
     
-    // Per compatibilità con il sistema esistente, usa il primo disegno come primary
-    const firstDrawing = sequentialData.find(item => item.type === 'drawing');
+    // MODIFICA CRUCIALE: Assicuriamoci di creare un vero array
+    const allDrawingImages = sequentialData
+      .filter(item => item.type === 'drawing')
+      .map(item => item.content); // item.content qui è la stringa base64
     
     return { 
       textContent: combinedText.trim(), 
       sequentialData: sequentialData,
-      // Per compatibilità con il sistema esistente
-      drawingImage: firstDrawing ? firstDrawing.content : null,
-      drawingImages: sequentialData.filter(item => item.type === 'drawing').map(item => item.content)
+      // Questa proprietà ora è un VERO ARRAY di stringhe base64
+      drawingImages: allDrawingImages 
     };
   }, [sequentialElements]);
 
