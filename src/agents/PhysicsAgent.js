@@ -62,32 +62,32 @@ export class PhysicsAgent {
     }
 
     async processResponse(responseData) {
-        console.log("📬 [DEBUG-2 | PhysicsAgent] Ho ricevuto i seguenti dati dal frontend:");
-    console.log("Dati ricevuti:", responseData);
-    console.log(`Numero di immagini nell'array ricevuto: ${responseData.images ? responseData.images.length : 'non definito'}`);
-    console.log("-------------------------------------------");
-        try {
-            const text = typeof responseData === 'string' ? responseData : responseData.text;
-            const image = typeof responseData === 'object' ? responseData.image : null;
-            
-            const result = await this.conversationManager.sendMessage(text, image);
-            
-            return {
-                type: result.type,
-                response: result.message,
-                isComplete: result.isComplete,
-                progress: result.progress
-            };
-        } catch (error) {
-            console.error('❌ Process failed:', error);
-            return {
-                type: 'error',
-                response: "Errore. Riprovare?",
-                isComplete: false,
-                progress: { covered: 0, total: 1, percentage: 0 }
-            };
-        }
+    try {
+        const text = responseData.text || '';
+        
+        // MODIFICA 1: Estrae la proprietà 'images' (plurale), che è un array.
+        // Usa `|| []` per assicurarsi che 'images' sia sempre un array, anche se non viene inviato.
+        const images = responseData.images || [];
+        
+        // MODIFICA 2: Passa l'intero array 'images' al metodo successivo.
+        const result = await this.conversationManager.sendMessage(text, images);
+        
+        return {
+            type: result.type,
+            response: result.message,
+            isComplete: result.isComplete,
+            progress: result.progress
+        };
+    } catch (error) {
+        console.error('❌ Process failed:', error);
+        return {
+            type: 'error',
+            response: "Errore. Riprovare?",
+            isComplete: false,
+            progress: { covered: 0, total: 1, percentage: 0 }
+        };
     }
+}
 
     async generateFinalEvaluation() {
         // Minimal fallback
