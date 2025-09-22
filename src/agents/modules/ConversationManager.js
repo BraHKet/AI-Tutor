@@ -62,53 +62,40 @@ Inizia con type="setup" e la prima domanda.`;
         }
     }
 
-    async sendMessage(text, images = []) { // MODIFICA 1: Il parametro ora è 'images' (plurale)
+    async sendMessage(text, images = []) {
     if (!this.isActive || !this.chatSession) {
         throw new Error('No active session');
     }
 
     try {
-        const inputs = [];
-        
-        // MODIFICA 2: Controlla se l'array 'images' contiene elementi.
-        if (images && images.length > 0) {
-            
-            // MODIFICA 3: Esegue un ciclo su OGNI immagine nell'array.
-            for (const singleImage of images) {
+        // Mettiamo prima il testo di contesto
+        const textPrompt = { text: `Lo studente ha risposto con del testo e/o dei disegni.
 
-                console.log(`--- ---------------------- ---`);
-                console.log(
-                    '%c ', // Carattere vuoto stilizzato
-                    'font-size: 1px; ' +
-                    'padding: 100px; ' + // Dimensioni del riquadro dell'immagine (200x200)
-                    'border: 1px solid black; ' +
-                    'background: url(' + singleImage + ') no-repeat center center; ' +
-                    'background-size: contain;'
-                );
-                console.log('--- FINE IMMAGINE ---');
-
-                const imageData = singleImage.split(',')[1];
-                // Aggiunge ogni immagine come un oggetto separato al payload.
-                inputs.push({ inlineData: { mimeType: 'image/png', data: imageData } });
-            }
-        }
-        
-        // MODIFICA 4: Aggiunge il testo e un riferimento al numero di disegni alla fine.
-        const imageInfo = images && images.length > 0 
-            ? ` (con ${images.length} disegni allegati)` 
-            : '';
-            
-        inputs.push({ text: `Studente risponde: "${text}"${imageInfo}. 
+ISTRUZIONI PER TE (SEGUI QUESTO ORDINE):
+1.  **ANALIZZA I DISEGNI PRIMA DI TUTTO:** Se ci sono disegni, la tua prima priorità è analizzarli.
+2.  **SE IL DISEGNO È CHIARO (Formula, Diagramma, Testo):** Usalo come parte principale della risposta dello studente.
+3.  **SE IL DISEGNO NON È CHIARO O È ASTRATTO:** Non dire che è vuoto o illeggibile. Invece, descrivi letteralmente ciò che vedi. Esempio: "Nel disegno vedo una linea a zig-zag e una curva." POI procedi con l'esame.
+4.  **VALUTA IL TESTO:** Leggi anche il testo fornito dallo studente ("${text}").
+5.  **FORMULA LA RISPOSTA:** Combina l'analisi di testo e immagini, e procedi con la prossima domanda dell'esame.
 
 IMPORTANTE: Rispondi SEMPRE e SOLO con JSON valido nel formato:
 {
   "type": "question",
-  "message": "Il tuo messaggio",
+  "message": "La tua risposta (che include l'analisi dei disegni) e/o la prossima domanda",
   "progress": {"covered": X, "total": Y, "percentage": Z},
   "isComplete": false
-}
+}`};
 
-Valuta e procedi con la prossima domanda.` });
+        const inputs = [ textPrompt ];
+        
+        // Aggiungiamo le immagini dopo
+        if (images && images.length > 0) {
+            for (const singleImage of images) {
+                // ... (il tuo codice di debug per stampare l'immagine può rimanere qui se vuoi) ...
+                const imageData = singleImage.split(',')[1];
+                inputs.push({ inlineData: { mimeType: 'image/png', data: imageData } });
+            }
+        }
         
         const result = await this.chatSession.sendMessage(inputs);
         return this.parseResponse(result.response.text());
