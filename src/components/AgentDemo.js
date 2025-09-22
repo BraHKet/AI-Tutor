@@ -644,7 +644,7 @@ const reinitializeAllCanvases = useCallback(() => {
       console.log(`Numero di disegni trovati: ${drawingImages ? drawingImages.length : 0}`);
       console.log("Contenuto dell'array 'drawingImages':", drawingImages);
       console.log("-------------------------------------------");
-      
+
       // Debug: stampa la sequenza elaborata per conferma
       console.log('📝 Sequential content:', {
         textContent,
@@ -1226,13 +1226,14 @@ useEffect(() => {
                     {turn.content}
                   </div>
                   
-                  {turn.image && (
+                  {turn.sequentialData && turn.sequentialData.filter(item => item.type === 'drawing').map((drawingItem, imgIndex) => (
                     <img 
-                      src={turn.image} 
-                      alt="Drawing" 
+                      key={imgIndex}
+                      src={drawingItem.content} 
+                      alt={`Drawing ${imgIndex + 1}`} 
                       className={styles.turnImage}
                     /> 
-                  )}
+                  ))}
                   
                   <div className={styles.turnTimestamp}>
                     {new Date(turn.timestamp).toLocaleTimeString()}
@@ -1542,3 +1543,4 @@ useEffect(() => {
   );
 }
 
+turn.image
