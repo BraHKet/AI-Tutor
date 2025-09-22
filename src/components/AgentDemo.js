@@ -127,6 +127,8 @@ export default function AgentDemo() {
 
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
+  const LARGE_SCREEN_BREAKPOINT = 1024;
+
 
   // Gestisce l'avvio e lo stop della riproduzione per un messaggio specifico.
   const handleRepeatOrStop = (message) => {
@@ -1009,6 +1011,14 @@ useEffect(() => {
       return () => clearTimeout(resizeTimer);
     }
   }, [showHistory, reinitializeAllCanvases]); // Le dipendenze: si attiva quando showHistory cambia.
+
+
+  // Effetto per gestire la visibilità della sidebar in base alla dimensione dello schermo
+  useEffect(() => {
+    if (isLargeScreen) {
+      setShowHistory(true);
+    }
+  }, [isLargeScreen]); 
 
 
 
