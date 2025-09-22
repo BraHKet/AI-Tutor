@@ -1311,7 +1311,11 @@ useEffect(() => {
                           rows={3}
                         />
                       ) : (
-                        <div className={styles.drawingElementContainer}>
+                        <div className={styles.drawingElementContainer} style={
+                            (isMobile && currentTool === 'pointer') 
+                              ? { touchAction: 'auto' } 
+                              : {}
+                          }>
                           
                           
                           <canvas 
