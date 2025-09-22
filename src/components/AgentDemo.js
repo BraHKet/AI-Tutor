@@ -1370,12 +1370,14 @@ useEffect(() => {
                 </button>
               )}
             </div>
-            <button
-              onClick={closeAIResponse}
-              className={styles.aiResponseCloseButton}
-            >
-              <X size={18} />
-            </button>
+            {!isLargeScreen && (
+        <button
+          onClick={closeAIResponse}
+          className={styles.aiResponseCloseButton}
+        >
+          <X size={18} />
+        </button>
+      )}
           </div>
           
           <div className={styles.aiResponseContent}>
