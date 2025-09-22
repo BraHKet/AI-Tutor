@@ -62,30 +62,26 @@ Inizia con type="setup" e la prima domanda.`;
         }
     }
 
-    async sendMessage(text, images = []) { // <-- MODIFICA 1: Accetta "images" (plurale)
+    async sendMessage(text, images = []) { // MODIFICA 1: Il parametro ora è 'images' (plurale)
     if (!this.isActive || !this.chatSession) {
         throw new Error('No active session');
     }
 
     try {
-        // Inizializza l'array di input. Il testo verrà aggiunto alla fine.
         const inputs = [];
         
         // MODIFICA 2: Controlla se l'array 'images' contiene elementi.
         if (images && images.length > 0) {
-            console.log(`[ConversationManager] Processing ${images.length} images.`);
             
-            // MODIFICA 3: Esegui un ciclo su OGNI immagine nell'array.
+            // MODIFICA 3: Esegue un ciclo su OGNI immagine nell'array.
             for (const singleImage of images) {
-                // Per ogni immagine, estrai i dati base64
                 const imageData = singleImage.split(',')[1];
-                // e aggiungila come parte separata al payload.
+                // Aggiunge ogni immagine come un oggetto separato al payload.
                 inputs.push({ inlineData: { mimeType: 'image/png', data: imageData } });
             }
         }
         
-        // MODIFICA 4: Aggiungi il testo DOPO tutte le immagini.
-        // Il prompt è stato migliorato per menzionare il numero di disegni.
+        // MODIFICA 4: Aggiunge il testo e un riferimento al numero di disegni alla fine.
         const imageInfo = images && images.length > 0 
             ? ` (con ${images.length} disegni allegati)` 
             : '';
@@ -101,8 +97,6 @@ IMPORTANTE: Rispondi SEMPRE e SOLO con JSON valido nel formato:
 }
 
 Valuta e procedi con la prossima domanda.` });
-        
-        console.log(`[ConversationManager] Sending final payload to AI with ${inputs.length} parts.`);
         
         const result = await this.chatSession.sendMessage(inputs);
         return this.parseResponse(result.response.text());
