@@ -62,7 +62,7 @@ Inizia con type="setup" e la prima domanda.`;
         }
     }
 
-    async sendMessage(text, images = []) {
+    async sendMessage(text, images = []) { // MODIFICA 1: Il parametro ora è 'images' (plurale)
     if (!this.isActive || !this.chatSession) {
         throw new Error('No active session');
     }
@@ -70,33 +70,45 @@ Inizia con type="setup" e la prima domanda.`;
     try {
         const inputs = [];
         
+        // MODIFICA 2: Controlla se l'array 'images' contiene elementi.
         if (images && images.length > 0) {
+            
+            // MODIFICA 3: Esegue un ciclo su OGNI immagine nell'array.
             for (const singleImage of images) {
+
+                console.log(`--- IMMAGINE N° ${imageIndex + 1} INVIATA ALL'AI ---`);
+                console.log(
+                    '%c ', // Carattere vuoto stilizzato
+                    'font-size: 1px; ' +
+                    'padding: 100px; ' + // Dimensioni del riquadro dell'immagine (200x200)
+                    'border: 1px solid black; ' +
+                    'background: url(' + singleImage + ') no-repeat center center; ' +
+                    'background-size: contain;'
+                );
+                console.log('--- FINE IMMAGINE ---');
+
                 const imageData = singleImage.split(',')[1];
+                // Aggiunge ogni immagine come un oggetto separato al payload.
                 inputs.push({ inlineData: { mimeType: 'image/png', data: imageData } });
             }
         }
         
+        // MODIFICA 4: Aggiunge il testo e un riferimento al numero di disegni alla fine.
         const imageInfo = images && images.length > 0 
-            ? ` con ${images.length} disegni allegati che DEVI analizzare.` 
+            ? ` (con ${images.length} disegni allegati)` 
             : '';
             
-        // ▼▼▼ MODIFICA CHIAVE NEL PROMPT QUI SOTTO ▼▼▼
-        inputs.push({ text: `Lo studente ha risposto: "${text}"${imageInfo}.
-
-ISTRUZIONI PER TE:
-1.  **ANALIZZA I DISEGNI:** Se ci sono disegni, osservali attentamente. Sono la parte più importante della risposta dello studente.
-2.  **RISPONDI A DOMANDE DIRETTE:** Se lo studente ti fa una domanda diretta sul disegno (es. "riesci a leggere questo?", "questo è corretto?"), rispondi PRIMA a quella domanda.
-3.  **VALUTA LA RISPOSTA:** Dopo aver analizzato tutto, valuta la risposta dello studente nel contesto dell'esame.
-4.  **PROCEDI:** Fai la prossima domanda per continuare l'esame.
+        inputs.push({ text: `Studente risponde: "${text}"${imageInfo}. 
 
 IMPORTANTE: Rispondi SEMPRE e SOLO con JSON valido nel formato:
 {
   "type": "question",
-  "message": "La tua risposta e/o la prossima domanda",
+  "message": "Il tuo messaggio",
   "progress": {"covered": X, "total": Y, "percentage": Z},
   "isComplete": false
-}` });
+}
+
+Valuta e procedi con la prossima domanda.` });
         
         const result = await this.chatSession.sendMessage(inputs);
         return this.parseResponse(result.response.text());
