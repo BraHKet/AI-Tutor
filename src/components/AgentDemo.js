@@ -652,7 +652,7 @@ const reinitializeAllCanvases = useCallback(() => {
 
       console.log("-------------------------------------------");
       console.log("🔎 [DEBUG-1 | AgentDemo] Sto per inviare i dati.");
-      console.log(`Numero di disegni trovati: ${drawingImages ? drawingImages.length : 0}`);
+      console.log(`Numero di disegni trovati: ${drawingImage ? drawingImage.length : 0}`);
       console.log("Contenuto dell'array 'drawingImages':", drawingImages);
       console.log("-------------------------------------------");
       
