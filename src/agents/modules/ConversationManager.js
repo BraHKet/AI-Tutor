@@ -76,7 +76,7 @@ Inizia con type="setup" e la prima domanda.`;
             // MODIFICA 3: Esegue un ciclo su OGNI immagine nell'array.
             for (const singleImage of images) {
 
-                console.log(`--- IMMAGINE N° ${imageIndex + 1} INVIATA ALL'AI ---`);
+                console.log(`--- ---------------------- ---`);
                 console.log(
                     '%c ', // Carattere vuoto stilizzato
                     'font-size: 1px; ' +
