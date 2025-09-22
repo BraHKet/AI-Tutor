@@ -1314,7 +1314,7 @@ useEffect(() => {
                         <div className={styles.drawingElementContainer} style={
                             (isMobile && currentTool === 'pointer') 
                               ? { touchAction: 'auto' } 
-                              : {}
+                              : { touchAction: 'none' }
                           }>
                           
                           
