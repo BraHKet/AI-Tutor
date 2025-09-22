@@ -1178,13 +1178,17 @@ useEffect(() => {
           <div className={styles.historySidebar}>
             <div className={styles.sidebarHeader}>
               <h3 className={styles.sidebarTitle}>Conversation History</h3>
+
+              {!isLargeScreen && (
               <button
                 onClick={() => setShowHistory(false)}
                 className={styles.closeButton}
               >
                 <X size={18} />
               </button>
-            </div>
+              )}
+            </div> 
+            
             
             <div className={styles.conversationContainer}>
               {conversation.map((turn, index) => (
@@ -1377,14 +1381,14 @@ useEffect(() => {
                 </button>
               )}
             </div>
-            {isLargeScreen && (
+            
         <button
           onClick={closeAIResponse}
           className={styles.aiResponseCloseButton}
         >
           <X size={18} />
         </button>
-      )}
+      
           </div>
           
           <div className={styles.aiResponseContent}>
