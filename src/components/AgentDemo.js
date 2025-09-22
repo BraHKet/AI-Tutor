@@ -128,8 +128,9 @@ export default function AgentDemo() {
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
 
-  const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth > 1024);
-  const LARGE_SCREEN_BREAKPOINT = 1024;
+  const LARGE_SCREEN_BREAKPOINT = 825;
+  const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth > LARGE_SCREEN_BREAKPOINT);
+
 
 
   // Gestisce l'avvio e lo stop della riproduzione per un messaggio specifico.
@@ -1124,12 +1125,15 @@ useEffect(() => {
                 {progress.covered}/{progress.total} ({progress.percentage}%)
               </div>
             )}
-            <button
-              onClick={() => setShowHistory(!showHistory)}
-              className={showHistory ? styles.historyButtonActive : styles.historyButtonInactive}
-            >
-              <History size={16} />
-            </button>
+            {!isLargeScreen && (
+              <button
+                onClick={() => setShowHistory(!showHistory)}
+                className={showHistory ? styles.historyButtonActive : styles.historyButtonInactive}
+                disabled={isLargeScreen}
+              >
+                <History size={16} />
+              </button>
+            )}
             <button
               onClick={sendSequentialContent}
               disabled={isProcessing || !hasContent()}
