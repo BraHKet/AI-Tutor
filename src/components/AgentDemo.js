@@ -1542,5 +1542,3 @@ useEffect(() => {
     </>
   );
 }
-
-turn.image
