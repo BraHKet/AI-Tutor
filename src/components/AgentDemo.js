@@ -627,51 +627,50 @@ const reinitializeAllCanvases = useCallback(() => {
     }
   };
 
-    const sendSequentialContent = async () => {
+  const sendSequentialContent = async () => {
     if (!agent || isProcessing || !hasContent()) return;
 
     try {
       setIsProcessing(true);
       voiceUtils.stopSpeaking();
       
-      // MODIFICA 1: Estrai `drawingImages` (plurale) invece di `drawingImage` (singolare).
-      const { textContent, drawingImages, sequentialData } = compileSequentialContent();
+      const { textContent, drawingImage, sequentialData } = compileSequentialContent();
       
-      // Debug: stampa la sequenza elaborata per conferma
+      // Debug: stampa la sequenza elaborata
       console.log('📝 Sequential content:', {
         textContent,
-        drawingImages, // Controlla che qui ci siano tutti i tuoi disegni
         sequentialData,
         originalOrder: sequentialElements.map(el => ({ id: el.id, type: el.type }))
       });
       
-      // Logica migliorata per descrivere il contenuto
       let finalText = textContent;
-      if (drawingImages && drawingImages.length > 0) {
-        const imageCountText = `[Con ${drawingImages.length} elementi grafici allegati]`;
-        finalText = textContent ? `${textContent} ${imageCountText}` : imageCountText;
+      if (drawingImage && textContent) {
+        finalText += ' [Con elementi grafici allegati]';
+      } else if (drawingImage && !textContent) {
+        finalText = '[Solo elementi grafici]';
       }
+
+      console.log("-------------------------------------------");
+      console.log("🔎 [DEBUG-1 | AgentDemo] Sto per inviare i dati.");
+      console.log(`Numero di disegni trovati: ${drawingImages ? drawingImages.length : 0}`);
+      console.log("Contenuto dell'array 'drawingImages':", drawingImages);
+      console.log("-------------------------------------------");
       
-      // MODIFICA 2: Aggiorna l'oggetto del messaggio per la cronologia.
-      // Usiamo il primo disegno per l'anteprima (`image`), ma conserviamo l'array completo (`images`).
       const studentMessage = {
         speaker: 'student',
         content: finalText,
-        image: drawingImages && drawingImages.length > 0 ? drawingImages[0] : null,
-        images: drawingImages, // Salva l'array completo per usi futuri
+        image: drawingImage,
         textContent: textContent,
-        sequentialData: sequentialData, 
+        sequentialData: sequentialData, // Aggiungi dati sequenziali
         timestamp: new Date()
       };
       
       setConversation(prev => [...prev, studentMessage]);
 
-      // MODIFICA 3 (LA PIÙ IMPORTANTE): Passa l'array completo di disegni all'agente.
-      // Si assume che l'agente si aspetti una proprietà `images` (o simile) per ricevere un array.
       const result = await agent.processResponse({
         text: textContent,
-        images: drawingImages, // Passa l'array di tutti i disegni
-        sequential: sequentialData 
+        image: drawingImage,
+        sequential: sequentialData // Passa anche i dati sequenziali
       });
 
       const aiMessage = {

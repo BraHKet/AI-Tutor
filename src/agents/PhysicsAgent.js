@@ -61,37 +61,33 @@ export class PhysicsAgent {
         return await this.conversationManager.startSession(this.currentMaterial);
     }
 
-    // FILE: src/agents/PhysicsAgent.js
-
-async processResponse(responseData) {
-    try {
-        const text = responseData.text || '';
-        
-        // MODIFICA 1: Estrai l'array 'images' (plurale) invece della singola 'image'.
-        // Usiamo `|| []` come fallback sicuro per avere sempre un array.
-        const images = responseData.images || [];
-        
-        console.log(`[PhysicsAgent] Processing response with ${images.length} image(s).`);
-
-        // MODIFICA 2: Passa l'intero array 'images' al ConversationManager.
-        const result = await this.conversationManager.sendMessage(text, images);
-        
-        return {
-            type: result.type,
-            response: result.message,
-            isComplete: result.isComplete,
-            progress: result.progress
-        };
-    } catch (error) {
-        console.error('❌ Process failed:', error);
-        return {
-            type: 'error',
-            response: "Errore. Riprovare?",
-            isComplete: false,
-            progress: { covered: 0, total: 1, percentage: 0 }
-        };
+    async processResponse(responseData) {
+        console.log("📬 [DEBUG-2 | PhysicsAgent] Ho ricevuto i seguenti dati dal frontend:");
+    console.log("Dati ricevuti:", responseData);
+    console.log(`Numero di immagini nell'array ricevuto: ${responseData.images ? responseData.images.length : 'non definito'}`);
+    console.log("-------------------------------------------");
+        try {
+            const text = typeof responseData === 'string' ? responseData : responseData.text;
+            const image = typeof responseData === 'object' ? responseData.image : null;
+            
+            const result = await this.conversationManager.sendMessage(text, image);
+            
+            return {
+                type: result.type,
+                response: result.message,
+                isComplete: result.isComplete,
+                progress: result.progress
+            };
+        } catch (error) {
+            console.error('❌ Process failed:', error);
+            return {
+                type: 'error',
+                response: "Errore. Riprovare?",
+                isComplete: false,
+                progress: { covered: 0, total: 1, percentage: 0 }
+            };
+        }
     }
-}
 
     async generateFinalEvaluation() {
         // Minimal fallback

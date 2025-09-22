@@ -62,20 +62,35 @@ Inizia con type="setup" e la prima domanda.`;
         }
     }
 
-    async sendMessage(text, image = null) {
-        if (!this.isActive || !this.chatSession) {
-            throw new Error('No active session');
-        }
+    async sendMessage(text, images = []) { // <-- MODIFICA 1: Accetta "images" (plurale)
+    if (!this.isActive || !this.chatSession) {
+        throw new Error('No active session');
+    }
 
-        try {
-            const inputs = [];
+    try {
+        // Inizializza l'array di input. Il testo verrà aggiunto alla fine.
+        const inputs = [];
+        
+        // MODIFICA 2: Controlla se l'array 'images' contiene elementi.
+        if (images && images.length > 0) {
+            console.log(`[ConversationManager] Processing ${images.length} images.`);
             
-            if (image) {
-                const imageData = image.split(',')[1];
+            // MODIFICA 3: Esegui un ciclo su OGNI immagine nell'array.
+            for (const singleImage of images) {
+                // Per ogni immagine, estrai i dati base64
+                const imageData = singleImage.split(',')[1];
+                // e aggiungila come parte separata al payload.
                 inputs.push({ inlineData: { mimeType: 'image/png', data: imageData } });
             }
+        }
+        
+        // MODIFICA 4: Aggiungi il testo DOPO tutte le immagini.
+        // Il prompt è stato migliorato per menzionare il numero di disegni.
+        const imageInfo = images && images.length > 0 
+            ? ` (con ${images.length} disegni allegati)` 
+            : '';
             
-            inputs.push({ text: `Studente risponde: "${text}"${image ? ' (con disegno allegato)' : ''}. 
+        inputs.push({ text: `Studente risponde: "${text}"${imageInfo}. 
 
 IMPORTANTE: Rispondi SEMPRE e SOLO con JSON valido nel formato:
 {
@@ -86,14 +101,16 @@ IMPORTANTE: Rispondi SEMPRE e SOLO con JSON valido nel formato:
 }
 
 Valuta e procedi con la prossima domanda.` });
-            
-            const result = await this.chatSession.sendMessage(inputs);
-            return this.parseResponse(result.response.text());
-        } catch (error) {
-            console.error('❌ Message failed:', error);
-            throw error;
-        }
+        
+        console.log(`[ConversationManager] Sending final payload to AI with ${inputs.length} parts.`);
+        
+        const result = await this.chatSession.sendMessage(inputs);
+        return this.parseResponse(result.response.text());
+    } catch (error) {
+        console.error('❌ Message failed:', error);
+        throw error;
     }
+}
 
     parseResponse(aiResponse) {
         console.log('🔍 Raw AI Response:', aiResponse);
