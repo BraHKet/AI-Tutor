@@ -1017,12 +1017,19 @@ useEffect(() => {
 
 
   // Effetto per gestire la visibilità della sidebar in base alla dimensione dello schermo
-  useEffect(() => {
-    if (isLargeScreen) {
+useEffect(() => {
+  const handleResize = () => {
+    const isCurrentlyLarge = window.innerWidth > LARGE_SCREEN_BREAKPOINT;
+    setIsLargeScreen(isCurrentlyLarge);
+    if (isCurrentlyLarge) {
       setShowHistory(true);
     }
-  }, [isLargeScreen]); 
-
+  };
+  handleResize();
+  window.addEventListener('resize', handleResize);
+  return () => window.removeEventListener('resize', handleResize);
+  
+}, []); 
 
 
 
@@ -1370,7 +1377,7 @@ useEffect(() => {
                 </button>
               )}
             </div>
-            {!isLargeScreen && (
+            {isLargeScreen && (
         <button
           onClick={closeAIResponse}
           className={styles.aiResponseCloseButton}
