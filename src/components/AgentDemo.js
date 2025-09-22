@@ -638,6 +638,13 @@ const reinitializeAllCanvases = useCallback(() => {
       // MODIFICA 1: Estrai `drawingImages` (plurale) invece di `drawingImage` (singolare).
       const { textContent, drawingImages, sequentialData } = compileSequentialContent();
       
+
+      console.log("-------------------------------------------");
+      console.log("🔎 [DEBUG-1 | AgentDemo] Sto per inviare i dati.");
+      console.log(`Numero di disegni trovati: ${drawingImages ? drawingImages.length : 0}`);
+      console.log("Contenuto dell'array 'drawingImages':", drawingImages);
+      console.log("-------------------------------------------");
+      
       // Debug: stampa la sequenza elaborata per conferma
       console.log('📝 Sequential content:', {
         textContent,
