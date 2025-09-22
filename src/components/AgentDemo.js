@@ -274,6 +274,10 @@ const initializeElementCanvas = useCallback((elementId) => {
     // 3. Ottieni il context
     const ctx = canvas.getContext('2d');
 
+    // 4. Mettiamo sfondo bianco
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
     // 4. Applica trasformazioni e stili
     ctx.scale(dpr, dpr);
     ctx.lineCap = 'round';
