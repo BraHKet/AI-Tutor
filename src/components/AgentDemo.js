@@ -127,6 +127,8 @@ export default function AgentDemo() {
 
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
+
+  const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth > 1024);
   const LARGE_SCREEN_BREAKPOINT = 1024;
 
 
