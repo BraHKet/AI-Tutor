@@ -1,84 +1,121 @@
 /* =======================================================
-// HEADER STYLE - Matching AI Image
+// FILE: header.module.css (FINALE - "WOW" Edition)
+// DESC: Stile premium con gradienti, ombre e animazioni.
 // ======================================================= */
+
+@keyframes subtleGlow {
+  0% { box-shadow: 0 0 4px rgba(79, 70, 229, 0.2); }
+  50% { box-shadow: 0 0 12px rgba(79, 70, 229, 0.4); }
+  100% { box-shadow: 0 0 4px rgba(79, 70, 229, 0.2); }
+}
 
 .stickyHeaderWrapper {
   position: sticky;
   top: 0;
   z-index: 50;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06),
-              0 2px 6px rgba(0, 0, 0, 0.04);
+  /* Ombra più morbida, profonda e realistica per un effetto "fluttuante" */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+  /* Ancora per il responsive */
 }
 
-/* Header container */
 .header {
-  background: linear-gradient(135deg, #eef2ff 0%, #fdf2f8 100%);
-  border-bottom: 1px solid #e5e7eb;
-  padding: 14px 28px;
+  /* BACKGROUND A GRADIENTE: Sottile ma elegante, aggiunge profondità. */
+  background-image: linear-gradient(180deg, #F0F9FF 0%, #E0F2FE 100%);
+  border-bottom: 1px solid #CFE8FB; /* Bordo abbinato */
+  padding: 12px 28px; /* Più spazio per un look premium */
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 16px;
-  border-radius: 0 0 20px 20px; /* arrotondamento in basso per effetto card */
+  border-bottom: 1px solid #EAECEF;
 }
 
-/* Left, Center, Right zones */
-.headerLeft, .headerRight {
+.headerLeft {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px; /* Aumentato per più respiro */
+  flex-shrink: 0;
 }
+
 .headerCenter {
-  flex: 1;
+  flex-grow: 1;
   display: flex;
   justify-content: center;
+  min-width: 0;
 }
 
-/* Buttons - chiari e moderni */
-.header button,
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 16px; /* Aumentato per più respiro */
+  flex-shrink: 0;
+}
+
+/* ==========================================
+// BOTTONI PREMIUM (La vera magia!)
+// ========================================== */
+
 .backButton,
-.historyButtonInactive,
-.iconButton {
-  background: white;
+.historyButtonInactive, .iconButton {
+  background-color: #FFFFFF;
   border: none;
-  padding: 8px 16px;
-  border-radius: 12px;
-  font-weight: 600;
-  color: #374151;
+  padding: 9px 16px; /* Leggermente più alti */
+  border-radius: 9px; /* Angoli più arrotondati e moderni */
   cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-  transition: all 0.2s ease;
+  font-weight: 600; /* Testo più deciso */
+  color: #374151;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* Ombra per dare un effetto 3D al pulsante */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05), 0 1px 1px rgba(0, 0, 0, 0.03);
+  /* TRANSIZIONE FLUIDA: non lineare, per un feeling più naturale */
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), 
+              box-shadow 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.header button:hover,
 .backButton:hover,
-.historyButtonInactive:hover,
-.iconButton:hover {
+.historyButtonInactive:hover, .iconButton:hover {
+  /* EFFETTO "LIFT": il pulsante si solleva verso l'utente */
   transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-  background: #f9fafb;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.07), 0 2px 3px rgba(0, 0, 0, 0.05);
+  background-color: #FBFCFF; /* Leggero cambio di colore per feedback */
 }
 
-/* Active button */
+/* STATO ATTIVO: il protagonista */
 .historyButtonActive {
-  background: linear-gradient(45deg, #6366f1 0%, #4f46e5 100%);
-  color: white;
-  border-radius: 12px;
-  padding: 8px 16px;
+  /* Copia gli stili base per coerenza */
+  padding: 9px 16px;
+  border-radius: 9px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-weight: 600;
-  box-shadow: 0 4px 12px rgba(99,102,241,0.3);
-  transform: translateY(-1px);
-  transition: all 0.2s ease;
-}
-.historyButtonActive:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(99,102,241,0.4);
+  
+  /* BACKGROUND A GRADIENTE VIBRANTE */
+  background-image: linear-gradient(45deg, #4F46E5 0%, #6366F1 100%);
+  color: white;
+  border: none;
+  
+  /* Ombra che matcha il colore del gradiente per un look integrato */
+  box-shadow: 0 3px 8px rgba(79, 70, 229, 0.3);
+  transform: translateY(-1px); /* Leggermente sollevato di default */
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Title & Badge */
+.historyButtonActive:hover {
+  box-shadow: 0 5px 12px rgba(79, 70, 229, 0.4);
+  transform: translateY(-2px); /* Si solleva ancora di più */
+}
+
+
+/* ==========================================
+// ELEMENTI UI MIGLIORATI
+// ========================================== */
+
 .title {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: 1.25rem; /* Più grande e d'impatto */
   font-weight: 700;
   color: #111827;
   display: flex;
@@ -87,19 +124,53 @@
 }
 
 .progressBadge {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #4f46e5;
-  background: #eef2ff;
-  border: 1px solid #c7d2fe;
-  padding: 6px 14px;
-  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600; /* Più leggibile */
+  color: #4338ca; /* Colore primario per coerenza */
+  background-color: #EEF2FF; /* Sfondo in tinta */
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: 1px solid #C7D2FE; /* Bordo in tinta */
+  /* Animazione sottile per attirare l'attenzione */
   animation: subtleGlow 3s infinite;
 }
 
-/* Glow animation */
-@keyframes subtleGlow {
-  0%   { box-shadow: 0 0 4px rgba(99, 102, 241, 0.2); }
-  50%  { box-shadow: 0 0 12px rgba(99, 102, 241, 0.35); }
-  100% { box-shadow: 0 0 4px rgba(99, 102, 241, 0.2); }
+@media (max-width: 900px) {
+  .progressBadge, .title {
+      display: none;
+  }
 }
+/* ==========================================
+// SEZIONE RESPONSIVE (INVARIATA NELLA LOGICA)
+// ========================================== */
+
+@media (max-width: 768px) {
+  .header {
+    justify-content: space-between;
+    padding: 10px 16px; /* Adattiamo il padding */
+  }
+
+  .headerCenter {
+    position: absolute;
+    top: 100%; 
+    left: 0;
+    width: 100%;
+    background-color: white;
+    border-bottom: 1px solid #e5e7eb;
+    justify-content: flex-start;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .headerCenter::-webkit-scrollbar {
+    display: none;
+  }
+
+  .stickyHeaderWrapper {
+    margin-bottom: 60px; /* attivo solo quando la toolbar compatta esiste/visibile */
+  }
+  
+}
+
