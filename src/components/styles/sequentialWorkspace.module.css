@@ -153,13 +153,13 @@
 }
 
 /* Se l'icona è un SVG o un font icon, potrebbe essere necessario agire direttamente su di essa */
-.sendButtonDisabled svg {
+.sendButtonDisabled svg { 
     fill: rgba(0, 0, 0, 0.3); /* Esempio per SVG, adatta il colore */
 }
 
-
   
- 
+
+             
 /*-----------------------------------------------------*/
 
 .sequentialElementsList {
