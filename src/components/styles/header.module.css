@@ -3,12 +3,6 @@
 // DESC: Stile premium con gradienti, ombre e animazioni.
 // ======================================================= */
 
-@keyframes subtleGlow {
-  0% { box-shadow: 0 0 4px rgba(79, 70, 229, 0.2); }
-  50% { box-shadow: 0 0 12px rgba(79, 70, 229, 0.4); }
-  100% { box-shadow: 0 0 4px rgba(79, 70, 229, 0.2); }
-}
-
 .stickyHeaderWrapper {
   position: sticky;
   top: 0;
@@ -242,4 +236,3 @@
   }
   
 }
-
