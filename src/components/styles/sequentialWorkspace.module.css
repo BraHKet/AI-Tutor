@@ -75,33 +75,78 @@
   font-size: 13px;
 }
 
+
+/*----------------------Send button-------------------------------*/
+
 .sendButtonActive,
 .sendButtonDisabled {
+  /* Stili di base comuni */
   border: none;
-  padding: 8px 16px;
-  border-radius: var(--border-radius-small);
-  display: flex;
+  padding: 10px 20px; /* Aumentiamo un po' il padding per un look più premium */
+  border-radius: 9999px; /* Stile "Pill" per coerenza con il progressBadge */
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+  font-size: 0.95rem; /* ~15px */
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  position: relative; /* Necessario per lo pseudo-elemento "glow" */
+  -webkit-tap-highlight-color: transparent;
+  outline: none; /* Gestiremo il focus con box-shadow */
+  transition:
+    transform 0.18s cubic-bezier(.22,1,.36,1),
+    box-shadow .18s ease;
 }
 
+/* --- STATO ATTIVO --- */
 .sendButtonActive {
-  background: var(--color-success);
-  color: var(--color-text-light);
-}
-.sendButtonActive:hover {
-  background: var(--color-success-dark);
-  box-shadow: var(--shadow-small);
+  color: #ffffff;
+  background-image: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+  box-shadow: 0 8px 24px rgba(99,102,241,0.25);
+  transform: translateY(-1px); /* Leggermente sollevato di default */
 }
 
-.sendButtonDisabled {
-  background: var(--color-disabled);
-  color: #9ca3af; /* Colore testo specifico per disabilitato */
-  cursor: not-allowed;
+/* Alone luminoso dietro al bottone (preso da .historyButtonActive) */
+.sendButtonActive::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 110%; /* Leggermente più grande del bottone */
+  height: 150%;/* Leggermente più grande del bottone */
+  transform: translate(-50%, -50%);
+  border-radius: inherit; /* Eredita il border-radius del bottone */
+  background: radial-gradient(circle,
+              rgba(99,102,241,0.18) 0%,
+              transparent 55%);
+  filter: blur(12px);
+  z-index: -1;
+  pointer-events: none;
 }
+
+/* Hover per lo stato attivo: si solleva e l'ombra aumenta */
+.sendButtonActive:hover {
+  transform: translateY(-2.5px);
+  box-shadow: 0 12px 34px rgba(99,102,241,0.36);
+}
+
+/* Focus per accessibilità */
+.sendButtonActive:focus-visible {
+  box-shadow: 0 12px 34px rgba(99,102,241,0.36),
+              0 0 0 3px rgba(99,102,241,0.12);
+}
+
+
+/* --- STATO DISABILITATO --- */
+.sendButtonDisabled {
+  background: #E0E7FF; /* Un colore di sfondo lilla molto chiaro */
+  color: #A5B4FC;      /* Un colore di testo indaco desaturato */
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/*-----------------------------------------------------*/
 
 .sequentialElementsList {
   flex-grow: 1; /* Permette alla lista di occupare lo spazio disponibile */
