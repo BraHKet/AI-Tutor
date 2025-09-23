@@ -124,6 +124,7 @@ export default function AgentDemo() {
   const mainWorkspaceRef = useRef(null);
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [IsMobileTablet, setIsMobileTablet] = useState(window.innerWidth < 1400);
 
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
@@ -1000,6 +1001,7 @@ useEffect(() => {
   useEffect(() => {
   const handleResize = () => {
     setIsMobile(window.innerWidth < 768);
+    setIsMobileTablet(window.innerWidth < 1400);
   };
 
   window.addEventListener("resize", handleResize);
@@ -1332,7 +1334,7 @@ useEffect(() => {
                         />
                       ) : (
                         <div className={styles.drawingElementContainer} style={
-                            (isMobile && currentTool === 'pointer') 
+                            (IsMobileTablet && currentTool === 'pointer') 
                               ? { touchAction: 'auto' } 
                               : { touchAction: 'none' }
                           }>
