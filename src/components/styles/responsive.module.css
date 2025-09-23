@@ -9,6 +9,7 @@ gap: 8px;
 }
 .drawingToolsCompact {
 order: 2;
+display:flex;
 }
 .actionButtonsRight {
 order: 3;
