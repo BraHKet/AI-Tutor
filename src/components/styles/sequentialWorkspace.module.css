@@ -53,9 +53,29 @@
 .colorPickerCompact::-webkit-color-swatch { border-radius: 50%; }
 .colorPickerCompact::-moz-color-swatch { border-radius: 50%; }
 
+* Stile per lo slider dello spessore */
 .strokeSliderCompact {
-  width: 100px; /* Larghezza dello slider */
+  -webkit-appearance: none;
+  appearance: none;
+  width: 120px; /* un po’ più largo */
+  height: 6px; /* track sottile */
+  border-radius: 3px;
+  background: #e5e7eb; /* grigio chiaro */
   cursor: pointer;
+  transition: background 0.2s;
+}
+
+/* Thumb (il cursore) */
+.strokeSliderCompact::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #3b82f6; /* blu professionale */
+  border: none;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s, background 0.2s;
 }
 
 .actionButtonsRight {
