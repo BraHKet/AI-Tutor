@@ -45,6 +45,7 @@
   margin: 0 4px; /* Un po' di respiro */
   margin-left: 15px;
   overflow: hidden;
+  margin-top: 5px;
 }
 .colorPickerCompact:hover {
   transform: scale(1.1);
@@ -62,6 +63,7 @@
   background: #e5e7eb; /* grigio chiaro */
   cursor: pointer;
   transition: background 0.2s;
+  margin-top: 15px
 }
 
 /* Thumb (il cursore) */
