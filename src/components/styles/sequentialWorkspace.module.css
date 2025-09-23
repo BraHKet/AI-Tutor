@@ -138,13 +138,7 @@
 }
 
 
-/* --- STATO DISABILITATO --- */
-.sendButtonDisabled {
-  background: #E0E7FF; /* Un colore di sfondo lilla molto chiaro */
-  color: #A5B4FC;      /* Un colore di testo indaco desaturato */
-  cursor: not-allowed;
-  box-shadow: none;
-}
+
 
 /*-----------------------------------------------------*/
 
