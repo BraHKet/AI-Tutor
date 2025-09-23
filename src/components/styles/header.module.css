@@ -26,7 +26,6 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  border-radius: 0 0 20px 20px;
 }
 
 .headerLeft {
@@ -76,9 +75,9 @@
     opacity 0.18s ease;
   -webkit-tap-highlight-color: transparent;
   outline: none;
-  
-  font-size: 1.125rem; /* ~18px */
-  font-weight: 700;
+
+  font-size: 1.1rem; /* ~18px */
+  font-weight: 500;
 }
 
 /* alone hover (pseudo-element) */
@@ -194,60 +193,16 @@
   gap: 10px;
 }
 
-.progressBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.875rem;               /* ~14px */
-  font-weight: 600;
-  color: #4F46E5;                    /* indaco acceso */
-  background: linear-gradient(135deg, #E0E7FF 0%, #EEF2FF 100%); 
-  padding: 6px 16px;
-  border-radius: 9999px;             /* pill perfetto */
-  border: none;                      /* nessun bordo visibile */
-  position: relative;
-  box-shadow: 0 2px 6px rgba(79,70,229,0.15),
-              inset 0 1px 2px rgba(255,255,255,0.9); /* effetto glossy */
-  overflow: hidden;
+.progressBadge { 
+  font-size: 0.875rem; 
+  font-weight: 600; /* Più leggibile */ 
+  color: #000000; /* Colore primario per coerenza */ 
+  background-color: #e4f5fe; /* Sfondo in tinta */ 
+  padding: 7px 14px; 
+  border-radius: 20px; 
+  border: 1px solid #e4f5fe; /* Bordo in tinta */ /* Animazione sottile per attirare l'attenzione */ 
+  animation: subtleGlow 3s infinite; 
 }
-
-/* glow soffice che pulsa */
-.progressBadge::after {
-  content: "";
-  position: absolute;
-  top: -20%;
-  left: -20%;
-  width: 140%;
-  height: 140%;
-  background: radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 60%);
-  opacity: 0;
-  transition: opacity 0.3s ease-in-out;
-  border-radius: 9999px;
-  z-index: -1;
-}
-
-.progressBadge:hover::after {
-  opacity: 1;
-}
-
-/* micro-animazione pulsante */
-@keyframes badgePulse {
-  0%, 100% {
-    transform: translateY(0);
-    box-shadow: 0 2px 6px rgba(79,70,229,0.15),
-                inset 0 1px 2px rgba(255,255,255,0.9);
-  }
-  50% {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(79,70,229,0.28),
-                inset 0 1px 2px rgba(255,255,255,0.9);
-  }
-}
-
-.progressBadge {
-  animation: badgePulse 3s infinite ease-in-out;
-}
-
 
 @media (max-width: 900px) {
   .progressBadge, .title {
