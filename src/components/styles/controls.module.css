@@ -55,7 +55,7 @@
   cursor: pointer;
   background-color: transparent;
   transition: transform 0.2s;
-  border: 2px solid #e5e7eb;
+  border: none;
   margin: 0 4px; /* Un po' di respiro */
   margin-left: 5px;
   overflow: hidden;
