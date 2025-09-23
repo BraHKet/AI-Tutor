@@ -39,20 +39,15 @@
   white-space: nowrap; /* Impedisce al testo di andare a capo */
 }
 
-
-.toolButtonInactive:hover {
-  background-color: #f3f4f6; /* Sfondo grigio chiaro al passaggio */
-  border-color: #e5e7eb;
-}
-
 .toolButtonActive {
   
-  color: #224071;
+  color: #1b212c;
 }
 
 /* Stile per il selettore del colore */
 .colorPickerCompact {
   appearance: none;
+  -webkit-appearance: none;
   width: 28px;
   height: 28px;
   padding: 0;
@@ -62,6 +57,8 @@
   transition: transform 0.2s;
   border: 2px solid #e5e7eb;
   margin: 0 4px; /* Un po' di respiro */
+  margin-left: 5px;
+  overflow: hidden;
 }
 .colorPickerCompact:hover {
   transform: scale(1.1);
