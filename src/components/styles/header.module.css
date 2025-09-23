@@ -51,20 +51,17 @@
   flex-shrink: 0;
 }
 
-/* ==========================================
-// BOTTONI PREMIUM (La vera magia!)
-// ========================================== */
-
 /* ============================================
    ICON-ONLY BUTTONS (default trasparenti)
    ============================================ */
+
 .backButton,
 .historyButtonInactive,
 .iconButton {
   background: transparent;        /* nessun contenitore visibile */
   border: none;
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   padding: 0;
   border-radius: 50%;
   display: inline-flex;
@@ -199,29 +196,56 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.8125rem;         /* leggermente più compatto */
-  font-weight: 500;             /* meno bold, più raffinato */
-  color: #4F46E5;               /* testo in tinta con il brand */
-  background-color: #E0E7FF;    /* lilla chiaro pieno, niente bianco */
-  padding: 6px 14px;            /* pill più sottile e orizzontale */
-  border-radius: 9999px;        /* pill perfetta */
-  border: none;                 /* niente bordo visibile */
+  font-size: 0.875rem;               /* ~14px */
+  font-weight: 600;
+  color: #4F46E5;                    /* indaco acceso */
+  background: linear-gradient(135deg, #E0E7FF 0%, #EEF2FF 100%); 
+  padding: 6px 16px;
+  border-radius: 9999px;             /* pill perfetto */
+  border: none;                      /* nessun bordo visibile */
   position: relative;
-  box-shadow: 0 2px 6px rgba(79,70,229,0.15); /* ombra soft coerente */
+  box-shadow: 0 2px 6px rgba(79,70,229,0.15),
+              inset 0 1px 2px rgba(255,255,255,0.9); /* effetto glossy */
+  overflow: hidden;
+}
+
+/* glow soffice che pulsa */
+.progressBadge::after {
+  content: "";
+  position: absolute;
+  top: -20%;
+  left: -20%;
+  width: 140%;
+  height: 140%;
+  background: radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  border-radius: 9999px;
+  z-index: -1;
+}
+
+.progressBadge:hover::after {
+  opacity: 1;
+}
+
+/* micro-animazione pulsante */
+@keyframes badgePulse {
+  0%, 100% {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(79,70,229,0.15),
+                inset 0 1px 2px rgba(255,255,255,0.9);
+  }
+  50% {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(79,70,229,0.28),
+                inset 0 1px 2px rgba(255,255,255,0.9);
+  }
+}
+
+.progressBadge {
   animation: badgePulse 3s infinite ease-in-out;
 }
 
-/* Animazione glow/pulse molto soft */
-@keyframes badgePulse {
-  0%, 100% {
-    box-shadow: 0 2px 6px rgba(79,70,229,0.15);
-    transform: translateY(0);
-  }
-  50% {
-    box-shadow: 0 4px 12px rgba(79,70,229,0.28);
-    transform: translateY(-1px);
-  }
-}
 
 @media (max-width: 900px) {
   .progressBadge, .title {
