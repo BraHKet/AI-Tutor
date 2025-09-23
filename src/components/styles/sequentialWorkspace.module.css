@@ -25,14 +25,6 @@
   --shadow-small: 0 1px 3px rgba(0,0,0,0.05); /* Ombra leggera */
 }
 
-.drawingToolsCompact {
-  display: flex;
-  flex-direction: row; /* <-- La riga fondamentale */
-  align-items: center;
-  gap: 8px;
-  flex-wrap: nowrap; 
-}
-
 .sequentialWorkspace {
   flex-grow: 1; /* Permette al workspace di occupare lo spazio disponibile */
   background-color: var(--color-background-secondary);
@@ -111,7 +103,7 @@
 .sendButtonDisabled {
   /* Stili di base comuni */
   border: none; /* Rimuoviamo il bordo per entrambi, poi lo aggiustiamo se serve per l'attivo */
-  padding: 10px 20px;
+  padding: 10px 13px;
   border-radius: 9999px;
   display: inline-flex;
   align-items: center;
@@ -175,7 +167,6 @@
   cursor: not-allowed; /* Cursore di non-permesso */
   padding: 0; /* Rimuovi il padding per far vedere solo l'icona, o lascialo se vuoi un'area cliccabile più grande */
   width: 40px; /* Imposta una larghezza e altezza fissa per l'icona */
-  height: 40px;
   border-radius: 50%; /* Se vuoi un'area circolare invisibile attorno */
 }
 
