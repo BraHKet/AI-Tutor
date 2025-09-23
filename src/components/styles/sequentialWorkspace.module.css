@@ -45,7 +45,7 @@
   margin: 0 4px; /* Un po' di respiro */
   margin-left: 15px;
   overflow: hidden;
-  margin-top: 5px;
+  margin-top: 4px;
 }
 .colorPickerCompact:hover {
   transform: scale(1.1);
