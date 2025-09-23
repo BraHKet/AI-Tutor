@@ -25,101 +25,54 @@
 // Rende i bottoni stessi dei contenitori flex orizzontali.
 // =================================================================== */
 .toolButtonActive, .toolButtonInactive {
+  
+  /* Stili estetici */
   background-color: transparent;
-  border: none; /* Rimuovi il bordo */
+  border: 1px solid transparent;
   border-radius: 6px;
   padding: 8px 12px;
   cursor: pointer;
-  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out; /* Transizioni solo per sfondo e colore */
+  transition: all 0.2s ease-in-out;
   font-size: 14px;
   font-weight: 500;
-  color: #6B7280; /* Colore del testo grigio neutro per inattivo */
-  white-space: nowrap;
-  display: flex; /* Permette all'icona e al testo di allinearsi se presenti */
-  align-items: center; /* Centra verticalmente */
-  justify-content: center; /* Centra orizzontalmente se solo icona */
+  color: #374151;
+  white-space: nowrap; /* Impedisce al testo di andare a capo */
 }
 
 .toolButtonInactive:hover {
-  background-color: #F9FAFB; /* Sfondo molto chiaro al passaggio */
-  color: #1F2937; /* Colore del testo più scuro all'hover */
+  background-color: #f3f4f6; /* Sfondo grigio chiaro al passaggio */
+  border-color: #e5e7eb;
 }
 
 .toolButtonActive {
-  background-color: #E0E7FF; /* Sfondo blu chiaro per l'elemento attivo */
-  color: #4F46E5; /* Colore del testo blu più scuro per attivo */
+  background-color: #eef2ff; /* Viola/Blu molto chiaro per l'elemento attivo */
+  color: #4338ca;
+  border-color: #c7d2fe;
 }
 
 /* Stile per il selettore del colore */
 .colorPickerCompact {
   appearance: none;
-  width: 20px; /* Larghezza più piccola come nell'immagine */
-  height: 20px; /* Altezza più piccola come nell'immagine */
+  width: 28px;
+  height: 28px;
   padding: 0;
   border-radius: 50%;
   cursor: pointer;
   background-color: transparent;
   transition: transform 0.2s;
-  border: 2px solid #D1D5DB; /* Bordo grigio chiaro */
+  border: 2px solid #e5e7eb;
   margin: 0 4px; /* Un po' di respiro */
-  outline: none; /* Rimuovi l'outline di default al focus */
 }
-
 .colorPickerCompact:hover {
   transform: scale(1.1);
 }
-
-.colorPickerCompact::-webkit-color-swatch {
-  border-radius: 50%;
-  border: none; /* Rimuovi il bordo predefinito dello swatch */
-}
-
-.colorPickerCompact::-moz-color-swatch {
-  border-radius: 50%;
-  border: none; /* Rimuovi il bordo predefinito dello swatch */
-}
+.colorPickerCompact::-webkit-color-swatch { border-radius: 50%; }
+.colorPickerCompact::-moz-color-swatch { border-radius: 50%; }
 
 /* Stile per lo slider dello spessore */
 .strokeSliderCompact {
   width: 100px;
   cursor: pointer;
-  -webkit-appearance: none; /* Rimuovi stili di default per Chrome/Safari */
-  appearance: none;
-  height: 4px; /* Altezza della traccia */
-  background: #D1D5DB; /* Colore della traccia */
-  border-radius: 2px;
-  outline: none; /* Rimuovi l'outline al focus */
-  transition: background 0.2s;
-}
-
-.strokeSliderCompact::-webkit-slider-thumb {
-  -webkit-appearance: none; /* Rimuovi stili di default */
-  appearance: none;
-  width: 14px; /* Larghezza del thumb */
-  height: 14px; /* Altezza del thumb */
-  background: #4F46E5; /* Colore del thumb */
-  border-radius: 50%;
-  cursor: grab;
-  margin-top: -5px; /* Centra il thumb sulla traccia */
-  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.3); /* Effetto glow leggero */
-}
-
-.strokeSliderCompact::-moz-range-thumb {
-  width: 14px; /* Larghezza del thumb */
-  height: 14px; /* Altezza del thumb */
-  background: #4F46E5; /* Colore del thumb */
-  border-radius: 50%;
-  cursor: grab;
-  border: none; /* Rimuovi il bordo predefinito per Firefox */
-  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.3);
-}
-
-.strokeSliderCompact:hover::-webkit-slider-thumb {
-  background: #4338CA; /* Colore del thumb all'hover */
-}
-
-.strokeSliderCompact:hover::-moz-range-thumb {
-  background: #4338CA; /* Colore del thumb all'hover */
 }
 
 /* Stili per il pulsante di invio */
