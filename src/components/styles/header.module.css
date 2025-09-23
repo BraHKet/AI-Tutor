@@ -196,15 +196,31 @@
 }
 
 .progressBadge {
-  font-size: 0.875rem;
-  font-weight: 600; /* Più leggibile */
-  color: #4338ca; /* Colore primario per coerenza */
-  background-color: #EEF2FF; /* Sfondo in tinta */
-  padding: 7px 14px;
-  border-radius: 20px;
-  border: 1px solid #C7D2FE; /* Bordo in tinta */
-  /* Animazione sottile per attirare l'attenzione */
-  animation: subtleGlow 3s infinite;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8125rem;         /* leggermente più compatto */
+  font-weight: 500;             /* meno bold, più raffinato */
+  color: #4F46E5;               /* testo in tinta con il brand */
+  background-color: #E0E7FF;    /* lilla chiaro pieno, niente bianco */
+  padding: 6px 14px;            /* pill più sottile e orizzontale */
+  border-radius: 9999px;        /* pill perfetta */
+  border: none;                 /* niente bordo visibile */
+  position: relative;
+  box-shadow: 0 2px 6px rgba(79,70,229,0.15); /* ombra soft coerente */
+  animation: badgePulse 3s infinite ease-in-out;
+}
+
+/* Animazione glow/pulse molto soft */
+@keyframes badgePulse {
+  0%, 100% {
+    box-shadow: 0 2px 6px rgba(79,70,229,0.15);
+    transform: translateY(0);
+  }
+  50% {
+    box-shadow: 0 4px 12px rgba(79,70,229,0.28);
+    transform: translateY(-1px);
+  }
 }
 
 @media (max-width: 900px) {
