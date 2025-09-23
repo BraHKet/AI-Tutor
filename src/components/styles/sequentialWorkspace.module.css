@@ -35,8 +35,8 @@
 
 .colorPickerCompact {
   appearance: none; /* Rimuove lo stile predefinito del browser */
-  width: 24px;
-  height: 28px;
+  width: 22px;
+  height: 26px;
   padding: 0;
   border:none;
   border-radius: 50%;
@@ -53,7 +53,7 @@
 .colorPickerCompact::-webkit-color-swatch { border-radius: 50%; }
 .colorPickerCompact::-moz-color-swatch { border-radius: 50%; }
 
-* Stile per lo slider dello spessore */
+/* Stile per lo slider dello spessore */
 .strokeSliderCompact {
   -webkit-appearance: none;
   appearance: none;
