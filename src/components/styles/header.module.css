@@ -213,7 +213,7 @@
 // SEZIONE RESPONSIVE (INVARIATA NELLA LOGICA)
 // ========================================== */
 
-@media (max-width: 768px) {
+@media (max-width: 769px) {
   .header {
     justify-content: space-between;
     padding: 10px 16px; /* Adattiamo il padding */
