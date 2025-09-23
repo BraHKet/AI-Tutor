@@ -35,9 +35,10 @@
   transition: all 0.2s ease-in-out;
   font-size: 14px;
   font-weight: 500;
-  color: #374151;
+  color: #b5c1d4;
   white-space: nowrap; /* Impedisce al testo di andare a capo */
 }
+
 
 .toolButtonInactive:hover {
   background-color: #f3f4f6; /* Sfondo grigio chiaro al passaggio */
@@ -46,8 +47,7 @@
 
 .toolButtonActive {
   background-color: #eef2ff; /* Viola/Blu molto chiaro per l'elemento attivo */
-  color: #4338ca;
-  border-color: #c7d2fe;
+  color: #224071;
 }
 
 /* Stile per il selettore del colore */
