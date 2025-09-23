@@ -35,15 +35,16 @@
 
 .colorPickerCompact {
   appearance: none; /* Rimuove lo stile predefinito del browser */
-  width: 28px;
+  width: 24px;
   height: 28px;
   padding: 0;
+  border:none;
   border-radius: 50%;
   cursor: pointer;
   background-color: transparent;
   transition: transform 0.2s;
   margin: 0 4px; /* Un po' di respiro */
-  margin-left: 5px;
+  margin-left: 15px;
   overflow: hidden;
 }
 .colorPickerCompact:hover {
