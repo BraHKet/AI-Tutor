@@ -1196,7 +1196,7 @@ useEffect(() => {
         {showHistory && (
           <div className={styles.historySidebar}>
             <div className={styles.sidebarHeader}>
-              <h3 className={styles.sidebarTitle}>Conversation History</h3>
+              <h3 className={styles.sidebarTitle}></h3>
 
               {!isLargeScreen && (
               <button
