@@ -19,7 +19,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, #f8fafc 0%, #e0e7ed 100%); /* Sfumatura chiara e moderna */
+  background: rgba(255, 255, 255, 0.3); /* Sfumatura chiara e moderna */
   z-index: 9999;
   animation: fadeInBackground 0.4s ease-out forwards; /* Animazione delicata di apparizione */
 }

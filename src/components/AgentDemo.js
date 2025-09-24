@@ -1058,7 +1058,6 @@ useEffect(() => {
         message="Il professore sta rispondendo..."
         size="medium"
         fullScreen={true}  
-        style={{ backgroundColor: "rgba(255, 255, 255, 0.3)" }}
       />
     );
   }
