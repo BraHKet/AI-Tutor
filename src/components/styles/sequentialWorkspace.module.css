@@ -185,7 +185,7 @@
 .sequentialElementsList {
   flex-grow: 1; /* Permette alla lista di occupare lo spazio disponibile */
   overflow-y: auto; /* Rende la lista scrollabile verticalmente */
-  padding: 15px;
+  padding: 40px;
   display: flex;
   flex-direction: column;
   gap: 15px;
@@ -205,10 +205,7 @@
   margin-bottom: 0; /* Gap gestito dalla lista */
   overflow: hidden;
   transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.activeElement {
-  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.1); /* Ombra leggera blu */
+  box-shadow: 0 8px 20px rgba(92, 92, 92, 0.15);
 }
 
 .elementHeader {
@@ -228,7 +225,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 1rem;
+  font-size: 1.25rem;
   font-weight: 600;
   color: #1F2937;
 }
@@ -264,8 +261,8 @@
 
 .voiceControlButton {
   border: none;
-  padding: 4px 8px;
-  border-radius: 4px;
+  padding: 6px 8px;
+  border-radius: 9px;
   cursor: pointer;
   font-size: 11px;
   display: flex;
@@ -276,16 +273,16 @@
 
 .voiceControlActive {
   composes: voiceControlButton;
-  background: var(--color-success);
+  background: #8db7fd;
 }
 
 .voiceControlInactive {
   composes: voiceControlButton;
-  background: var(--color-primary);
+  background: #8db7fd;
 }
 
 .clearCanvasButton {
-  background: var(--color-warning);
+  background: #edcf52;
   color: var(--color-text-light);
   border: none;
   padding: 4px 8px;
@@ -295,13 +292,13 @@
 }
 
 .deleteElementButton {
-  background: var(--color-danger);
+  background: #5f5def;
   color: var(--color-text-light);
   border: none;
-  padding: 4px 8px;
-  border-radius: 4px;
+  padding: 6px 8px;
+  border-radius: 9px;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 14px;
   display: flex;
   align-items: center;
 }

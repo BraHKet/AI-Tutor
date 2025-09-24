@@ -1270,7 +1270,7 @@ useEffect(() => {
                   >
                     <div className={styles.elementHeader}>
                       <span className={styles.elementNumber}>
-                        {index + 1}. {element.type === 'text' ? '📝 Text' : '🎨 Drawing'}
+                        {index + 1}. {element.type === 'text' ? 'Text' : 'Drawing'}
                       </span>
                       
                       
