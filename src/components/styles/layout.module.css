@@ -41,6 +41,7 @@
   /* MODIFICATO: Rimosso height: calc(...) e overflow: hidden; da qui */
   /* Lo scroll complessivo della pagina sarà sul body (o sul container se necessario) */
   /* Gli scroll interni saranno gestiti da mainWorkspace e historySidebar */
+  background: linear-gradient(to right, #fef6fb, #dae8f7);
 }
 
 .mainWorkspace {
@@ -55,6 +56,7 @@
 
   margin-right: 0;
   transition: margin-right 0.3s ease-out;
+  background: transparent;
 }
 
 

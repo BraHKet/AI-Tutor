@@ -27,7 +27,7 @@
 
 .sequentialWorkspace {
   flex-grow: 1; /* Permette al workspace di occupare lo spazio disponibile */
-  background-color: var(--color-background-secondary);
+  background-color: transparent;
   border-radius: var(--border-radius-base);
   overflow: hidden; /* Gestisce lo scroll interno */
 }
@@ -63,7 +63,7 @@
   background: #e5e7eb; /* grigio chiaro */
   cursor: pointer;
   transition: background 0.2s;
-  margin-top: 15px
+  margin-top: 16px
 }
 
 /* Thumb (il cursore) */
@@ -189,7 +189,7 @@
   display: flex;
   flex-direction: column;
   gap: 15px;
-  background: #f8fafc; /* Colore di sfondo della lista */
+  background: transparent; 
 }
 
 .emptyState {

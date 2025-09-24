@@ -16,6 +16,7 @@
   visibility: hidden;
   pointer-events: none;
   /* MODIFICATO: Rimosso height: 100vh; da qui, sarà specifico per media query o calcolato */
+  background: transparent;
 }
 
 .historySidebarVisible {
