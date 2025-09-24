@@ -133,7 +133,7 @@ const LoginPage = () => {
             {/* Sostituisci con un'immagine o animazione rappresentativa */}
             <img src="/logImage.png" alt="Generazione di un'interrogazione da un PDF" className={styles.featureImage} />
           </div>
-        </section>
+        </section>  
 
         {/* ===== COMPARISON SECTION ===== */}
         <section className={styles.comparisonSection}>
