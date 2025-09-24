@@ -96,6 +96,7 @@
 
 .absoluteLoadingContainer {
   position: fixed; /* Posiziona l'overlay rispetto alla viewport */
+  background: transparent;
   top: 0;
   left: 0;
   width: 100vw; /* Copre l'intera larghezza della viewport */
