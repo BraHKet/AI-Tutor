@@ -55,7 +55,7 @@ export default function SetPdf() {
             if (e.target.files[0].size < 5 * 1024 * 1024) {
             setPdfLocal(e.target.files[0]);
             }
-            else {return}
+            else {alert("Il file supera i 5MB, scegli un PDF più leggero.");}
           }
         }} 
       />
