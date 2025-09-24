@@ -91,3 +91,18 @@
     /* MODIFICATO: Rimosso height: calc(...) e overflow: hidden; da qui, lo scroll è sui figli */
   }
 }
+
+
+
+.absoluteLoadingContainer {
+  position: fixed; /* Posiziona l'overlay rispetto alla viewport */
+  top: 0;
+  left: 0;
+  width: 100vw; /* Copre l'intera larghezza della viewport */
+  height: 100vh; /* Copre l'intera altezza della viewport */
+  display: flex; /* Per centrare il loading spinner */
+  justify-content: center;
+  align-items: center;
+  z-index: 1001; /* Assicurati che sia sopra l'effetto applicato al body */
+  pointer-events: auto; /* Molto importante: riabilita i click solo su questo overlay */
+}
