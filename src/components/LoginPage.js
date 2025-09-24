@@ -76,10 +76,10 @@ const LoginPage = () => {
         {/* ===== HERO SECTION ===== */}
         <section className={styles.heroSection}>
           <h1 className={styles.headline}>
-            Interrogazioni istantanee <span className={styles.highlightText}>dal tuo PDF</span> con un singolo upload.
+            Allenati per l'esame con <span className={styles.highlightText}>interrogazioni simulate</span>. Carica il PDF della lezione ed eleva il tuo studio.
           </h1>
           <p className={styles.subheadline}>
-            Carica un documento, scegli gli argomenti e ottieni una simulazione d'esame in pochi minuti. Niente studio passivo, niente perdite di tempo.
+            Carica un documento e ottieni una simulazione d'esame in pochi minuti. Dire la lezione ai familiari è superato.
           </p>
           <div className={styles.ctaContainer}>
             <button 
@@ -119,14 +119,14 @@ const LoginPage = () => {
         <section id="features" className={styles.featureSection}>
           <div className={styles.featureContent}>
 
-            <h2 className={styles.sectionTitle}>Carica una volta. Preparati con un'intera sessione d'esame.</h2>
+            <h2 className={styles.sectionTitle}>Carica la lezione. Ottieni un vantaggio competitivo sugli altri.</h2>
             <p className={styles.sectionDescription}>
-              Da un singolo PDF, Mentora genera domande mirate, quiz a risposta multipla e simulazioni orali per testare la tua preparazione in pochi minuti.
+              Da un singolo PDF, Mentora genera simulazioni orali per testare la tua preparazione in pochi minuti. Non sai se sei abbastanza preparato? Te lo dice Mentora.
             </p>
             <ul className={styles.featureList}>
-              <li><CheckIcon /> Domande generate su capitoli specifici.</li>
-              <li><CheckIcon /> Adattamento dello stile e della difficoltà.</li>
-              <li><CheckIcon /><span>Memorizzazione dei tuoi progressi e aree di debolezza.</span></li>
+              <li><CheckIcon /> Professore AI severo</li>
+              <li><CheckIcon /> Possibilità di inserire immagini e formule</li>
+              <li><CheckIcon /><span>Feedback istantaneo sulla preparazione</span></li>
             </ul>
           </div>
           <div className={styles.featureImageContainer}>
@@ -137,25 +137,25 @@ const LoginPage = () => {
 
         {/* ===== COMPARISON SECTION ===== */}
         <section className={styles.comparisonSection}>
-            <h2 className={styles.sectionTitleCentered}>Mentora AI vs. Studio Tradizionale</h2>
+            <h2 className={styles.sectionTitleCentered}>Mentora AI vs. Familiari e amici</h2>
             <p className={styles.sectionDescriptionCentered}>Risparmia tempo, massimizza i risultati e mantieni alta la concentrazione.</p>
             <div className={styles.comparisonGrid}>
                 <div className={styles.comparisonCard}>
                     <h3 className={styles.cardTitle}>Mentora AI</h3>
                     <ul>
-                        <li><CheckIcon /> Genera centinaia di domande da un singolo PDF.</li>
-                        <li><CheckIcon /><span>Dall'idea all'interrogazione in <strong>minuti</strong>, non ore.</span></li>
-                        <li><CheckIcon /> Focus preciso sugli argomenti chiave e le tue lacune.</li>
-                        <li><CheckIcon /> Test di apprendimento attivo su qualsiasi modello di studio.</li>
+                        <li><CheckIcon /> Ti interroga come farebbe un professore sulla tua lezione.</li>
+                        <li><CheckIcon /><span>E' <strong>onniscente</strong> e sà dove sbagli.</span></li>
+                        <li><CheckIcon /> Ti dà un feedback immediato sulla tua esposizione.</li>
+                        <li><CheckIcon /> Ti fa rimanere concentrato per tutto il corso dell'interrogazione.</li>
                     </ul>
                 </div>
                 <div className={`${styles.comparisonCard} ${styles.traditionalCard}`}>
-    <h3 className={styles.cardTitle}>Studio Tradizionale</h3>
+    <h3 className={styles.cardTitle}>Familiari e amici</h3>
     <ul>
-        <li><XIcon /><span>Lettura passiva, logistica, evidenziatori: ore e a volte giorni.</span></li>
-        <li><XIcon /><span>Costi per-ripetizioni: lezioni + ripasso + esercitazioni.</span></li>
-        <li><XIcon /><span>Piccoli dubbi richiedono nuove ricerche e portano a distrazioni.</span></li>
-        <li><XIcon /><span>Volume di test limitato, poche simulazioni reali.</span></li>
+        <li><XIcon /><span>Spesso non sono severi come il tuo professore.</span></li>
+        <li><XIcon /><span>Non conoscono l'argomento che stai esponendo e non sanno farti domande mirate.</span></li>
+        <li><XIcon /><span>Non riescono a darti un feedback vero sulla tua esposizione.</span></li>
+        <li><XIcon /><span>A causa di tutto ciò perdi interesse e voglia di esporre la lezione.</span></li>
     </ul>
 </div>
             </div>
