@@ -283,12 +283,14 @@ input[type=range].sliderInput::-moz-range-thumb {
   justify-content: space-between;
   align-items: center;
   width: 100%;
+  font-weight: 600;
+  font-size: 1,3rem;
+  
 }
 
 .repeatButton {
-  background-color: #f3f4f6; /* Grigio chiaro */
-  border: 1px solid #e5e7eb; /* Bordo sottile */
-  color: #4b5563; /* Grigio scuro */
+  background-color: #5f5def; /* Grigio chiaro */
+  color: #ffffff; /* Grigio scuro */
   font-weight: bold;
   font-size: 12px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
