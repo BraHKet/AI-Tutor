@@ -166,12 +166,12 @@ const LoginPage = () => {
           <h2 className={styles.sectionTitleCentered}>Domande Frequenti</h2>
           <div className={styles.faqContainer}>
             <details className={styles.faqItem}>
-              <summary>Cosa posso creare con Mentora AI?</summary>
-              <p>Con un singolo PDF, puoi generare interrogazioni professionali, quiz, test a risposta multipla e simulazioni di esami orali. La nostra AI gestisce l'analisi del testo, la creazione di domande pertinenti e l'adattamento della difficoltà, preservando gli elementi chiave del tuo materiale di studio.</p>
+              <summary>Posso inserire qualsiasi tipo di PDF?</summary>
+              <p>E' consigliabile NON inserire PDF con un numero di pagine troppo elevato per far si che i tempi di analisi da parte dell'AI engine rimangano relativamente contenuti.</p>
             </details>
             <details className={styles.faqItem}>
-              <summary>Mentora AI preserverà i dettagli e i concetti chiave del mio PDF?</summary>
-              <p>Assolutamente. L'algoritmo è progettato per identificare e dare priorità ai concetti fondamentali, alle definizioni e ai dati cruciali presenti nel tuo documento, garantendo che le domande siano sempre pertinenti e focalizzate sugli aspetti più importanti del tuo studio.</p>
+              <summary>Posso essere interrogato su dimostrazioni?</summary>
+              <p>Assolutamente. Il servizio è stato pensato soprattutto per questo, basterà disegnare le formule nell'apposito riquadro di disegno e il professore le confronterà con quelle nel tuo PDF.</p>
             </details>
           </div>
         </section>
