@@ -451,4 +451,8 @@
   .addElementButton:last-of-type {
     left: calc(80% + 25px);
   }
+
+  .sequentialWorkspace {
+    height: 100vh;
+  }
 }
