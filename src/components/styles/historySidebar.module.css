@@ -62,12 +62,18 @@
   composes: conversationTurn;
   background: linear-gradient(90deg, #f2efff, #ececff);
   position: relative;
-  margin-top: 22px
+  margin-top: 22px;
+  gap: 16px;
+  display: grid;
+  padding: 25px;
 }
 
 .studentTurn {
   composes: conversationTurn;
   background: linear-gradient(90deg, #f9dcdc, #ffecec);
+  gap: 16px;
+  display: grid;
+  padding: 25px;
 }
 
 .turnSpeaker {

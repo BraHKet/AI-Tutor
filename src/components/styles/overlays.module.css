@@ -285,7 +285,7 @@ input[type=range].sliderInput::-moz-range-thumb {
   width: 100%;
   font-weight: 600;
   font-size: 1,3rem;
-  
+  font-family: math;
 }
 
 .repeatButton {
