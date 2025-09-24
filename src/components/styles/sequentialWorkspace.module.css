@@ -201,15 +201,13 @@
 
 .sequentialElement {
   background: var(--color-background-elevated);
-  border: 2px solid var(--color-border);
-  border-radius: var(--border-radius-base);
+  border-radius: 17px;
   margin-bottom: 0; /* Gap gestito dalla lista */
   overflow: hidden;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .activeElement {
-  border-color: var(--color-primary);
   box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.1); /* Ombra leggera blu */
 }
 
@@ -221,12 +219,8 @@
   justify-content: space-between;
   align-items: center;
   
-  /* Sostituiamo il bordo con un'ombra più moderna e soffice */
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 2px 8px rgba(0, 0, 0, 0.03);
-  
   /* 2. BARRA D'ACCENTO LATERALE */
   /* La barra colorata che crea l'identità visiva */
-  border-left: 5px solid #a0aec0; /* Un grigio neutro di default */
   transition: border-color 0.3s ease; /* Anima il cambio di colore */
 }
 
@@ -244,9 +238,7 @@
 // ======================================================= */
 
 /* -- Stile per il PRIMO header (.elementHeader) -> TEXT -- */
-.elementHeader:first-of-type {
-  border-left-color: #3B82F6; /* Blu per il testo */
-}
+
 
 /* Cambia anche il colore dell'icona all'interno del primo header */
 .elementHeader:first-of-type .icon {
