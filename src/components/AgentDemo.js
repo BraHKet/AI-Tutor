@@ -1121,10 +1121,6 @@ useEffect(() => {
             <button onClick={() => navigate("/setpdf")}  className={styles.backButton}>
               New
             </button>
-            <button onClick={() => navigate("/setpdf")}  className={styles.backButton}>
-              Ciao
-              <img src="/logo192.png" alt="Mentora Logo" className={styles.logo} />
-            </button>
           </div>
           
           <div className={styles.headerCenter} style={{ padding: isDrawingToolsCompact ? "8px 16px" : "0" }}>
