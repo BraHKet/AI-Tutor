@@ -439,3 +439,16 @@
 .drawingToolsCompact {
   align-items: center;
 }
+
+
+@media (max-width: 826px) {
+
+  .addElementButton:first-of-type {
+    left: calc(65% + 25px);  
+  }
+
+  /* SECONDO BOTTONE */
+  .addElementButton:last-of-type {
+    left: calc(80% + 25px);
+  }
+}

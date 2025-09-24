@@ -72,6 +72,7 @@
 
   font-size: 1.01rem; /* ~18px */
   font-weight: 500;
+  font-family: math;
 }
 
 /* alone hover (pseudo-element) */
