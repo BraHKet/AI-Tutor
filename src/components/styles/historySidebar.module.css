@@ -63,6 +63,7 @@
   composes: conversationTurn;
   background: linear-gradient(90deg, #f2efff, #ececff);
   position: relative;
+  margin-top: 22px
 }
 
 .studentTurn {
@@ -81,13 +82,15 @@
 .professorSpeaker {
   composes: turnSpeaker;
   color: #1d4ed8;
-  font-weight: 600;
+  font-weight: 600 !important;
+  font-size: 1.3rem;
 }
 
 .studentSpeaker {
   composes: turnSpeaker;
   color: #000000;
   font-weight: 600;
+  font-size: 1.3rem;
 }
 
 .turnContent {

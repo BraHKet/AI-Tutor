@@ -1214,7 +1214,7 @@ useEffect(() => {
                 <div key={index} className={turn.speaker === 'professor' ? styles.professorTurn : styles.studentTurn}>
                   <div className={turn.speaker === 'professor' ? styles.professorSpeaker : styles.studentSpeaker}>
                     {turn.speaker === 'professor' ? 'Professor' : 'Student'}
-                    {turn.image && ' 🎨'}
+                    {turn.image && ''}
                   </div>
 
                   {turn.speaker === 'professor' && (
