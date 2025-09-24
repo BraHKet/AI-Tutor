@@ -50,6 +50,7 @@
   flex-grow: 1;
   overflow-y: auto; /* ABILITA LO SCROLL VERTICALE SOLO PER QUESTO CONTAINER */
   padding: 16px;
+  scrollbar-width: none;
 }
 
 .conversationTurn {
@@ -60,13 +61,13 @@
 
 .professorTurn {
   composes: conversationTurn;
-  background: #dbeafe;
+  background: linear-gradient(90deg, #f2efff, #ececff);
   position: relative;
 }
 
 .studentTurn {
   composes: conversationTurn;
-  background: #dcfce7;
+  background: linear-gradient(90deg, #f9dcdc, #ffecec);
 }
 
 .turnSpeaker {
@@ -80,11 +81,13 @@
 .professorSpeaker {
   composes: turnSpeaker;
   color: #1d4ed8;
+  font-weight: 600;
 }
 
 .studentSpeaker {
   composes: turnSpeaker;
-  color: #059669;
+  color: #000000;
+  font-weight: 600;
 }
 
 .turnContent {
