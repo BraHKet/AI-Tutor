@@ -50,8 +50,12 @@ export default function SetPdf() {
         className={styles.fileInput}
         id="pdfUpload"
         onChange={(e) => {
+          
           if (e.target.files && e.target.files[0]) {
+            if (e.target.size < 5 * 1024 * 1024) {
             setPdfLocal(e.target.files[0]);
+            }
+            else {return}
           }
         }} 
       />
@@ -80,7 +84,7 @@ export default function SetPdf() {
     </div>
 
     <p className={styles.helperText}>
-      Dimensione max: <b>--</b>
+      Inserisci un pdf di poche pagine. Max 5 Mb.
     </p>
   </div>
 );

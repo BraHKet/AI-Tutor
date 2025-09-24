@@ -5,7 +5,6 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: #ffffff; /* Imposta lo sfondo di default della pagina */
-  height: 100dvh;
 }
 html, body {
   scrollbar-width: none;
