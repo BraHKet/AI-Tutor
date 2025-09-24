@@ -1052,15 +1052,24 @@ useEffect(() => {
 
 
 
-  if (isProcessing && !isAutoSetupInProgress) {
-    return (
-      <SimpleLoading 
-        message="Il professore sta rispondendo..."
-        size="medium"
-        fullScreen={true}  
-      />
-    );
-  }
+  useEffect(() => {
+    if (isProcessing) {
+      document.body.style.overflow = 'hidden'; // Previene lo scroll se l'overlay è a schermo intero
+      document.body.style.pointerEvents = 'none'; // Disabilita i click su tutto il body
+      document.body.style.filter = 'blur(2px)'; // Sfoca tutto il body
+      document.body.style.opacity = '0.5'; // Rende opaco tutto il body
+      document.body.style.transition = 'filter 0.3s ease-out, opacity 0.3s ease-out';
+    } else {
+      // Ripristina gli stili quando non è in elaborazione
+      document.body.style.overflow = '';
+      document.body.style.pointerEvents = '';
+      document.body.style.filter = '';
+      document.body.style.opacity = '';
+      document.body.style.transition = '';
+    }
+  }, [isProcessing]);
+
+  
 
   if (isAutoSetupInProgress) {
     return (
@@ -1090,6 +1099,18 @@ useEffect(() => {
         showUI={false}
         disabled={isProcessing}
       />
+
+
+      {/* Verrà posizionato sopra il contenuto sfocato e opaco del body. */}
+      {isProcessing && (
+        <div className={styles.absoluteLoadingContainer}>
+          <SimpleLoading
+            message="Il professore sta rispondendo..."
+            size="medium"
+            fullScreen={false} // Qui fullScreen=false significa che SimpleLoading si centra all'interno di absoluteLoadingContainer
+          />
+        </div>
+      )}
 
       {/* ================================================================== */}
       {/* ========= INIZIO DELLA NUOVA STRUTTURA ORGANIZZATIVA ============= */}
