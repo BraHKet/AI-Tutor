@@ -57,7 +57,7 @@ export default function AgentDemo() {
   const [agent, setAgent] = useState(null);
   const [status, setStatus] = useState('Initializing...');
   const [isProcessing, setIsProcessing] = useState(false);
-  const FIXED_CANVAS_HEIGHT = 600; // Altezza fissa del foglio di disegno
+  const FIXED_CANVAS_HEIGHT = 300; // Altezza fissa del foglio di disegno
   
   // Exam states
   const [materialReady, setMaterialReady] = useState(false);

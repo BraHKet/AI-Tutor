@@ -205,7 +205,8 @@
   margin-bottom: 0; /* Gap gestito dalla lista */
   overflow: hidden;
   transition: border-color 0.2s, box-shadow 0.2s;
-  box-shadow: 0 8px 20px rgba(92, 92, 92, 0.15);
+  box-shadow: 0 8px 10px rgba(92, 92, 92, 0.15);
+  padding: 10px;
 }
 
 .elementHeader {
@@ -282,13 +283,13 @@
 }
 
 .clearCanvasButton {
-  background: #edcf52;
+  background: #ffc057;
   color: var(--color-text-light);
   border: none;
   padding: 4px 8px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 14px;
 }
 
 .deleteElementButton {
