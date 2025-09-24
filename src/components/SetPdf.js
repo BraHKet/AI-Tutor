@@ -52,7 +52,7 @@ export default function SetPdf() {
         onChange={(e) => {
           
           if (e.target.files && e.target.files[0]) {
-            if (e.target.size < 5 * 1024 * 1024) {
+            if (e.target.files[0].size < 5 * 1024 * 1024) {
             setPdfLocal(e.target.files[0]);
             }
             else {return}
