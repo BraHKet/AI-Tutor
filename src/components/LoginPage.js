@@ -131,7 +131,7 @@ const LoginPage = () => {
           </div>
           <div className={styles.featureImageContainer}>
             {/* Sostituisci con un'immagine o animazione rappresentativa */}
-            <img src="https://i.imgur.com/uGIVgq1.png" alt="Generazione di un'interrogazione da un PDF" className={styles.featureImage} />
+            <img src="/logImage.png" alt="Generazione di un'interrogazione da un PDF" className={styles.featureImage} />
           </div>
         </section>
 
