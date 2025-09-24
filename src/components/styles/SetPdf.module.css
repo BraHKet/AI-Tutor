@@ -167,6 +167,8 @@
 .fileName {
   color: #fff;
   font-size: 0.95rem;
+  overflow: hidden;           
+  text-overflow: ellipsis;
 }
 
 /* Mobile */
