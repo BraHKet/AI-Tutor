@@ -1395,7 +1395,7 @@ useEffect(() => {
         <div className={showHistory ? styles.aiResponseOverlayWithHistory : styles.aiResponseOverlayWithoutHistory}>
           <div className={styles.aiResponseHeader}>
             <div className={styles.aiResponseTitle}>
-              🎓 Professor Response
+              Professor Response
               {voiceEnabled && (
                 <button
                   className={styles.repeatButton}
