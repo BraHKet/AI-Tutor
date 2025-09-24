@@ -49,6 +49,7 @@
   max-width: 400px;
   max-height: 300px;
   overflow: auto;
+  overflow: hidden;
 }
 
 .aiResponseOverlayWithHistory {
