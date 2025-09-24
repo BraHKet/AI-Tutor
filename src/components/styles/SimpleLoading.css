@@ -34,7 +34,6 @@
   width: 100%;
   min-height: 150px; /* Un po' meno ingombrante */
   padding: 30px 20px;
-  background-color: #ffffff; /* Sfondo chiaro per contesti normali */
   border-radius: 12px; /* Angoli arrotondati */
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* Ombra sottile */
 }
