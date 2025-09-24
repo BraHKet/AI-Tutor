@@ -96,7 +96,9 @@
 
 .absoluteLoadingContainer {
   position: fixed; /* Posiziona l'overlay rispetto alla viewport */
-  background: transparent;
+  background: rgba(255, 255, 255, 0.4); /* colore bianco con trasparenza */
+  backdrop-filter: blur(8px); /* sfoca quello che sta sotto */
+  -webkit-backdrop-filter: blur(8px);
   top: 0;
   left: 0;
   width: 100vw; /* Copre l'intera larghezza della viewport */
