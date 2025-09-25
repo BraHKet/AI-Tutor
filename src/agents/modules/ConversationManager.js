@@ -1,13 +1,24 @@
 // ==========================================
-// FILE: src/agents/modules/ConversationManager.js (SESSIONE CONTINUA + PARSING ROBUSTO)
+// FILE: src/agents/modules/ConversationManager.js
+// VERSIONE AGGIORNATA: @google/genai + Gemini 2.5
 // ==========================================
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
 export class ConversationManager {
     constructor() {
-        this.genAI = new GoogleGenerativeAI(process.env.REACT_APP_GEMINI_API_KEY);
-        this.model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey) {
+            throw new Error("La variabile d'ambiente GEMINI_API_KEY non è impostata.");
+        }
+
+        this.genAI = new GoogleGenAI({
+            apiKey,
+            vertexai: true,
+            project: process.env.GOOGLE_CLOUD_PROJECT,
+            location: process.env.GOOGLE_CLOUD_LOCATION || 'us-central1',
+        });
+
         this.chatSession = null;
         this.isActive = false;
     }
@@ -40,16 +51,27 @@ IMPORTANTE: Rispondi SEMPRE e SOLO con JSON valido, senza testo aggiuntivo prima
 Inizia con type="setup" e la prima domanda.`;
 
         try {
-            this.chatSession = this.model.startChat({ history: [] });
-            
-            const result = await this.chatSession.sendMessage([
-                { inlineData: { mimeType: pdfData.mimeType, data: pdfData.data } },
+            // Creazione della "sessione chat" tramite il nuovo SDK
+            const contents = [
                 { text: systemPrompt }
-            ]);
-            
-            const response = this.parseResponse(result.response.text());
+            ];
+
+            // Allego PDF come inlineData se fornito
+            if (pdfData && pdfData.data && pdfData.mimeType) {
+                contents.unshift({ inlineData: { mimeType: pdfData.mimeType, data: pdfData.data } });
+            }
+
+            const result = await this.genAI.models.generateContent({
+                model: "gemini-2.5-flash",
+                contents: contents,
+                safetySettings: [],
+            });
+
+            // Parsing della risposta robusto
+            const responseText = result.output_text || result[0]?.content?.text || "";
+            const response = this.parseResponse(responseText);
             this.isActive = true;
-            
+
             return {
                 success: true,
                 mainTopic: response.mainTopic,
@@ -62,43 +84,37 @@ Inizia con type="setup" e la prima domanda.`;
         }
     }
 
-    async sendMessage(text, images = []) { // MODIFICA 1: Il parametro ora è 'images' (plurale)
-    if (!this.isActive || !this.chatSession) {
-        throw new Error('No active session');
-    }
-
-    try {
-        const inputs = [];
-        
-        // MODIFICA 2: Controlla se l'array 'images' contiene elementi.
-        if (images && images.length > 0) {
-            
-            // MODIFICA 3: Esegue un ciclo su OGNI immagine nell'array.
-            for (const singleImage of images) {
-
-                console.log(`--- ---------------------- ---`);
-                console.log(
-                    '%c ', // Carattere vuoto stilizzato
-                    'font-size: 1px; ' +
-                    'padding: 100px; ' + // Dimensioni del riquadro dell'immagine (200x200)
-                    'border: 1px solid black; ' +
-                    'background: url(' + singleImage + ') no-repeat center center; ' +
-                    'background-size: contain;'
-                );
-                console.log('--- FINE IMMAGINE ---');
-
-                const imageData = singleImage.split(',')[1];
-                // Aggiunge ogni immagine come un oggetto separato al payload.
-                inputs.push({ inlineData: { mimeType: 'image/png', data: imageData } });
-            }
+    async sendMessage(text, images = []) {
+        if (!this.isActive) {
+            throw new Error('No active session');
         }
-        
-        // MODIFICA 4: Aggiunge il testo e un riferimento al numero di disegni alla fine.
-        const imageInfo = images && images.length > 0 
-            ? ` (con ${images.length} disegni allegati)` 
-            : '';
-            
-        inputs.push({ text: `Studente risponde: "${text}"${imageInfo}. 
+
+        try {
+            const inputs = [];
+
+            // Allego immagini se presenti
+            if (images && images.length > 0) {
+                for (const singleImage of images) {
+                    console.log(`--- ---------------------- ---`);
+                    console.log(
+                        '%c ',
+                        'font-size: 1px; ' +
+                        'padding: 100px; ' +
+                        'border: 1px solid black; ' +
+                        'background: url(' + singleImage + ') no-repeat center center; ' +
+                        'background-size: contain;'
+                    );
+                    console.log('--- FINE IMMAGINE ---');
+
+                    const imageData = singleImage.split(',')[1];
+                    inputs.push({ inlineData: { mimeType: 'image/png', data: imageData } });
+                }
+            }
+
+            // Aggiungo testo dello studente
+            const imageInfo = images && images.length > 0 ? ` (con ${images.length} disegni allegati)` : '';
+            inputs.push({
+                text: `Studente risponde: "${text}"${imageInfo}. 
 
 IMPORTANTE: Rispondi SEMPRE e SOLO con JSON valido nel formato:
 {
@@ -108,39 +124,44 @@ IMPORTANTE: Rispondi SEMPRE e SOLO con JSON valido nel formato:
   "isComplete": false
 }
 
-Valuta e procedi con la prossima domanda.` });
-        
-        const result = await this.chatSession.sendMessage(inputs);
-        return this.parseResponse(result.response.text());
-    } catch (error) {
-        console.error('❌ Message failed:', error);
-        throw error;
+Valuta e procedi con la prossima domanda.`
+            });
+
+            const result = await this.genAI.models.generateContent({
+                model: "gemini-2.5-flash",
+                contents: inputs,
+                safetySettings: [],
+            });
+
+            const responseText = result.output_text || result[0]?.content?.text || "";
+            return this.parseResponse(responseText);
+        } catch (error) {
+            console.error('❌ Message failed:', error);
+            throw error;
+        }
     }
-}
 
     parseResponse(aiResponse) {
         console.log('🔍 Raw AI Response:', aiResponse);
-        
+
         try {
-            // Pulizia molto più aggressiva
             let cleanedText = aiResponse;
-            
-            // Rimuovi markdown code blocks
+
+            // Rimuovo markdown code blocks
             cleanedText = cleanedText.replace(/```json\s*/g, '').replace(/```\s*/g, '');
-            
-            // Rimuovi testo prima e dopo JSON
+
+            // Rimuovo testo prima e dopo JSON
             cleanedText = cleanedText.replace(/^[^{]*/, '').replace(/[^}]*$/, '');
-            
-            // Trova il JSON usando diverse strategie
+
             let jsonString = null;
-            
-            // Strategia 1: Match JSON completo
+
+            // Strategia 1: match JSON completo
             const fullJsonMatch = cleanedText.match(/\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/);
             if (fullJsonMatch) {
                 jsonString = fullJsonMatch[0];
             }
-            
-            // Strategia 2: Se non trova, cerca il primo { fino all'ultimo }
+
+            // Strategia 2: se non trova, cerca dal primo { all'ultimo }
             if (!jsonString) {
                 const firstBrace = cleanedText.indexOf('{');
                 const lastBrace = cleanedText.lastIndexOf('}');
@@ -148,23 +169,21 @@ Valuta e procedi con la prossima domanda.` });
                     jsonString = cleanedText.substring(firstBrace, lastBrace + 1);
                 }
             }
-            
+
             if (jsonString) {
-                // Pulizia finale del JSON
                 jsonString = jsonString
-                    .replace(/,\s*([}\]])/g, '$1') // Rimuovi virgole finali
-                    .replace(/\n/g, ' ') // Sostituisci newline con spazi
-                    .replace(/\r/g, '') // Rimuovi carriage return
-                    .replace(/\t/g, ' ') // Sostituisci tab con spazi
-                    .replace(/\\/g, '\\\\') // Escape backslashes
+                    .replace(/,\s*([}\]])/g, '$1') // rimuovo virgole finali
+                    .replace(/\n/g, ' ')
+                    .replace(/\r/g, '')
+                    .replace(/\t/g, ' ')
+                    .replace(/\\/g, '\\\\')
                     .trim();
-                
+
                 console.log('🧹 Cleaned JSON:', jsonString);
-                
+
                 try {
                     const parsed = JSON.parse(jsonString);
-                    
-                    // Validazione e normalizzazione
+
                     const normalized = {
                         type: this.validateString(parsed.type, 'question'),
                         message: this.validateString(parsed.message, 'Continui la sua esposizione.'),
@@ -172,10 +191,9 @@ Valuta e procedi con la prossima domanda.` });
                         isComplete: Boolean(parsed.isComplete),
                         mainTopic: this.validateString(parsed.mainTopic, undefined)
                     };
-                    
+
                     console.log('✅ Parsed successfully:', normalized);
                     return normalized;
-                    
                 } catch (parseError) {
                     console.error('❌ JSON Parse Error:', parseError);
                     console.error('❌ Failed JSON string:', jsonString);
@@ -184,12 +202,10 @@ Valuta e procedi con la prossima domanda.` });
             } else {
                 throw new Error('No JSON object found in response');
             }
-            
+
         } catch (error) {
             console.error('❌ Parse failed completely:', error);
             console.error('❌ Original response:', aiResponse);
-            
-            // Fallback robusto con analisi della risposta
             return this.createIntelligentFallback(aiResponse);
         }
     }
@@ -202,46 +218,37 @@ Valuta e procedi con la prossima domanda.` });
         if (!progress || typeof progress !== 'object') {
             return { covered: 0, total: 1, percentage: 0 };
         }
-        
+
         const covered = Math.max(0, parseInt(progress.covered) || 0);
         const total = Math.max(1, parseInt(progress.total) || 1);
         const percentage = Math.min(100, Math.max(0, parseInt(progress.percentage) || Math.round((covered / total) * 100)));
-        
+
         return { covered, total, percentage };
     }
 
     createIntelligentFallback(originalResponse) {
         console.log('🔄 Creating intelligent fallback...');
-        
-        // Analizza la risposta per estrarre informazioni utili
         const response = originalResponse.toLowerCase();
-        
+
         let message = 'Continui la sua esposizione.';
         let type = 'question';
         let isComplete = false;
-        
-        // Cerca indicatori di completamento
+
         if (response.includes('completo') || response.includes('finito') || response.includes('terminato')) {
             isComplete = true;
             type = 'completion';
             message = 'Esame completato. Ottimo lavoro!';
-        }
-        // Cerca indicatori di setup iniziale
-        else if (response.includes('inizio') || response.includes('iniziamo') || response.includes('cominciamo')) {
+        } else if (response.includes('inizio') || response.includes('iniziamo') || response.includes('cominciamo')) {
             type = 'setup';
             message = 'Iniziamo l\'esame. Mi faccia una trattazione completa del materiale.';
-        }
-        // Estrai un messaggio più specifico se possibile
-        else {
-            // Cerca frasi che sembrano domande del professore
+        } else {
             const sentences = originalResponse.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 10);
             if (sentences.length > 0) {
-                // Prendi la prima frase significativa
-                const bestSentence = sentences.find(s => 
-                    s.includes('può') || s.includes('spieg') || s.includes('descri') || 
+                const bestSentence = sentences.find(s =>
+                    s.includes('può') || s.includes('spieg') || s.includes('descri') ||
                     s.includes('illustr') || s.includes('dimostr') || s.includes('cos')
                 ) || sentences[0];
-                
+
                 if (bestSentence && bestSentence.length < 200) {
                     message = bestSentence.charAt(0).toUpperCase() + bestSentence.slice(1);
                     if (!message.endsWith('.') && !message.endsWith('?') && !message.endsWith('!')) {
@@ -250,7 +257,7 @@ Valuta e procedi con la prossima domanda.` });
                 }
             }
         }
-        
+
         const fallback = {
             type: type,
             message: message,
@@ -258,7 +265,7 @@ Valuta e procedi con la prossima domanda.` });
             isComplete: isComplete,
             mainTopic: undefined
         };
-        
+
         console.log('🆘 Fallback created:', fallback);
         return fallback;
     }
