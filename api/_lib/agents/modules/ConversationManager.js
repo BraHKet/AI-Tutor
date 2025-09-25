@@ -84,7 +84,7 @@ const result = await this.genAI.models.generateContent({
 });
 
             // Parsing della risposta robusto
-            const responseText = result.output_text || result[0]?.content?.text || "";
+            const responseText = result.response.text();
             const response = this.parseResponse(responseText);
             this.isActive = true;
 
@@ -149,7 +149,7 @@ Valuta e procedi con la prossima domanda.`
                 safetySettings: [],
             });
 
-            const responseText = result.output_text || result[0]?.content?.text || "";
+            const responseText = result.response.text();
             return this.parseResponse(responseText);
         } catch (error) {
             console.error('❌ Message failed:', error);

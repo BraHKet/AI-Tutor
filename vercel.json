@@ -3,8 +3,8 @@
     "api/speechProxy.js": {
       "maxDuration": 30
     },
-    "api/**/*.js": {
-      "includeFiles": "node_modules/@google/genai/**"
+    "api/agent.js": {
+      "maxDuration": 60 
     }
   }
 }
