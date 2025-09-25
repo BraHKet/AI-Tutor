@@ -5,28 +5,32 @@
 
 import { GoogleGenAI } from '@google/genai';
 import { GoogleAuth } from 'google-auth-library';
+import fs from 'fs';         // <-- AGGIUNGI QUESTA RIGA
+import os from 'os';         // <-- AGGIUNGI QUESTA RIGA
+import path from 'path';
 
 export class ConversationManager {
     constructor() {
-    // 1. Leggiamo il contenuto JSON dalla nostra variabile d'ambiente personalizzata.
+    // Questa logica di setup viene eseguita solo una volta quando il server si avvia.
     const credentialsJson = process.env.GOOGLE_CREDENTIALS_JSON;
-    if (!credentialsJson) {
-        throw new Error("La variabile d'ambiente GOOGLE_CREDENTIALS_JSON non è impostata.");
+    if (credentialsJson) {
+        // Vercel fornisce una directory temporanea scrivibile in /tmp
+        const tempDir = os.tmpdir();
+        const credentialsPath = path.join(tempDir, 'gcp-credentials.json');
+
+        // Scriviamo il contenuto della variabile d'ambiente in un file temporaneo.
+        fs.writeFileSync(credentialsPath, credentialsJson);
+
+        // Diciamo alla libreria di Google: "Le credenziali si trovano in questo percorso!"
+        process.env.GOOGLE_APPLICATION_CREDENTIALS = credentialsPath;
     }
-    const credentials = JSON.parse(credentialsJson);
 
-    // 2. Creiamo un client di autenticazione dedicato usando le credenziali.
-    // Questo è il passaggio che mancava.
-    const auth = new GoogleAuth({
-        credentials,
-        scopes: 'https://www.googleapis.com/auth/cloud-platform',
-    });
-
-    // 3. Inizializziamo il client di Gemini passando il client di autenticazione già pronto.
-    // Nota: non servono più 'project' e 'location' qui, perché sono gestiti dall'auth client.
+    // Ora che l'ambiente è configurato correttamente, l'inizializzazione standard funziona.
+    // La libreria troverà automaticamente il file che abbiamo appena creato.
     this.genAI = new GoogleGenAI({
         vertexai: true,
-        authClient: auth, // <-- Passiamo l'auth client invece delle credenziali grezze
+        project: process.env.GOOGLE_CLOUD_PROJECT,
+        location: process.env.GOOGLE_CLOUD_LOCATION || 'us-central1',
     });
 
     this.chatSession = null;
