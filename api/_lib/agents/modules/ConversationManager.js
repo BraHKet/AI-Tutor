@@ -13,7 +13,6 @@ export class ConversationManager {
         }
 
         this.genAI = new GoogleGenAI({
-            apiKey,
             vertexai: true,
             project: process.env.GOOGLE_CLOUD_PROJECT,
             location: process.env.GOOGLE_CLOUD_LOCATION || 'us-central1',
