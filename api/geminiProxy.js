@@ -28,7 +28,7 @@ export default async function handler(req, res) {
     // Estrai il nome del modello e le configurazioni dal payload
     const modelName = requestPayload.modelName || 'gemini-1.5-flash';
     const model = genAI.getGenerativeModel({ 
-      model: modelName,
+      model: "gemini-1.5-flash",
       safetySettings: requestPayload.safetySettings
     });
 
