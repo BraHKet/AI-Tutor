@@ -12,11 +12,22 @@ export class ConversationManager {
             throw new Error("La variabile d'ambiente GEMINI_API_KEY non è impostata.");
         }
 
-        this.genAI = new GoogleGenAI({
-            vertexai: true,
-            project: process.env.GOOGLE_CLOUD_PROJECT,
-            location: process.env.GOOGLE_CLOUD_LOCATION || 'us-central1',
-        });
+        const credentialsJson = process.env.GOOGLE_CREDENTIALS_JSON;
+if (!credentialsJson) {
+    throw new Error("La variabile d'ambiente GOOGLE_CREDENTIALS_JSON non è impostata o è vuota.");
+}
+
+// 2. Convertiamo la stringa JSON in un vero oggetto JavaScript.
+const credentials = JSON.parse(credentialsJson);
+
+// 3. Inizializziamo il client passando l'oggetto delle credenziali direttamente.
+this.genAI = new GoogleGenAI({
+    vertexai: true,
+    // Ora usiamo il project_id direttamente dalle credenziali per coerenza.
+    project: credentials.project_id,
+    location: process.env.GOOGLE_CLOUD_LOCATION || 'us-central1',
+    credentials, // <-- Questa è la riga magica che risolve tutto.
+});
 
         this.chatSession = null;
         this.isActive = false;
