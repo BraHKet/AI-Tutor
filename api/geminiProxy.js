@@ -1,5 +1,5 @@
 // api/geminiProxy.js
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
 export default async function handler(req, res) {
   // Accetta solo richieste di tipo POST
@@ -16,7 +16,12 @@ export default async function handler(req, res) {
     }
 
     // Inizializza il client di Gemini sul backend
-    const genAI = new GoogleGenerativeAI(apiKey);
+    const genAI = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY, // NON usare più REACT_APP_
+  vertexai: true,
+  project: process.env.GOOGLE_CLOUD_PROJECT,       // opzionale se già impostato
+  location: process.env.GOOGLE_CLOUD_LOCATION || 'us-central1',
+});
 
     // 2. Prendi il payload completo inviato dal frontend
     const { requestPayload } = req.body;
@@ -27,16 +32,15 @@ export default async function handler(req, res) {
 
     // Estrai il nome del modello e le configurazioni dal payload
     const modelName = requestPayload.modelName || 'gemini-1.5-flash';
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.0-flash",
-      safetySettings: requestPayload.safetySettings
+    const result = await genAI.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: requestPayload.contents,
+      safetySettings: requestPayload.safetySettings || [],
     });
     console.log("Model inizializzato:", model);
 
     // 3. Esegui la chiamata a Gemini dal backend usando i dati forniti
-    const result = await model.generateContent(requestPayload);
-    const response = await result.response;
-    const text = response.text();
+    const text = result.output_text || result[0]?.content?.text || "";
 
     // 4. Invia la risposta testuale di Gemini di nuovo al frontend
     res.status(200).json({ text });
