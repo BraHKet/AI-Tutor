@@ -4,34 +4,34 @@
 // ==========================================
 
 import { GoogleGenAI } from '@google/genai';
+import { GoogleAuth } from 'google-auth-library';
 
 export class ConversationManager {
     constructor() {
-        const apiKey = process.env.GEMINI_API_KEY;
-        if (!apiKey) {
-            throw new Error("La variabile d'ambiente GEMINI_API_KEY non è impostata.");
-        }
-
-        const credentialsJson = process.env.GOOGLE_CREDENTIALS_JSON;
-if (!credentialsJson) {
-    throw new Error("La variabile d'ambiente GOOGLE_CREDENTIALS_JSON non è impostata o è vuota.");
-}
-
-// 2. Convertiamo la stringa JSON in un vero oggetto JavaScript.
-const credentials = JSON.parse(credentialsJson);
-
-// 3. Inizializziamo il client passando l'oggetto delle credenziali direttamente.
-this.genAI = new GoogleGenAI({
-    vertexai: true,
-    // Ora usiamo il project_id direttamente dalle credenziali per coerenza.
-    project: credentials.project_id,
-    location: process.env.GOOGLE_CLOUD_LOCATION || 'us-central1',
-    credentials, // <-- Questa è la riga magica che risolve tutto.
-});
-
-        this.chatSession = null;
-        this.isActive = false;
+    // 1. Leggiamo il contenuto JSON dalla nostra variabile d'ambiente personalizzata.
+    const credentialsJson = process.env.GOOGLE_CREDENTIALS_JSON;
+    if (!credentialsJson) {
+        throw new Error("La variabile d'ambiente GOOGLE_CREDENTIALS_JSON non è impostata.");
     }
+    const credentials = JSON.parse(credentialsJson);
+
+    // 2. Creiamo un client di autenticazione dedicato usando le credenziali.
+    // Questo è il passaggio che mancava.
+    const auth = new GoogleAuth({
+        credentials,
+        scopes: 'https://www.googleapis.com/auth/cloud-platform',
+    });
+
+    // 3. Inizializziamo il client di Gemini passando il client di autenticazione già pronto.
+    // Nota: non servono più 'project' e 'location' qui, perché sono gestiti dall'auth client.
+    this.genAI = new GoogleGenAI({
+        vertexai: true,
+        authClient: auth, // <-- Passiamo l'auth client invece delle credenziali grezze
+    });
+
+    this.chatSession = null;
+    this.isActive = false;
+}
 
     async startSession(pdfData) {
         const systemPrompt = `Tu sei un PROFESSORE UNIVERSITARIO di fisica durante un esame orale.
