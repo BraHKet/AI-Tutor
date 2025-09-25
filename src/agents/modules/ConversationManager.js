@@ -7,7 +7,7 @@ import { GoogleGenAI } from '@google/genai';
 
 export class ConversationManager {
     constructor() {
-        const apiKey = process.env.GEMINI_API_KEY;
+        const apiKey = process.env.REACT_APP_GEMINI_API_KEY;
         if (!apiKey) {
             throw new Error("La variabile d'ambiente GEMINI_API_KEY non è impostata.");
         }
