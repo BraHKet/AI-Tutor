@@ -31,6 +31,7 @@ export default async function handler(req, res) {
       model: "gemini-2.5-flash",
       safetySettings: requestPayload.safetySettings
     });
+    console.log("Model inizializzato:", model);
 
     // 3. Esegui la chiamata a Gemini dal backend usando i dati forniti
     const result = await model.generateContent(requestPayload);
