@@ -5,8 +5,8 @@ import { PhysicsAgent } from './_lib/agents/PhysicsAgent.js';
 
 // NOTA: Le variabili d'ambiente in Vercel sono disponibili direttamente 
 // tramite process.env, senza il prefisso REACT_APP_.
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
-const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
 // Crea una singola istanza dell'agente qui
 const agent = new PhysicsAgent(supabaseUrl, supabaseKey);
