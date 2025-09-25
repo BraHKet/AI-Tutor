@@ -1,5 +1,5 @@
 // FILE: /api/agent.js
-
+import '@google/genai';
 // Importa l'agente che ora si trova sul server
 import { PhysicsAgent } from './_lib/agents/PhysicsAgent.js';
 
