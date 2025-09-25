@@ -747,12 +747,8 @@ const reinitializeAllCanvases = useCallback(() => {
       try {
         setStatus('🔧 Initializing...');
 
-        const physicsAgent = new PhysicsAgent(
-          process.env.REACT_APP_SUPABASE_URL,
-          process.env.REACT_APP_SUPABASE_ANON_KEY
-        );
+        const physicsAgent = new PhysicsAgent();
         
-        await physicsAgent.initialize();
         setAgent(physicsAgent);
         setStatus('✅ Ready. Analyze material to begin.');
       } catch (error) {

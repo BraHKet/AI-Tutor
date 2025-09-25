@@ -118,7 +118,7 @@ export class PDFProcessor {
         }
         
         // Codifica la stringa binaria in Base64
-        return btoa(binary);
+        return Buffer.from(binary, 'binary').toString('base64');
     }
 
     // ====================================
