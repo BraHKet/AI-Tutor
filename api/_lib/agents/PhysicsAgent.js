@@ -2,7 +2,7 @@
 // FILE: /api/_lib/agents/PhysicsAgent.js (IL VERO AGENTE - "IL CERVELLO")
 // Questo file deve trovarsi nel backend.
 // =========================================================================
-
+import '@google/genai';
 import { createClient } from '@supabase/supabase-js';
 // Assicurati che questi percorsi siano corretti rispetto alla posizione del file
 import { PDFProcessor } from './modules/PDFProcessor.js';
