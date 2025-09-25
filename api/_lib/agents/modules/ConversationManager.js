@@ -38,31 +38,43 @@ export class ConversationManager {
 }
 
     async startSession(pdfData) {
-        const systemPrompt = `Tu sei un PROFESSORE UNIVERSITARIO di fisica durante un esame orale.
+        const systemPrompt = `Sei un professore universitario di fisica che deve interrogare uno studente sul contenuto di un PDF.
 
-COMPITO:
-1. Analizza questo PDF completamente (tutte le pagine)
-2. Identifica tutto ciò che lo studente deve trattare
-3. Gestisci l'esame fino al completamento totale
+**IL TUO UNICO COMPITO È PRODURRE OGGETTI JSON VALIDI.** Non devi MAI rispondere con testo normale.
 
-REGOLE:
-- Fai domande per coprire TUTTO il PDF
-- Non dare suggerimenti (solo interrogare)
-- Tieni traccia del progresso
-- Lo studente può inviare testo + disegni/formule
+**REGOLE:**
+1. Quando ti viene fornito un PDF, analizzalo per identificare gli argomenti principali.
+2. La tua primissima risposta DEVE essere un oggetto JSON con 'type' uguale a 'setup'.
+3. Le risposte successive, dopo aver ricevuto una risposta dallo studente, DEVONO essere oggetti JSON con 'type' uguale a 'question' o 'completion'.
 
-FORMATO RISPOSTA (sempre JSON VALIDO):
+**ESEMPIO DI CONVERSAZIONE:**
+
+UTENTE: [File PDF] Per favore, inizia l'esame.
+
+TUA RISPOSTA OBBLIGATORIA:
+\`\`\`json
 {
   "type": "setup",
-  "message": "Messaggio allo studente",
-  "progress": {"covered": 0, "total": 20, "percentage": 0},
+  "message": "Buongiorno. Iniziamo con il primo argomento. Mi parli dei principi della termodinamica.",
+  "progress": {"covered": 0, "total": 5, "percentage": 0},
   "isComplete": false,
-  "mainTopic": "Argomento"
+  "mainTopic": "Termodinamica"
 }
+\`\`\`
 
-IMPORTANTE: Rispondi SEMPRE e SOLO con JSON valido, senza testo aggiuntivo prima o dopo.
+UTENTE: [Risposta dello studente...]
 
-Inizia con type="setup" e la prima domanda.`;
+TUA RISPOSTA OBBLIGATORIA:
+\`\`\`json
+{
+  "type": "question",
+  "message": "Molto bene. Ora mi illustri la seconda legge della termodinamica.",
+  "progress": {"covered": 1, "total": 5, "percentage": 20},
+  "isComplete": false
+}
+\`\`\`
+
+**ISTRUZIONE FINALE:** Ora analizza il PDF fornito e genera la tua prima risposta JSON di tipo 'setup'.`;
 
         try {
             // Creazione della "sessione chat" tramite il nuovo SDK
