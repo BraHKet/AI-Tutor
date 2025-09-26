@@ -103,7 +103,7 @@ console.log('📡 [DEBUG] Sending request to Gemini with contents:', {
 });
 
 const result = await this.genAI.models.generateContent({
-    model: "gemini-2.5-flash",       // <-- TORNATO AL TUO MODELLO ORIGINALE
+    model: "gemini-2.0-flash-exp",       // <-- TORNATO AL TUO MODELLO ORIGINALE
     contents: contents,              // <-- ORA INVIAMO UN SOLO PACCO
     systemInstruction: systemPrompt, // Le istruzioni generali le mettiamo qui
     safetySettings: [],
