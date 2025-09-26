@@ -1,15 +1,24 @@
 // FILE: /api/agent.js
 import '@google/genai';
-// Importa l'agente che ora si trova sul server
 import { PhysicsAgent } from './_lib/agents/PhysicsAgent.js';
 
-// NOTA: Le variabili d'ambiente in Vercel sono disponibili direttamente 
-// tramite process.env, senza il prefisso REACT_APP_.
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
-// Crea una singola istanza dell'agente qui
-const agent = new PhysicsAgent(supabaseUrl, supabaseKey);
+// ================== MODIFICA CHIAVE 1 ==================
+// Mappa per conservare un'istanza dell'agente per ogni sessione.
+// La chiave sarà un ID di sessione, il valore sarà l'istanza di PhysicsAgent.
+const activeAgents = new Map();
+
+function getOrCreateAgent(sessionId) {
+  if (!activeAgents.has(sessionId)) {
+    console.log(`[API] Creating new agent for session ID: ${sessionId}`);
+    activeAgents.set(sessionId, new PhysicsAgent(supabaseUrl, supabaseKey));
+  }
+  return activeAgents.get(sessionId);
+}
+// ======================================================
+
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -17,41 +26,38 @@ export default async function handler(req, res) {
     }
 
     try {
-        // Il body della richiesta ci dirà quale metodo chiamare
         const { action, payload } = req.body;
+        
+        // ================== MODIFICA CHIAVE 2 ==================
+        // Ogni richiesta DEVE contenere un sessionId per identificare l'utente.
+        // Il frontend dovrà generarlo e inviarlo ogni volta.
+        const { sessionId } = payload;
+        if (!sessionId) {
+            return res.status(400).json({ error: 'Session ID is missing in payload' });
+        }
+        
+        // Ottieni l'agente specifico per questa sessione.
+        const agent = getOrCreateAgent(sessionId);
+        // ======================================================
 
         let result;
 
         switch (action) {
             case 'analyzeMaterial':
-    // 1. Convertiamo la stringa base64 in un Buffer (dati binari). Questo è corretto.
-    const buffer = Buffer.from(payload.file.base64, 'base64');
-
-    // 2. Creiamo un "falso" oggetto blob. Il tuo PDFProcessor ha solo bisogno
-    //    che l'oggetto abbia un metodo .arrayBuffer(), quindi glielo forniamo.
-    const fakeBlob = {
-        arrayBuffer: async () => buffer,
-        // Aggiungiamo altre proprietà se il tuo codice le usa, es:
-        type: 'application/pdf',
-        size: buffer.length
-    };
-
-    // 3. Passiamo l'oggetto file con il nostro fakeBlob.
-    result = await agent.analyzeMaterial({ blob: fakeBlob });
-    
-    // 4. Restituiamo il risultato e lo stato al frontend. Questo è corretto.
-    result.currentMaterial = agent.currentMaterial; 
-    break;
+                const buffer = Buffer.from(payload.file.base64, 'base64');
+                const fakeBlob = { arrayBuffer: async () => buffer };
+                result = await agent.analyzeMaterial({ blob: fakeBlob });
+                break;
 
             case 'startExamination':
-                // Ripristiniamo lo stato dall'input del frontend
-                agent.currentMaterial = payload.currentMaterial;
+                // NON è più necessario ripristinare lo stato. L'istanza dell'agente
+                // lo conserva già correttamente dalla chiamata 'analyzeMaterial'.
                 result = await agent.startExamination();
                 break;
 
             case 'processResponse':
-                // Ripristiniamo lo stato
-                agent.currentMaterial = payload.currentMaterial;
+                // ANCHE QUI, non serve ripristinare lo stato. L'agente
+                // sa già a che punto è la conversazione.
                 result = await agent.processResponse(payload.responseData);
                 break;
             
@@ -60,7 +66,11 @@ export default async function handler(req, res) {
                  break;
 
             case 'reset':
-                result = agent.reset();
+                agent.reset();
+                // Rimuovi l'agente dalla memoria per evitare memory leak.
+                activeAgents.delete(sessionId);
+                console.log(`[API] Session ended and agent removed for ID: ${sessionId}`);
+                result = { success: true };
                 break;
 
             default:
