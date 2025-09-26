@@ -1,24 +1,11 @@
 // FILE: /api/agent.js
-import '@google/genai';
+import { kv } from '@vercel/kv'; // <-- Importa il client della cache
 import { PhysicsAgent } from './_lib/agents/PhysicsAgent.js';
 
-const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseUrl = process.env.SUPABASE_URL; // Li teniamo per l'agente se servono
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
-// ================== MODIFICA CHIAVE 1 ==================
-// Mappa per conservare un'istanza dell'agente per ogni sessione.
-// La chiave sarà un ID di sessione, il valore sarà l'istanza di PhysicsAgent.
-const activeAgents = new Map();
-
-function getOrCreateAgent(sessionId) {
-  if (!activeAgents.has(sessionId)) {
-    console.log(`[API] Creating new agent for session ID: ${sessionId}`);
-    activeAgents.set(sessionId, new PhysicsAgent(supabaseUrl, supabaseKey));
-  }
-  return activeAgents.get(sessionId);
-}
-// ======================================================
-
+// LA MAPPA IN MEMORIA È STATA RIMOSSA
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -27,37 +14,42 @@ export default async function handler(req, res) {
 
     try {
         const { action, payload } = req.body;
-        
-        // ================== MODIFICA CHIAVE 2 ==================
-        // Ogni richiesta DEVE contenere un sessionId per identificare l'utente.
-        // Il frontend dovrà generarlo e inviarlo ogni volta.
         const { sessionId } = payload;
+
         if (!sessionId) {
-            return res.status(400).json({ error: 'Session ID is missing in payload' });
+            return res.status(400).json({ error: 'Session ID is missing' });
         }
-        
-        // Ottieni l'agente specifico per questa sessione.
-        const agent = getOrCreateAgent(sessionId);
-        // ======================================================
+
+        // ================== NUOVA LOGICA CON LA CACHE ==================
+
+        // 1. Definisci una chiave univoca per la sessione nella cache
+        const sessionKey = `session:${sessionId}`;
+
+        // 2. Recupera la cronologia dalla cache
+        const existingHistory = await kv.get(sessionKey) || [];
+
+        // 3. Crea l'agente iniettando la cronologia recuperata
+        //    (Questo richiede le piccole modifiche a PhysicsAgent e ConversationManager
+        //     che abbiamo discusso nella risposta precedente. Sono ancora necessarie).
+        const agent = new PhysicsAgent(supabaseUrl, supabaseKey, existingHistory);
+
+        // =============================================================
 
         let result;
 
         switch (action) {
             case 'analyzeMaterial':
+                // ... (logica per convertire il blob, non cambia)
                 const buffer = Buffer.from(payload.file.base64, 'base64');
                 const fakeBlob = { arrayBuffer: async () => buffer };
                 result = await agent.analyzeMaterial({ blob: fakeBlob });
                 break;
 
             case 'startExamination':
-                // NON è più necessario ripristinare lo stato. L'istanza dell'agente
-                // lo conserva già correttamente dalla chiamata 'analyzeMaterial'.
                 result = await agent.startExamination();
                 break;
 
             case 'processResponse':
-                // ANCHE QUI, non serve ripristinare lo stato. L'agente
-                // sa già a che punto è la conversazione.
                 result = await agent.processResponse(payload.responseData);
                 break;
             
@@ -66,16 +58,25 @@ export default async function handler(req, res) {
                  break;
 
             case 'reset':
-                agent.reset();
-                // Rimuovi l'agente dalla memoria per evitare memory leak.
-                activeAgents.delete(sessionId);
-                console.log(`[API] Session ended and agent removed for ID: ${sessionId}`);
-                result = { success: true };
+                // Rimuovi la sessione dalla cache
+                await kv.del(sessionKey);
+                result = { success: true, message: 'Session reset.' };
                 break;
 
             default:
                 return res.status(400).json({ error: 'Invalid action' });
         }
+
+        // =============== SALVA LO STATO AGGIORNATO NELLA CACHE ===============
+        if (action !== 'reset') {
+            const updatedHistory = agent.getConversationHistory();
+            
+            // Salva la cronologia aggiornata nella cache con una scadenza (es. 1 ora)
+            // 'ex: 3600' significa "expire in 3600 seconds". È buona pratica per non
+            // tenere sessioni vecchie all'infinito.
+            await kv.set(sessionKey, updatedHistory, { ex: 3600 });
+        }
+        // ===================================================================
 
         res.status(200).json(result);
 

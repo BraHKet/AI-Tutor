@@ -7,15 +7,24 @@ import OpenAI from 'openai';
 import pdfParse from 'pdf-parse';
 
 export class ConversationManager {
-    constructor() {
+     constructor(existingHistory = []) {
         // Inizializza OpenAI client
         this.openai = new OpenAI({
-            apiKey: process.env.OPENAI_API_KEY, // Assicurati di avere questa variabile d'ambiente
+            apiKey: process.env.OPENAI_API_KEY,
         });
 
-        this.chatSession = [];
-        this.isActive = false;
-        this.conversationHistory = []; // ChatGPT usa la cronologia delle conversazioni
+        this.chatSession = []; // Puoi tenere questa riga se ti serve altrove
+        
+        // Carica la cronologia esterna (dalla cache)
+        this.conversationHistory = existingHistory;
+        
+        // La sessione è attiva SE c'è una cronologia
+        this.isActive = existingHistory.length > 0;
+    }
+
+    // Aggiungi questo nuovo metodo per restituire la cronologia
+    getHistory() {
+        return this.conversationHistory;
     }
 
     async startSession(pdfData) {

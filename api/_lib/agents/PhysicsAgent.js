@@ -9,11 +9,17 @@ import { PDFProcessor } from './modules/PDFProcessor.js';
 import { ConversationManager } from './modules/ConversationManager.js';
 
 export class PhysicsAgent {
-    constructor(supabaseUrl, supabaseKey) {
+    constructor(supabaseUrl, supabaseKey, existingHistory = []) {
         this.supabase = createClient(supabaseUrl, supabaseKey);
         this.pdfProcessor = new PDFProcessor();
-        this.conversationManager = new ConversationManager();
+        // Inietta la cronologia recuperata dalla cache nel manager
+        this.conversationManager = new ConversationManager(existingHistory);
         this.currentMaterial = null;
+    }
+
+    // Aggiungi questo nuovo metodo per esporre la cronologia aggiornata
+    getConversationHistory() {
+        return this.conversationManager.getHistory();
     }
 
     async initialize() {

@@ -1175,7 +1175,7 @@ useEffect(() => {
             )}
             <button
               onClick={sendSequentialContent}
-              disabled={isProcessing || !hasContent() || !examStarted}
+              disabled={isProcessing || !hasContent()}
               className={hasContent() ? styles.sendButtonActive : styles.sendButtonDisabled}
             >
               <Send size={14} />
