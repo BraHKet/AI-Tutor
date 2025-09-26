@@ -106,6 +106,28 @@ const result = await this.genAI.models.generateContent({
     model: "gemini-2.0-flash-exp",       // <-- TORNATO AL TUO MODELLO ORIGINALE
     contents: contents,              // <-- ORA INVIAMO UN SOLO PACCO
     systemInstruction: systemPrompt, // Le istruzioni generali le mettiamo qui
+    generationConfig: {
+    responseMimeType: "application/json",
+    responseSchema: {
+      type: "object",
+      properties: {
+        type: { type: "string", enum: ["setup", "question", "completion"] },
+        message: { type: "string" },
+        progress: {
+          type: "object",
+          properties: {
+            covered: { type: "number" },
+            total: { type: "number" },
+            percentage: { type: "number" }
+          },
+          required: ["covered", "total", "percentage"]
+        },
+        isComplete: { type: "boolean" },
+        mainTopic: { type: "string" }
+      },
+      required: ["type", "message", "progress", "isComplete"]
+    }
+  },
     safetySettings: [],
 });
 
