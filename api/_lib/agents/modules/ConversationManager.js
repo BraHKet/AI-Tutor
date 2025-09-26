@@ -1,149 +1,122 @@
 // ==========================================
 // FILE: src/agents/modules/ConversationManager.js
-// VERSIONE CORRETTA: Debug migliorato + gestione robusta delle risposte
+// VERSIONE AGGIORNATA: @google/genai + Gemini 2.5
 // ==========================================
 
 import { GoogleGenAI } from '@google/genai';
-import fs from 'fs';
-import os from 'os';
+import { GoogleAuth } from 'google-auth-library';
+import fs from 'fs';         // <-- AGGIUNGI QUESTA RIGA
+import os from 'os';         // <-- AGGIUNGI QUESTA RIGA
 import path from 'path';
 
 export class ConversationManager {
     constructor() {
-        // Setup delle credenziali
-        const credentialsJson = process.env.GOOGLE_CREDENTIALS_JSON;
-        if (credentialsJson) {
-            const tempDir = os.tmpdir();
-            const credentialsPath = path.join(tempDir, 'gcp-credentials.json');
-            fs.writeFileSync(credentialsPath, credentialsJson);
-            process.env.GOOGLE_APPLICATION_CREDENTIALS = credentialsPath;
-        }
+    // Questa logica di setup viene eseguita solo una volta quando il server si avvia.
+    const credentialsJson = process.env.GOOGLE_CREDENTIALS_JSON;
+    if (credentialsJson) {
+        // Vercel fornisce una directory temporanea scrivibile in /tmp
+        const tempDir = os.tmpdir();
+        const credentialsPath = path.join(tempDir, 'gcp-credentials.json');
 
-        this.genAI = new GoogleGenAI({
-            vertexai: true,
-            project: process.env.GOOGLE_CLOUD_PROJECT,
-            location: process.env.GOOGLE_CLOUD_LOCATION || 'us-central1',
-        });
+        // Scriviamo il contenuto della variabile d'ambiente in un file temporaneo.
+        fs.writeFileSync(credentialsPath, credentialsJson);
 
-        this.chatSession = null;
-        this.isActive = false;
+        // Diciamo alla libreria di Google: "Le credenziali si trovano in questo percorso!"
+        process.env.GOOGLE_APPLICATION_CREDENTIALS = credentialsPath;
     }
 
+    // Ora che l'ambiente è configurato correttamente, l'inizializzazione standard funziona.
+    // La libreria troverà automaticamente il file che abbiamo appena creato.
+    this.genAI = new GoogleGenAI({
+        vertexai: true,
+        project: process.env.GOOGLE_CLOUD_PROJECT,
+        location: process.env.GOOGLE_CLOUD_LOCATION || 'us-central1',
+    });
+
+    this.chatSession = null;
+    this.isActive = false;
+}
+
     async startSession(pdfData) {
+        console.log('🚀 [DEBUG] Starting session...');
+        console.log('🚀 [DEBUG] PDF data received:', {
+            mimeType: pdfData.mimeType,
+            dataLength: pdfData.data ? pdfData.data.length : 'NO DATA',
+            hasData: !!pdfData.data
+        });
+
         const systemPrompt = `Tu sei un PROFESSORE UNIVERSITARIO di fisica durante un esame orale.
 
 COMPITO:
-1. Analizza questo PDF completamente
-2. Identifica gli argomenti principali che lo studente deve conoscere
-3. Gestisci l'esame fino al completamento
+1. Analizza questo PDF completamente (tutte le pagine)
+2. Identifica tutto ciò che lo studente deve trattare
+3. Gestisci l'esame fino al completamento totale
 
-REGOLE IMPORTANTI:
-- Fai domande specifiche sui contenuti del PDF
-- Non dare suggerimenti o aiuti
-- Mantieni un tono professionale da esaminatore
-- Lo studente può rispondere con testo e/o disegni
+REGOLE:
+- Fai domande per coprire TUTTO il PDF
+- Non dare suggerimenti (solo interrogare)
+- Tieni traccia del progresso
+- Lo studente può inviare testo + disegni/formule
 
-FORMATO RISPOSTA OBBLIGATORIO:
-Devi SEMPRE rispondere con un oggetto JSON nel seguente formato esatto:
-
+FORMATO RISPOSTA (sempre JSON VALIDO):
 {
   "type": "setup",
-  "message": "La tua domanda o commento qui",
-  "progress": {
-    "covered": 0,
-    "total": 10,
-    "percentage": 0
-  },
+  "message": "Messaggio allo studente",
+  "progress": {"covered": 0, "total": 20, "percentage": 0},
   "isComplete": false,
-  "mainTopic": "Argomento principale del PDF"
+  "mainTopic": "Argomento"
 }
 
-IMPORTANTE: 
-- Rispondi SOLO con il JSON, senza altro testo
-- Non usare markdown o backticks
-- Assicurati che il JSON sia valido
-- Inizia sempre con type "setup" per la prima domanda`;
+IMPORTANTE: Rispondi SEMPRE e SOLO con JSON valido, senza testo aggiuntivo prima o dopo.
+
+Inizia con type="setup" e la prima domanda.`;
 
         try {
-            console.log('🚀 Starting session with PDF data...');
-            
-            // Preparazione del contenuto per Gemini
-            const contents = [{
-                role: "user",
-                parts: [
-                    { 
-                        inlineData: { 
-                            mimeType: pdfData.mimeType, 
-                            data: pdfData.data 
-                        } 
-                    },
-                    { 
-                        text: "Analizza questo PDF di fisica e inizia l'esame orale. Rispondi esclusivamente con il JSON nel formato richiesto." 
-                    }
-                ]
-            }];
+            // Creazione della "sessione chat" tramite il nuovo SDK
+            const contents = [
+    {
+        role: "user",
+        parts: [
+            { inlineData: { mimeType: pdfData.mimeType, data: pdfData.data } },
+            { text: "Analizza questo PDF e inizia l'esame. Rispondi SOLO in JSON come da istruzioni." }
+        ]
+    }
+];
 
-            console.log('📡 Sending request to Gemini...');
-            
-            const result = await this.genAI.getGenerativeModel({ 
-                model: "gemini-2.0-flash-exp" // Prova con il modello più recente
-            }).generateContent({
-                contents: contents,
-                systemInstruction: systemPrompt,
-                generationConfig: {
-                    temperature: 0.7,
-                    topK: 40,
-                    topP: 0.95,
-                    maxOutputTokens: 2048,
-                },
-                safetySettings: [
-                    {
-                        category: "HARM_CATEGORY_HARASSMENT",
-                        threshold: "BLOCK_NONE"
-                    },
-                    {
-                        category: "HARM_CATEGORY_HATE_SPEECH", 
-                        threshold: "BLOCK_NONE"
-                    },
-                    {
-                        category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                        threshold: "BLOCK_NONE"
-                    },
-                    {
-                        category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-                        threshold: "BLOCK_NONE"
-                    }
-                ]
-            });
+console.log('📡 [DEBUG] Sending request to Gemini with contents:', {
+    partsCount: contents[0].parts.length,
+    hasInlineData: !!contents[0].parts[0].inlineData,
+    textPart: contents[0].parts[1].text
+});
 
-            console.log('📥 Raw response received:', result);
-            
-            // Estrazione del testo dalla risposta
-            let responseText = '';
-            if (result.response) {
-                responseText = result.response.text();
-            } else if (result.candidates && result.candidates[0]) {
-                responseText = result.candidates[0].content.parts[0].text;
-            } else {
-                throw new Error('No response text found in Gemini result');
-            }
+const result = await this.genAI.models.generateContent({
+    model: "gemini-2.5-flash",       // <-- TORNATO AL TUO MODELLO ORIGINALE
+    contents: contents,              // <-- ORA INVIAMO UN SOLO PACCO
+    systemInstruction: systemPrompt, // Le istruzioni generali le mettiamo qui
+    safetySettings: [],
+});
 
-            console.log('📝 Extracted response text:', responseText);
+console.log('📥 [DEBUG] Raw Gemini result object:', JSON.stringify(result, null, 2));
 
-            // Parsing della risposta
+            // Parsing della risposta robusto
+            const responseText = result.output_text || result[0]?.content?.text || "";
+            console.log('📝 [DEBUG] Extracted response text:', responseText);
+            console.log('📝 [DEBUG] Response text type:', typeof responseText);
+            console.log('📝 [DEBUG] Response text length:', responseText.length);
+
             const response = this.parseResponse(responseText);
             this.isActive = true;
 
             return {
                 success: true,
-                mainTopic: response.mainTopic || 'Fisica',
+                mainTopic: response.mainTopic,
                 initialQuestion: response.message,
                 totalItems: response.progress.total
             };
-
         } catch (error) {
-            console.error('❌ Session start failed:', error);
-            throw new Error(`Failed to start examination: ${error.message}`);
+            console.error('❌ [DEBUG] Session start failed:', error);
+            console.error('❌ [DEBUG] Error stack:', error.stack);
+            throw error;
         }
     }
 
@@ -153,146 +126,115 @@ IMPORTANTE:
         }
 
         try {
-            console.log('📤 Sending student message:', { text, imageCount: images.length });
+            console.log('📤 [DEBUG] Sending message to Gemini...');
+            console.log('📤 [DEBUG] Text:', text);
+            console.log('📤 [DEBUG] Images count:', images.length);
 
-            const parts = [];
+            const inputs = [];
 
-            // Aggiungi immagini se presenti
+            // Allego immagini se presenti
             if (images && images.length > 0) {
-                console.log(`🖼️ Processing ${images.length} images...`);
-                for (let i = 0; i < images.length; i++) {
-                    const imageData = images[i].includes(',') ? images[i].split(',')[1] : images[i];
-                    parts.push({ 
-                        inlineData: { 
-                            mimeType: 'image/png', 
-                            data: imageData 
-                        } 
-                    });
-                    console.log(`✅ Image ${i + 1} processed`);
+                for (const singleImage of images) {
+                    console.log('🖼️ [DEBUG] Processing image...');
+                    console.log(
+                        '%c ',
+                        'font-size: 1px; ' +
+                        'padding: 100px; ' +
+                        'border: 1px solid black; ' +
+                        'background: url(' + singleImage + ') no-repeat center center; ' +
+                        'background-size: contain;'
+                    );
+
+                    const imageData = singleImage.split(',')[1];
+                    inputs.push({ inlineData: { mimeType: 'image/png', data: imageData } });
                 }
             }
 
-            // Aggiungi il testo
-            const imageInfo = images && images.length > 0 ? ` (allegati ${images.length} disegni/formule)` : '';
-            parts.push({
-                text: `Risposta dello studente: "${text}"${imageInfo}
+            // Aggiungo testo dello studente
+            const imageInfo = images && images.length > 0 ? ` (con ${images.length} disegni allegati)` : '';
+            inputs.push({
+                text: `Studente risponde: "${text}"${imageInfo}. 
 
-Valuta la risposta e procedi con la prossima domanda. Rispondi SOLO con JSON nel formato:
+IMPORTANTE: Rispondi SEMPRE e SOLO con JSON valido nel formato:
 {
   "type": "question",
-  "message": "La tua prossima domanda o valutazione",
+  "message": "Il tuo messaggio",
   "progress": {"covered": X, "total": Y, "percentage": Z},
   "isComplete": false
-}`
+}
+
+Valuta e procedi con la prossima domanda.`
             });
 
-            const result = await this.genAI.getGenerativeModel({ 
-                model: "gemini-2.0-flash-exp" 
-            }).generateContent({
-                contents: [{ role: "user", parts }],
-                generationConfig: {
-                    temperature: 0.7,
-                    topK: 40,
-                    topP: 0.95,
-                    maxOutputTokens: 2048,
-                },
-                safetySettings: [
-                    {
-                        category: "HARM_CATEGORY_HARASSMENT",
-                        threshold: "BLOCK_NONE"
-                    },
-                    {
-                        category: "HARM_CATEGORY_HATE_SPEECH", 
-                        threshold: "BLOCK_NONE"
-                    },
-                    {
-                        category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                        threshold: "BLOCK_NONE"
-                    },
-                    {
-                        category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-                        threshold: "BLOCK_NONE"
-                    }
-                ]
+            console.log('📡 [DEBUG] Sending to Gemini with inputs:', {
+                inputsCount: inputs.length,
+                hasImages: inputs.some(i => i.inlineData),
+                textInput: inputs.find(i => i.text)?.text.substring(0, 100) + '...'
             });
 
-            let responseText = '';
-            if (result.response) {
-                responseText = result.response.text();
-            } else if (result.candidates && result.candidates[0]) {
-                responseText = result.candidates[0].content.parts[0].text;
-            }
+            const result = await this.genAI.models.generateContent({
+                model: "gemini-2.5-flash",
+                contents: inputs,
+                safetySettings: [],
+            });
 
-            console.log('📝 AI response for student message:', responseText);
+            console.log('📥 [DEBUG] Raw Gemini result for sendMessage:', JSON.stringify(result, null, 2));
+
+            const responseText = result.output_text || result[0]?.content?.text || "";
+            console.log('📝 [DEBUG] Extracted response text from sendMessage:', responseText);
+            console.log('📝 [DEBUG] Response text type:', typeof responseText);
+            console.log('📝 [DEBUG] Response text length:', responseText.length);
 
             return this.parseResponse(responseText);
-
         } catch (error) {
-            console.error('❌ Send message failed:', error);
-            return {
-                type: 'error',
-                message: 'Si è verificato un errore. Provi a ripetere la risposta.',
-                progress: { covered: 0, total: 1, percentage: 0 },
-                isComplete: false
-            };
+            console.error('❌ [DEBUG] Message failed:', error);
+            console.error('❌ [DEBUG] Error stack:', error.stack);
+            throw error;
         }
     }
 
     parseResponse(aiResponse) {
         console.log('🔍 Raw AI Response:', aiResponse);
-        console.log('🔍 Response length:', aiResponse.length);
-        console.log('🔍 Response type:', typeof aiResponse);
-
-        if (!aiResponse || typeof aiResponse !== 'string') {
-            console.error('❌ Invalid response type or empty response');
-            return this.createIntelligentFallback(aiResponse || '');
-        }
 
         try {
-            let cleanedText = aiResponse.trim();
+            let cleanedText = aiResponse;
 
-            // Rimuovi markdown code blocks
-            cleanedText = cleanedText.replace(/```json\s*/gi, '').replace(/```\s*/g, '');
-            
-            // Rimuovi eventuali commenti o testo prima/dopo il JSON
+            // Rimuovo markdown code blocks
+            cleanedText = cleanedText.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+
+            // Rimuovo testo prima e dopo JSON
             cleanedText = cleanedText.replace(/^[^{]*/, '').replace(/[^}]*$/, '');
-
-            console.log('🧹 Cleaned text:', cleanedText);
 
             let jsonString = null;
 
-            // Strategia 1: trova il JSON più completo possibile
-            const jsonMatches = cleanedText.match(/\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/g);
-            if (jsonMatches && jsonMatches.length > 0) {
-                // Prendi il JSON più lungo (probabilmente quello più completo)
-                jsonString = jsonMatches.reduce((a, b) => a.length > b.length ? a : b);
-                console.log('✅ Found JSON match:', jsonString);
+            // Strategia 1: match JSON completo
+            const fullJsonMatch = cleanedText.match(/\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/);
+            if (fullJsonMatch) {
+                jsonString = fullJsonMatch[0];
             }
 
-            // Strategia 2: se non trova nulla, prova a estrarre dal primo { all'ultimo }
+            // Strategia 2: se non trova, cerca dal primo { all'ultimo }
             if (!jsonString) {
                 const firstBrace = cleanedText.indexOf('{');
                 const lastBrace = cleanedText.lastIndexOf('}');
                 if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
                     jsonString = cleanedText.substring(firstBrace, lastBrace + 1);
-                    console.log('🔄 Fallback JSON extraction:', jsonString);
                 }
             }
 
             if (jsonString) {
-                // Pulizia finale del JSON
                 jsonString = jsonString
-                    .replace(/,\s*([}\]])/g, '$1') // rimuovi virgole finali
+                    .replace(/,\s*([}\]])/g, '$1') // rimuovo virgole finali
                     .replace(/\n/g, ' ')
                     .replace(/\r/g, '')
                     .replace(/\t/g, ' ')
+                    .replace(/\\/g, '\\\\')
                     .trim();
 
-                console.log('🎯 Final JSON string to parse:', jsonString);
+                console.log('🧹 Cleaned JSON:', jsonString);
 
                 try {
                     const parsed = JSON.parse(jsonString);
-                    console.log('✅ Successfully parsed JSON:', parsed);
 
                     const normalized = {
                         type: this.validateString(parsed.type, 'question'),
@@ -302,21 +244,20 @@ Valuta la risposta e procedi con la prossima domanda. Rispondi SOLO con JSON nel
                         mainTopic: this.validateString(parsed.mainTopic, undefined)
                     };
 
-                    console.log('✅ Normalized response:', normalized);
+                    console.log('✅ Parsed successfully:', normalized);
                     return normalized;
-                    
                 } catch (parseError) {
                     console.error('❌ JSON Parse Error:', parseError);
                     console.error('❌ Failed JSON string:', jsonString);
+                    throw parseError;
                 }
+            } else {
+                throw new Error('No JSON object found in response');
             }
-
-            // Se arriviamo qui, il parsing è fallito
-            console.error('❌ No valid JSON found in response');
-            return this.createIntelligentFallback(aiResponse);
 
         } catch (error) {
             console.error('❌ Parse failed completely:', error);
+            console.error('❌ Original response:', aiResponse);
             return this.createIntelligentFallback(aiResponse);
         }
     }
@@ -327,50 +268,44 @@ Valuta la risposta e procedi con la prossima domanda. Rispondi SOLO con JSON nel
 
     validateProgress(progress) {
         if (!progress || typeof progress !== 'object') {
-            return { covered: 0, total: 10, percentage: 0 };
+            return { covered: 0, total: 1, percentage: 0 };
         }
 
         const covered = Math.max(0, parseInt(progress.covered) || 0);
-        const total = Math.max(1, parseInt(progress.total) || 10);
+        const total = Math.max(1, parseInt(progress.total) || 1);
         const percentage = Math.min(100, Math.max(0, parseInt(progress.percentage) || Math.round((covered / total) * 100)));
 
         return { covered, total, percentage };
     }
 
     createIntelligentFallback(originalResponse) {
-        console.log('🆘 Creating intelligent fallback for:', originalResponse.substring(0, 200) + '...');
-        
+        console.log('🔄 Creating intelligent fallback...');
         const response = originalResponse.toLowerCase();
 
-        // Prova a estrarre informazioni utili dalla risposta anche se non è JSON
-        let message = 'Mi parli degli argomenti trattati nel PDF.';
+        let message = 'Continui la sua esposizione.';
         let type = 'question';
         let isComplete = false;
-        let mainTopic = 'Fisica';
 
-        // Cerca pattern comuni
-        if (response.includes('complet') || response.includes('finit') || response.includes('terminat')) {
+        if (response.includes('completo') || response.includes('finito') || response.includes('terminato')) {
             isComplete = true;
             type = 'completion';
             message = 'Esame completato. Ottimo lavoro!';
-        } else if (response.includes('inizi') || response.includes('iniziam') || response.includes('cominciam')) {
+        } else if (response.includes('inizio') || response.includes('iniziamo') || response.includes('cominciamo')) {
             type = 'setup';
-            message = 'Iniziamo l\'esame. Mi faccia una trattazione del materiale studiato.';
+            message = 'Iniziamo l\'esame. Mi faccia una trattazione completa del materiale.';
         } else {
-            // Cerca frasi che sembrano domande
-            const sentences = originalResponse.split(/[.!?]+/).filter(s => s.trim().length > 10);
-            const questionSentence = sentences.find(s => 
-                s.includes('?') || 
-                s.toLowerCase().includes('può') || 
-                s.toLowerCase().includes('spieg') ||
-                s.toLowerCase().includes('descri') ||
-                s.toLowerCase().includes('cosa')
-            );
-            
-            if (questionSentence) {
-                message = questionSentence.trim();
-                if (!message.endsWith('?') && !message.endsWith('.')) {
-                    message += '?';
+            const sentences = originalResponse.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 10);
+            if (sentences.length > 0) {
+                const bestSentence = sentences.find(s =>
+                    s.includes('può') || s.includes('spieg') || s.includes('descri') ||
+                    s.includes('illustr') || s.includes('dimostr') || s.includes('cos')
+                ) || sentences[0];
+
+                if (bestSentence && bestSentence.length < 200) {
+                    message = bestSentence.charAt(0).toUpperCase() + bestSentence.slice(1);
+                    if (!message.endsWith('.') && !message.endsWith('?') && !message.endsWith('!')) {
+                        message += '?';
+                    }
                 }
             }
         }
@@ -378,9 +313,9 @@ Valuta la risposta e procedi con la prossima domanda. Rispondi SOLO con JSON nel
         const fallback = {
             type: type,
             message: message,
-            progress: { covered: 1, total: 10, percentage: 10 },
+            progress: { covered: 0, total: 1, percentage: 0 },
             isComplete: isComplete,
-            mainTopic: mainTopic
+            mainTopic: undefined
         };
 
         console.log('🆘 Fallback created:', fallback);
@@ -390,8 +325,7 @@ Valuta la risposta e procedi con la prossima domanda. Rispondi SOLO con JSON nel
     endSession() {
         this.chatSession = null;
         this.isActive = false;
-        console.log('🔚 Session ended');
     }
 }
 
-export default ConversationManager;
+export default ConversationManage
