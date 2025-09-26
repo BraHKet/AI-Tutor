@@ -38,12 +38,13 @@ export class ConversationManager {
 }
 
     async startSession(pdfData) {
+
         console.log('🚀 [DEBUG] Starting session...');
-        console.log('🚀 [DEBUG] PDF data received:', {
-            mimeType: pdfData.mimeType,
-            dataLength: pdfData.data ? pdfData.data.length : 'NO DATA',
-            hasData: !!pdfData.data
-        });
+console.log('🚀 [DEBUG] PDF data received:', {
+    mimeType: pdfData.mimeType,
+    dataLength: pdfData.data ? pdfData.data.length : 'NO DATA',
+    hasData: !!pdfData.data
+});
 
         const systemPrompt = `Tu sei un PROFESSORE UNIVERSITARIO di fisica durante un esame orale.
 
@@ -83,6 +84,7 @@ Inizia con type="setup" e la prima domanda.`;
     }
 ];
 
+
 console.log('📡 [DEBUG] Sending request to Gemini with contents:', {
     partsCount: contents[0].parts.length,
     hasInlineData: !!contents[0].parts[0].inlineData,
@@ -100,10 +102,6 @@ console.log('📥 [DEBUG] Raw Gemini result object:', JSON.stringify(result, nul
 
             // Parsing della risposta robusto
             const responseText = result.output_text || result[0]?.content?.text || "";
-            console.log('📝 [DEBUG] Extracted response text:', responseText);
-            console.log('📝 [DEBUG] Response text type:', typeof responseText);
-            console.log('📝 [DEBUG] Response text length:', responseText.length);
-
             const response = this.parseResponse(responseText);
             this.isActive = true;
 
@@ -114,8 +112,7 @@ console.log('📥 [DEBUG] Raw Gemini result object:', JSON.stringify(result, nul
                 totalItems: response.progress.total
             };
         } catch (error) {
-            console.error('❌ [DEBUG] Session start failed:', error);
-            console.error('❌ [DEBUG] Error stack:', error.stack);
+            console.error('❌ Session start failed:', error);
             throw error;
         }
     }
@@ -126,16 +123,12 @@ console.log('📥 [DEBUG] Raw Gemini result object:', JSON.stringify(result, nul
         }
 
         try {
-            console.log('📤 [DEBUG] Sending message to Gemini...');
-            console.log('📤 [DEBUG] Text:', text);
-            console.log('📤 [DEBUG] Images count:', images.length);
-
             const inputs = [];
 
             // Allego immagini se presenti
             if (images && images.length > 0) {
                 for (const singleImage of images) {
-                    console.log('🖼️ [DEBUG] Processing image...');
+                    console.log(`--- ---------------------- ---`);
                     console.log(
                         '%c ',
                         'font-size: 1px; ' +
@@ -144,6 +137,7 @@ console.log('📥 [DEBUG] Raw Gemini result object:', JSON.stringify(result, nul
                         'background: url(' + singleImage + ') no-repeat center center; ' +
                         'background-size: contain;'
                     );
+                    console.log('--- FINE IMMAGINE ---');
 
                     const imageData = singleImage.split(',')[1];
                     inputs.push({ inlineData: { mimeType: 'image/png', data: imageData } });
@@ -166,29 +160,16 @@ IMPORTANTE: Rispondi SEMPRE e SOLO con JSON valido nel formato:
 Valuta e procedi con la prossima domanda.`
             });
 
-            console.log('📡 [DEBUG] Sending to Gemini with inputs:', {
-                inputsCount: inputs.length,
-                hasImages: inputs.some(i => i.inlineData),
-                textInput: inputs.find(i => i.text)?.text.substring(0, 100) + '...'
-            });
-
             const result = await this.genAI.models.generateContent({
                 model: "gemini-2.5-flash",
                 contents: inputs,
                 safetySettings: [],
             });
 
-            console.log('📥 [DEBUG] Raw Gemini result for sendMessage:', JSON.stringify(result, null, 2));
-
             const responseText = result.output_text || result[0]?.content?.text || "";
-            console.log('📝 [DEBUG] Extracted response text from sendMessage:', responseText);
-            console.log('📝 [DEBUG] Response text type:', typeof responseText);
-            console.log('📝 [DEBUG] Response text length:', responseText.length);
-
             return this.parseResponse(responseText);
         } catch (error) {
-            console.error('❌ [DEBUG] Message failed:', error);
-            console.error('❌ [DEBUG] Error stack:', error.stack);
+            console.error('❌ Message failed:', error);
             throw error;
         }
     }
@@ -328,4 +309,4 @@ Valuta e procedi con la prossima domanda.`
     }
 }
 
-export default ConversationManage
+export default ConversationManager;
