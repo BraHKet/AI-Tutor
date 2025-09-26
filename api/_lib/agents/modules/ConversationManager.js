@@ -25,7 +25,7 @@ export class ConversationManager {
             hasData: !!pdfData.data
         });
 
-        const systemPrompt = `Tu sei un PROFESSORE UNIVERSITARIO di fisica durante un esame orale.
+        const systemPrompt = `Tu sei un PROFESSORE UNIVERSITARIO durante un esame orale.
 
 COMPITO:
 1. Analizza questo contenuto PDF completamente
@@ -58,18 +58,23 @@ Inizia con type="setup" e la prima domanda.`;
             let pdfContent = "Contenuto PDF non disponibile per l'analisi diretta con ChatGPT.";
             
             try {
-                // Prova a estrarre il testo dal PDF usando pdf-parse
-                const pdfParse = await import('pdf-parse');
-                const pdfBuffer = Buffer.from(pdfData.data, 'base64');
-                const pdfResult = await pdfParse.default(pdfBuffer);
-                pdfContent = pdfResult.text;
-                console.log('✅ [DEBUG] PDF text extracted successfully, length:', pdfContent.length);
-            } catch (pdfError) {
-                console.warn('⚠️ [DEBUG] PDF text extraction failed:', pdfError.message);
-                pdfContent = `Ho ricevuto un PDF di fisica da analizzare. 
-                Anche se non posso leggere direttamente il contenuto, procederò con un esame generale di fisica.
-                Ti farò domande sui principali argomenti che solitamente si trovano nei PDF di fisica universitaria.`;
-            }
+    // Prova a estrarre il testo dal PDF usando pdf-parse
+    const pdfParse = await import('pdf-parse');
+
+    // Se pdfData.data è una stringa base64 la converto, altrimenti la uso direttamente
+    const pdfBuffer = Buffer.isBuffer(pdfData.data)
+        ? pdfData.data
+        : Buffer.from(pdfData.data, 'base64');
+
+    const pdfResult = await pdfParse.default(pdfBuffer);
+    pdfContent = pdfResult.text;
+    console.log('✅ [DEBUG] PDF text extracted successfully, length:', pdfContent.length);
+} catch (pdfError) {
+    console.warn('⚠️ [DEBUG] PDF text extraction failed:', pdfError.message);
+    pdfContent = `Ho ricevuto un PDF di fisica da analizzare. 
+    Anche se non posso leggere direttamente il contenuto, procederò con un esame generale di fisica.
+    Ti farò domande sui principali argomenti che solitamente si trovano nei PDF di fisica universitaria.`;
+}
 
             // Inizializza la cronologia della conversazione
             this.conversationHistory = [
