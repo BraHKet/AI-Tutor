@@ -1,43 +1,30 @@
 // =========================================================================
-// FILE: /api/_lib/agents/PhysicsAgent.js (IL VERO AGENTE - "IL CERVELLO")
-// Questo file deve trovarsi nel backend.
+// FILE: /api/_lib/agents/PhysicsAgent.js (VERSIONE FINALE DEFINITIVA)
 // =========================================================================
 import '@google/genai';
 import { createClient } from '@supabase/supabase-js';
-// Assicurati che questi percorsi siano corretti rispetto alla posizione del file
 import { PDFProcessor } from './modules/PDFProcessor.js';
 import { ConversationManager } from './modules/ConversationManager.js';
 
 export class PhysicsAgent {
-    constructor(supabaseUrl, supabaseKey, existingHistory = []) {
+    // MODIFICA 1: Il costruttore accetta anche il materiale esistente
+    constructor(supabaseUrl, supabaseKey, existingHistory = [], existingMaterial = null) {
         this.supabase = createClient(supabaseUrl, supabaseKey);
         this.pdfProcessor = new PDFProcessor();
-        // Inietta la cronologia recuperata dalla cache nel manager
         this.conversationManager = new ConversationManager(existingHistory);
-        this.currentMaterial = null;
+        // Carica il materiale dalla cache
+        this.currentMaterial = existingMaterial;
     }
 
-    // Aggiungi questo nuovo metodo per esporre la cronologia aggiornata
-    getConversationHistory() {
-        return this.conversationManager.getHistory();
+    // MODIFICA 2: Un solo metodo che restituisce l'intero stato della sessione
+    getSessionState() {
+        return {
+            history: this.conversationManager.getHistory(),
+            material: this.currentMaterial
+        };
     }
 
-    async initialize() {
-        try {
-            const { error } = await this.supabase
-                .from('ai_agent_profiles')
-                .insert({ agent_name: 'Continuous Session Agent', version: '5.0' })
-                .select();
-
-            if (error && error.code !== '23505') throw error;
-            
-            console.log('🤖 Agent initialized on server (minimal mode)');
-            return { success: true };
-        } catch (error) {
-            console.error('❌ Server Init failed:', error);
-            return { success: true }; // Non bloccare
-        }
-    }
+    // Il metodo getConversationHistory() non serve più.
 
     async analyzeMaterial(file, progressCallback) {
         try {
@@ -49,6 +36,7 @@ export class PhysicsAgent {
             } else {
                 throw new Error("Invalid file input on server");
             }
+            // MODIFICA 3: Salva il materiale analizzato nell'istanza corrente
             this.currentMaterial = this.pdfProcessor.prepareForGemini(processedPDF);
             return { success: true };
         } catch (error) {
@@ -62,6 +50,7 @@ export class PhysicsAgent {
         return await this.conversationManager.startSession(this.currentMaterial);
     }
 
+    // ... (Tutto il resto del codice da processResponse in poi rimane IDENTICO) ...
     async processResponse(responseData) {
         try {
             const text = responseData.text || '';

@@ -1,11 +1,11 @@
-// FILE: /api/agent.js
-import { kv } from '@vercel/kv'; // <-- Importa il client della cache
+// =========================================================================
+// FILE: /api/agent.js (VERSIONE FINALE DEFINITIVA)
+// =========================================================================
+import { kv } from '@vercel/kv';
 import { PhysicsAgent } from './_lib/agents/PhysicsAgent.js';
 
-const supabaseUrl = process.env.SUPABASE_URL; // Li teniamo per l'agente se servono
+const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
-
-// LA MAPPA IN MEMORIA È STATA RIMOSSA
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -17,29 +17,26 @@ export default async function handler(req, res) {
         const { sessionId } = payload;
 
         if (!sessionId) {
-            return res.status(400).json({ error: 'Session ID is missing' });
+            return res.status(400).json({ error: 'Session ID is missing in payload' });
         }
 
-        // ================== NUOVA LOGICA CON LA CACHE ==================
-
-        // 1. Definisci una chiave univoca per la sessione nella cache
         const sessionKey = `session:${sessionId}`;
+        
+        // MODIFICA 1: Recupera l'intero oggetto di stato, con valori di default
+        const sessionState = await kv.get(sessionKey) || { history: [], material: null };
 
-        // 2. Recupera la cronologia dalla cache
-        const existingHistory = await kv.get(sessionKey) || [];
-
-        // 3. Crea l'agente iniettando la cronologia recuperata
-        //    (Questo richiede le piccole modifiche a PhysicsAgent e ConversationManager
-        //     che abbiamo discusso nella risposta precedente. Sono ancora necessarie).
-        const agent = new PhysicsAgent(supabaseUrl, supabaseKey, existingHistory);
-
-        // =============================================================
-
+        // MODIFICA 2: Inietta sia la cronologia che il materiale nell'agente
+        const agent = new PhysicsAgent(
+            supabaseUrl, 
+            supabaseKey, 
+            sessionState.history, 
+            sessionState.material
+        );
+        
         let result;
 
         switch (action) {
             case 'analyzeMaterial':
-                // ... (logica per convertire il blob, non cambia)
                 const buffer = Buffer.from(payload.file.base64, 'base64');
                 const fakeBlob = { arrayBuffer: async () => buffer };
                 result = await agent.analyzeMaterial({ blob: fakeBlob });
@@ -58,25 +55,21 @@ export default async function handler(req, res) {
                  break;
 
             case 'reset':
-                // Rimuovi la sessione dalla cache
                 await kv.del(sessionKey);
-                result = { success: true, message: 'Session reset.' };
+                result = { success: true };
                 break;
 
             default:
                 return res.status(400).json({ error: 'Invalid action' });
         }
 
-        // =============== SALVA LO STATO AGGIORNATO NELLA CACHE ===============
+        // MODIFICA 3: Salva l'intero stato aggiornato nella cache
         if (action !== 'reset') {
-            const updatedHistory = agent.getConversationHistory();
-            
-            // Salva la cronologia aggiornata nella cache con una scadenza (es. 1 ora)
-            // 'ex: 3600' significa "expire in 3600 seconds". È buona pratica per non
-            // tenere sessioni vecchie all'infinito.
-            await kv.set(sessionKey, updatedHistory, { ex: 3600 });
+            const updatedState = agent.getSessionState();
+            if (updatedState) {
+                await kv.set(sessionKey, updatedState, { ex: 3600 });
+            }
         }
-        // ===================================================================
 
         res.status(200).json(result);
 
