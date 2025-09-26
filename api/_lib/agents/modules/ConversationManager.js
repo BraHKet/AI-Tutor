@@ -28,12 +28,12 @@ export class ConversationManager {
         const systemPrompt = `Tu sei un PROFESSORE UNIVERSITARIO di fisica durante un esame orale.
 
 COMPITO:
-1. Analizza questo PDF completamente (tutte le pagine)
+1. Analizza questo contenuto PDF completamente
 2. Identifica tutto ciò che lo studente deve trattare
 3. Gestisci l'esame fino al completamento totale
 
 REGOLE:
-- Fai domande per coprire TUTTO il PDF
+- Fai domande per coprire TUTTO il contenuto
 - Non dare suggerimenti (solo interrogare)
 - Tieni traccia del progresso
 - Lo studente può inviare testo + disegni/formule
@@ -52,38 +52,47 @@ IMPORTANTE: Rispondi SEMPRE e SOLO con JSON valido, senza testo aggiuntivo prima
 Inizia con type="setup" e la prima domanda.`;
 
         try {
-            // Inizializza la cronologia della conversazione con il sistema
+            // ChatGPT non supporta PDF direttamente, quindi estraiamo il testo o usiamo un servizio
+            console.log('📄 [DEBUG] Converting PDF to text for ChatGPT...');
+            
+            let pdfContent = "Contenuto PDF non disponibile per l'analisi diretta con ChatGPT.";
+            
+            try {
+                // Prova a estrarre il testo dal PDF usando pdf-parse
+                const pdfParse = await import('pdf-parse');
+                const pdfBuffer = Buffer.from(pdfData.data, 'base64');
+                const pdfResult = await pdfParse.default(pdfBuffer);
+                pdfContent = pdfResult.text;
+                console.log('✅ [DEBUG] PDF text extracted successfully, length:', pdfContent.length);
+            } catch (pdfError) {
+                console.warn('⚠️ [DEBUG] PDF text extraction failed:', pdfError.message);
+                pdfContent = `Ho ricevuto un PDF di fisica da analizzare. 
+                Anche se non posso leggere direttamente il contenuto, procederò con un esame generale di fisica.
+                Ti farò domande sui principali argomenti che solitamente si trovano nei PDF di fisica universitaria.`;
+            }
+
+            // Inizializza la cronologia della conversazione
             this.conversationHistory = [
                 {
                     role: "system",
                     content: systemPrompt
+                },
+                {
+                    role: "user", 
+                    content: `Ecco il contenuto del PDF di fisica da analizzare:
+
+---CONTENUTO PDF---
+${pdfContent.substring(0, 15000)} ${pdfContent.length > 15000 ? '...[testo troncato per lunghezza]' : ''}
+---FINE CONTENUTO---
+
+Analizza questo contenuto e inizia l'esame. Rispondi SOLO in JSON come da istruzioni.`
                 }
             ];
 
-            // Prepara il messaggio con il PDF
-            const userMessage = {
-                role: "user",
-                content: [
-                    {
-                        type: "text",
-                        text: "Analizza questo PDF di fisica e inizia l'esame. Rispondi SOLO in JSON come da istruzioni."
-                    },
-                    {
-                        type: "image_url",
-                        image_url: {
-                            url: `data:${pdfData.mimeType};base64,${pdfData.data}`,
-                            detail: "high"
-                        }
-                    }
-                ]
-            };
-
-            this.conversationHistory.push(userMessage);
-
-            console.log('📡 [DEBUG] Sending request to ChatGPT...');
+            console.log('📡 [DEBUG] Sending request to ChatGPT with PDF content...');
 
             const response = await this.openai.chat.completions.create({
-                model: "gpt-4o", // Modello che supporta immagini/PDF
+                model: "gpt-4o", // o "gpt-4" se hai accesso
                 messages: this.conversationHistory,
                 max_tokens: 2048,
                 temperature: 0.7,
@@ -107,7 +116,7 @@ Inizia con type="setup" e la prima domanda.`;
 
             return {
                 success: true,
-                mainTopic: parsedResponse.mainTopic,
+                mainTopic: parsedResponse.mainTopic || 'Fisica',
                 initialQuestion: parsedResponse.message,
                 totalItems: parsedResponse.progress.total
             };
