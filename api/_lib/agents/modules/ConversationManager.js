@@ -4,6 +4,7 @@
 // ==========================================
 
 import OpenAI from 'openai';
+import pdfParse from 'pdf-parse';
 
 export class ConversationManager {
     constructor() {
@@ -52,42 +53,29 @@ IMPORTANTE: Rispondi SEMPRE e SOLO con JSON valido, senza testo aggiuntivo prima
 Inizia con type="setup" e la prima domanda.`;
 
         try {
-            // ChatGPT non supporta PDF direttamente, quindi estraiamo il testo o usiamo un servizio
             console.log('📄 [DEBUG] Converting PDF to text for ChatGPT...');
-            
             let pdfContent = "Contenuto PDF non disponibile per l'analisi diretta con ChatGPT.";
-            
+
             try {
-    const pdfParse = await import('pdf-parse');
+                // Converti PDF base64 o Buffer in Buffer pronto per pdf-parse
+                let pdfBuffer;
+                if (Buffer.isBuffer(pdfData.data)) {
+                    pdfBuffer = pdfData.data;
+                    console.log('📊 [DEBUG] pdfData.data is a Buffer, length:', pdfBuffer.length);
+                } else if (typeof pdfData.data === 'string') {
+                    pdfBuffer = Buffer.from(pdfData.data, 'base64');
+                    console.log('📊 [DEBUG] pdfData.data decoded from base64, length:', pdfBuffer.length);
+                } else {
+                    throw new Error('pdfData.data non valido');
+                }
 
-    console.log("📊 [DEBUG] typeof pdfData.data:", typeof pdfData.data);
-    if (typeof pdfData.data === "string") {
-        console.log("📊 [DEBUG] pdfData.data preview:", pdfData.data.substring(0, 200));
-    } else if (Buffer.isBuffer(pdfData.data)) {
-        console.log("📊 [DEBUG] pdfData.data is already a Buffer, length:", pdfData.data.length);
-    }
-
-    let pdfBuffer;
-    if (Buffer.isBuffer(pdfData.data)) {
-        pdfBuffer = pdfData.data;
-    } else if (typeof pdfData.data === "string") {
-        if (pdfData.data.trim().endsWith(".pdf")) {
-            const fs = await import("fs");
-            pdfBuffer = fs.readFileSync(pdfData.data);
-            console.log("✅ [DEBUG] Caricato PDF da file:", pdfData.data);
-        } else {
-            pdfBuffer = Buffer.from(pdfData.data, "base64");
-            console.log("✅ [DEBUG] Decodificato PDF da base64");
-        }
-    }
-
-    const pdfResult = await pdfParse.default(pdfBuffer);
-    pdfContent = pdfResult.text;
-    console.log("✅ [DEBUG] Estratto testo PDF, length:", pdfContent.length);
-} catch (pdfError) {
-    console.warn("⚠️ [DEBUG] PDF text extraction failed:", pdfError.message);
-    pdfContent = `Ho ricevuto un PDF di fisica da analizzare...`;
-}
+                const pdfResult = await pdfParse(pdfBuffer);
+                pdfContent = pdfResult.text;
+                console.log('✅ [DEBUG] Estratto testo PDF, length:', pdfContent.length);
+            } catch (pdfError) {
+                console.warn('⚠️ [DEBUG] PDF text extraction failed:', pdfError.message);
+                pdfContent = `Ho ricevuto un PDF di fisica da analizzare, ma non è stato possibile estrarre il testo. Procederò con un esame generale.`;
+            }
 
             // Inizializza la cronologia della conversazione
             this.conversationHistory = [
