@@ -13,7 +13,7 @@ export class ConversationManager {
             apiKey: process.env.OPENAI_API_KEY, // Assicurati di avere questa variabile d'ambiente
         });
 
-        this.chatSession = null;
+        this.chatSession = [];
         this.isActive = false;
         this.conversationHistory = []; // ChatGPT usa la cronologia delle conversazioni
     }
