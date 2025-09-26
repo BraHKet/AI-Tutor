@@ -58,13 +58,26 @@ Inizia con type="setup" e la prima domanda.`;
             let pdfContent = "Contenuto PDF non disponibile per l'analisi diretta con ChatGPT.";
             
             try {
-    // Prova a estrarre il testo dal PDF usando pdf-parse
     const pdfParse = await import('pdf-parse');
 
-    // Se pdfData.data è una stringa base64 la converto, altrimenti la uso direttamente
-    const pdfBuffer = Buffer.isBuffer(pdfData.data)
-        ? pdfData.data
-        : Buffer.from(pdfData.data, 'base64');
+    let pdfBuffer;
+    if (Buffer.isBuffer(pdfData.data)) {
+        pdfBuffer = pdfData.data;
+        console.log("✅ [DEBUG] pdfData.data è già un Buffer");
+    } else if (typeof pdfData.data === "string") {
+        if (pdfData.data.trim().endsWith(".pdf")) {
+            // caso: pdfData.data è un percorso file
+            const fs = await import('fs');
+            pdfBuffer = fs.readFileSync(pdfData.data);
+            console.log("✅ [DEBUG] Caricato PDF da file:", pdfData.data);
+        } else {
+            // caso: pdfData.data è base64
+            pdfBuffer = Buffer.from(pdfData.data, 'base64');
+            console.log("✅ [DEBUG] Decodificato PDF da base64");
+        }
+    } else {
+        throw new Error("Formato pdfData.data non supportato");
+    }
 
     const pdfResult = await pdfParse.default(pdfBuffer);
     pdfContent = pdfResult.text;
@@ -72,8 +85,7 @@ Inizia con type="setup" e la prima domanda.`;
 } catch (pdfError) {
     console.warn('⚠️ [DEBUG] PDF text extraction failed:', pdfError.message);
     pdfContent = `Ho ricevuto un PDF di fisica da analizzare. 
-    Anche se non posso leggere direttamente il contenuto, procederò con un esame generale di fisica.
-    Ti farò domande sui principali argomenti che solitamente si trovano nei PDF di fisica universitaria.`;
+    Anche se non posso leggere direttamente il contenuto, procederò con un esame generale di fisica.`;
 }
 
             // Inizializza la cronologia della conversazione
