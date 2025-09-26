@@ -102,34 +102,23 @@ console.log('📡 [DEBUG] Sending request to Gemini with contents:', {
     textPart: contents[0].parts[1].text
 });
 
-const result = await this.genAI.models.generateContent({
-    model: "gemini-2.5-flash",       // <-- TORNATO AL TUO MODELLO ORIGINALE
-    contents: contents,              // <-- ORA INVIAMO UN SOLO PACCO
-    systemInstruction: systemPrompt, // Le istruzioni generali le mettiamo qui
-    generationConfig: {
-    responseMimeType: "application/json",
-    responseSchema: {
-      type: "object",
-      properties: {
-        type: { type: "string", enum: ["setup", "question", "completion"] },
-        message: { type: "string" },
-        progress: {
-          type: "object",
-          properties: {
-            covered: { type: "number" },
-            total: { type: "number" },
-            percentage: { type: "number" }
-          },
-          required: ["covered", "total", "percentage"]
-        },
-        isComplete: { type: "boolean" },
-        mainTopic: { type: "string" }
-      },
-      required: ["type", "message", "progress", "isComplete"]
-    }
-  },
-    safetySettings: [],
-});
+const result = await this.genAI.getGenerativeModel({
+                model: "gemini-2.5-flash",
+                systemInstruction: systemPrompt,
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    temperature: 0.1,  // Più deterministico
+                    maxOutputTokens: 500
+                }
+            }).generateContent([
+                {
+                    inlineData: { 
+                        mimeType: pdfData.mimeType, 
+                        data: pdfData.data 
+                    }
+                },
+                "Analizza questo PDF e inizia l'esame con la prima domanda. Rispondi SOLO in formato JSON come richiesto."
+            ]);
 
 console.log('📥 [DEBUG] Raw Gemini result object:', JSON.stringify(result, null, 2));
 
