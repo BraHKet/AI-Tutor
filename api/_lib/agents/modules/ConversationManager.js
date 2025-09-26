@@ -101,7 +101,7 @@ const result = await this.genAI.models.generateContent({
 console.log('📥 [DEBUG] Raw Gemini result object:', JSON.stringify(result, null, 2));
 
             // Parsing della risposta robusto
-            const responseText = result.output_text || result[0]?.content?.text || "";
+            const responseText = result.candidates[0].content.parts[0].text;
             const response = this.parseResponse(responseText);
             this.isActive = true;
 
