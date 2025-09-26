@@ -70,7 +70,7 @@ FORMATO RISPOSTA (sempre JSON VALIDO):
 
 IMPORTANTE: Rispondi SEMPRE e SOLO con JSON valido, senza testo aggiuntivo prima o dopo.
 **ESEMPIO PRIMA RISPOSTA:**
-\`\`\`json
+json
 {
   "type": "setup",
   "message": "Bene, iniziamo l'esame. Il documento che ha studiato riguarda l'analisi dei dati mancanti. Partiamo dalle definizioni fondamentali: quali sono le principali tipologie di dati mancanti e come si distinguono?",
@@ -103,7 +103,7 @@ console.log('📡 [DEBUG] Sending request to Gemini with contents:', {
 });
 
 const result = await this.genAI.models.generateContent({
-    model: "gemini-2.5-flash",       // <-- TORNATO AL TUO MODELLO ORIGINALE
+    model: "gemini-2.5-pro",       // <-- TORNATO AL TUO MODELLO ORIGINALE
     contents: contents,              // <-- ORA INVIAMO UN SOLO PACCO
     systemInstruction: systemPrompt, // Le istruzioni generali le mettiamo qui
     generationConfig: {
