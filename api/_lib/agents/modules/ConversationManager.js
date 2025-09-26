@@ -107,7 +107,7 @@ Analizza questo contenuto e inizia l'esame. Rispondi SOLO in JSON come da istruz
             console.log('📡 [DEBUG] Sending request to ChatGPT with PDF content...');
 
             const response = await this.openai.chat.completions.create({
-                model: "gpt-4o", // o "gpt-4" se hai accesso
+                model: "gpt-4o-mini", // o "gpt-4" se hai accesso
                 messages: this.conversationHistory,
                 max_tokens: 2048,
                 temperature: 0.7,
