@@ -60,32 +60,33 @@ Inizia con type="setup" e la prima domanda.`;
             try {
     const pdfParse = await import('pdf-parse');
 
+    console.log("📊 [DEBUG] typeof pdfData.data:", typeof pdfData.data);
+    if (typeof pdfData.data === "string") {
+        console.log("📊 [DEBUG] pdfData.data preview:", pdfData.data.substring(0, 200));
+    } else if (Buffer.isBuffer(pdfData.data)) {
+        console.log("📊 [DEBUG] pdfData.data is already a Buffer, length:", pdfData.data.length);
+    }
+
     let pdfBuffer;
     if (Buffer.isBuffer(pdfData.data)) {
         pdfBuffer = pdfData.data;
-        console.log("✅ [DEBUG] pdfData.data è già un Buffer");
     } else if (typeof pdfData.data === "string") {
         if (pdfData.data.trim().endsWith(".pdf")) {
-            // caso: pdfData.data è un percorso file
-            const fs = await import('fs');
+            const fs = await import("fs");
             pdfBuffer = fs.readFileSync(pdfData.data);
             console.log("✅ [DEBUG] Caricato PDF da file:", pdfData.data);
         } else {
-            // caso: pdfData.data è base64
-            pdfBuffer = Buffer.from(pdfData.data, 'base64');
+            pdfBuffer = Buffer.from(pdfData.data, "base64");
             console.log("✅ [DEBUG] Decodificato PDF da base64");
         }
-    } else {
-        throw new Error("Formato pdfData.data non supportato");
     }
 
     const pdfResult = await pdfParse.default(pdfBuffer);
     pdfContent = pdfResult.text;
-    console.log('✅ [DEBUG] PDF text extracted successfully, length:', pdfContent.length);
+    console.log("✅ [DEBUG] Estratto testo PDF, length:", pdfContent.length);
 } catch (pdfError) {
-    console.warn('⚠️ [DEBUG] PDF text extraction failed:', pdfError.message);
-    pdfContent = `Ho ricevuto un PDF di fisica da analizzare. 
-    Anche se non posso leggere direttamente il contenuto, procederò con un esame generale di fisica.`;
+    console.warn("⚠️ [DEBUG] PDF text extraction failed:", pdfError.message);
+    pdfContent = `Ho ricevuto un PDF di fisica da analizzare...`;
 }
 
             // Inizializza la cronologia della conversazione
