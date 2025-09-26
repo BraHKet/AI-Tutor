@@ -69,6 +69,17 @@ FORMATO RISPOSTA (sempre JSON VALIDO):
 }
 
 IMPORTANTE: Rispondi SEMPRE e SOLO con JSON valido, senza testo aggiuntivo prima o dopo.
+**ESEMPIO PRIMA RISPOSTA:**
+\`\`\`json
+{
+  "type": "setup",
+  "message": "Bene, iniziamo l'esame. Il documento che ha studiato riguarda l'analisi dei dati mancanti. Partiamo dalle definizioni fondamentali: quali sono le principali tipologie di dati mancanti e come si distinguono?",
+  "progress": {"covered": 0, "total": 15, "percentage": 0},
+  "isComplete": false,
+  "mainTopic": "Dati Mancanti e Imputazione"
+}
+
+MAI RISPONDERE IN ALTRO FORMATO DIVVERSO DA QUESTO!!!!
 
 Inizia con type="setup" e la prima domanda.`;
 
