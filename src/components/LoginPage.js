@@ -94,9 +94,12 @@ const LoginPage = () => {
       type="file"
       accept="application/pdf"
       onChange={(e) => {
-        if (e.target.files && e.target.files[0]) {
-          setPdfFile(e.target.files[0]);
-        }
+          if (e.target.files && e.target.files[0]) {
+            if (e.target.files[0].size < 5 * 1024 * 1024) {
+            setPdfFile(e.target.files[0]);
+            }
+            else {alert("Il file supera i 5MB, scegli un PDF più leggero.");}
+          }
       }}
     />
     Inserisci un PDF
