@@ -1,70 +1,64 @@
-# Getting Started with Create React App
+<div align="center">
+    <img width="250" alt="Mentora Logo" src="https://raw.githubusercontent.com/BraHKet/AI-Tutor/refs/heads/versione-con-AItutor/public/logo512.png?token=GHSAT0AAAAAADWAKBXF3JH2HCF7THCBUO4I2NFNTYQ" />
+    <h1>Mentora - Full stack project</h1>
+<p>An AI system that quizzes you on your exam notes and books, designed for physics, math, and engineering students.</p>
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+![alt text](https://badgen.net/badge/Status/Archived/yellow?scale=1.5)
+</div>
 
-## Available Scripts
+<br>
 
-In the project directory, you can run:
+> [!WARNING]
+> **Code Release Status:**
+> This work is currently **archived**.
+>
+> This project was previously deployed on [mentora.im](https://www.mentora.im)
+ but is no longer functional. It is no longer maintained, as it did not attract significant public interest. The documentation below is provided for reference only.
+> 
+---
 
-### `npm start`
+## Overview
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+<table>
+  <tr>
+    <td>
+<p>Mentora is a full-stack application I designed to improve individual learning. 
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+The platform allows students to use their own notes and textbooks as primary sources, enabling an AI tutor to ask questions and assess answers against the content. This approach helps maintain focus on relevant topics while reinforcing understanding.
+      
 
-### `npm test`
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+<h3>Key differentiators:</h3>
+      
+- <b>Multi-modal interaction:</b> Supports both textual and graphical responses, allowing students to draw formulas and graphs that are sent to the AI tutor. The tutor then analyzes both the drawings and the text together, providing feedback and questions based on the combined content, offering a more interactive and personalized study experience than standard LLM chat interfaces.
 
-### `npm run build`
+- <b>Guided questioning:</b> The app actively quizzes the student by asking questions and comparing their answers with the source materials. This transforms studying into an active, personalized learning process, rather than a passive interaction typical of standard LLMs.
+</p>
+    </td>
+    <td>
+      <img src="https://i.imgur.com/CVLBX08.jpeg" width="1700" style="border-radius:10px; margin-left:20px;" />
+    </td>
+  </tr>
+</table>
+<br>
+<p align="center"><img width="900" alt="Mentora" src="https://pbs.twimg.com/media/G1n1qiFXgAABiyo?format=jpg&name=large" /></p>
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+---
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Tech Stack
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+- **Frontend:** React  
+- **Backend:** Node.js, deployed on Render.com  
+- **Database & Auth:** Firebase (Realtime DB, Authentication)  
+- **Storage:** Google Drive (free for each user)  
+- **LLM AI:** Gemini → OpenAI  
+- **Others:** Supabase for database experiments, PDF worker, interactive canvas
 
-### `npm run eject`
+---
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## Lessons Learned
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- Reduce complexity for complex MVPs  
+- Validate users before full development  
+- Maintain clear separation between frontend, backend, and AI layers  
+- Document technical choices and data flow
