@@ -1,5 +1,5 @@
 <div align="center">
-    <img width="250" alt="Mentora Logo" src="https://raw.githubusercontent.com/BraHKet/AI-Tutor/refs/heads/versione-con-AItutor/public/logo512.png?token=GHSAT0AAAAAADWAKBXF3JH2HCF7THCBUO4I2NFNTYQ" />
+    <img width="100" alt="Mentora Logo" src="https://i.imgur.com/t9JKLyL.png" />
     <h1>Mentora - Full stack project</h1>
 <p>An AI system that quizzes you on your exam notes and books, designed for physics, math, and engineering students.</p>
 
